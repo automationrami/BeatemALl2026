@@ -1,6 +1,7 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import Link from 'next/link';
 import {
   Avatar,
   Button,
@@ -16,13 +17,17 @@ import type { PlayerProfile } from '@beat-em-all/types';
 
 const FALLBACK_PROFILE: PlayerProfile = getPlayerProfileForPersona('khaled');
 
+/** Renders the player profile of whatever persona is currently active in the store. */
 export function PlayerProfileView() {
-  const t = useTranslations('profile');
   const mounted = useHasMounted();
   const activePersonaId = useActAsPersona((s) => s.activePersonaId);
-
   const profile = mounted ? getPlayerProfileForPersona(activePersonaId) : FALLBACK_PROFILE;
+  return <PlayerProfileViewFor profile={profile} />;
+}
 
+/** Same body, but driven by an explicit profile prop — used by /players/[slug]. */
+export function PlayerProfileViewFor({ profile }: { profile: PlayerProfile }) {
+  const t = useTranslations('profile');
   return (
     <div>
       {/* Action bar */}
@@ -55,6 +60,7 @@ export function PlayerProfileView() {
 
 function HeroCard({ profile }: { profile: PlayerProfile }) {
   const t = useTranslations('profile');
+  const locale = useLocale();
   const hasPentagon = profile.pentagon.sampleSize > 0;
 
   return (
@@ -77,11 +83,24 @@ function HeroCard({ profile }: { profile: PlayerProfile }) {
             {profile.handle} · {profile.city} · {t('joinedPrefix')} {profile.joinedLabel}
           </p>
           <div className="flex flex-wrap gap-2 mt-4">
-            {profile.badges.map((b) => (
-              <Pill key={b.label} tone={b.tone} dot={b.label === 'Verified'}>
-                {b.label}
-              </Pill>
-            ))}
+            {profile.badges.map((b) => {
+              const pill = (
+                <Pill tone={b.tone} dot={b.label === 'Verified'}>
+                  {b.label}
+                </Pill>
+              );
+              return b.href ? (
+                <Link
+                  key={b.label}
+                  href={`/${locale}${b.href}`}
+                  className="hover:brightness-125 transition"
+                >
+                  {pill}
+                </Link>
+              ) : (
+                <span key={b.label}>{pill}</span>
+              );
+            })}
           </div>
         </div>
         <div className="md:flex hidden justify-center">

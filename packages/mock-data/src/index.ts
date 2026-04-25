@@ -4,5 +4,6 @@
 export * from './country-dial-codes';
 export * from './games';
 export * from './player-profiles';
+export * from './teams';
 
-export const MOCK_DATA_VERSION = '0.0.3';
+export const MOCK_DATA_VERSION = '0.0.4';

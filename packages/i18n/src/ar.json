@@ -100,5 +100,33 @@
     "emptyAchievements": "اكسب أول وسام بإكمال مباراة.",
     "pentagonCaption": "محسوب من آخر {sample} مباراة مصنّفة",
     "noPentagon": "العب بضع مباريات مصنّفة لفتح خماسي مهاراتك."
+  },
+  "team": {
+    "eyebrow": "فريق",
+    "membersCount": "{count} أعضاء",
+    "recruiting": "يبحث عن لاعبين",
+    "applyToJoin": "تقدّم للانضمام",
+    "challengeTeam": "تحدّى الفريق",
+    "ratingLabel": "التقييم",
+    "ratingDelta": "{delta} (30 يوم)",
+    "winRate": "نسبة الفوز",
+    "matches": "المباريات",
+    "trophies": "الكؤوس",
+    "roster": "التشكيلة",
+    "rosterCount": "{count} لاعب فعّال",
+    "upcoming": "المباراة القادمة",
+    "noUpcomingMatch": "لا توجد مباريات قادمة مجدولة.",
+    "captain": "قائد",
+    "starter": "أساسي",
+    "subRole": "احتياطي",
+    "coach": "مدرّب",
+    "coCaptain": "نائب القائد",
+    "back": "← رجوع",
+    "notFoundTitle": "الفريق غير موجود",
+    "notFoundBody": "لم نعثر على هذا الفريق. ربما تم حلّه أو لم يكن موجوداً أصلاً."
+  },
+  "playerNotFound": {
+    "title": "اللاعب غير موجود",
+    "body": "لم نعثر على ملف اللاعب."
   }
 }

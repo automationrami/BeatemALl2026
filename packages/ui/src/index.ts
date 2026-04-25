@@ -10,6 +10,8 @@ export * from './Pill';
 export * from './StatCard';
 export * from './StatPentagon';
 export * from './StepIndicator';
+export * from './TeamCrest';
 export * from './TextInput';
+export * from './VsBlock';
 export * from './Wordmark';
 export * from './useHasMounted';

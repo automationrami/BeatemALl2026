@@ -42,7 +42,7 @@ const KHALED: PlayerProfile = {
   badges: [
     { label: 'Verified', tone: 'violet' },
     { label: '★ KEC Sanctioned', tone: 'amber' },
-    { label: 'Captain · Sandstorm' },
+    { label: 'Captain · Sandstorm', href: '/teams/sandstorm' },
   ],
   stats: {
     winRate90d: 68,

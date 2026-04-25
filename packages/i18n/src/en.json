@@ -100,5 +100,33 @@
     "emptyAchievements": "Earn your first badge by completing a match.",
     "pentagonCaption": "Calculated from last {sample} ranked matches",
     "noPentagon": "Play a few ranked matches to unlock your stat pentagon."
+  },
+  "team": {
+    "eyebrow": "TEAM",
+    "membersCount": "{count} members",
+    "recruiting": "Recruiting",
+    "applyToJoin": "Apply to join",
+    "challengeTeam": "Challenge team",
+    "ratingLabel": "RATING",
+    "ratingDelta": "{delta} 30d",
+    "winRate": "WIN RATE",
+    "matches": "MATCHES",
+    "trophies": "TROPHIES",
+    "roster": "ROSTER",
+    "rosterCount": "{count} active",
+    "upcoming": "UPCOMING",
+    "noUpcomingMatch": "No upcoming match scheduled.",
+    "captain": "CAPTAIN",
+    "starter": "STARTER",
+    "subRole": "SUB",
+    "coach": "COACH",
+    "coCaptain": "CO-CAPTAIN",
+    "back": "← Back",
+    "notFoundTitle": "Team not found",
+    "notFoundBody": "We couldn't find that team. It may have been disbanded or never existed."
+  },
+  "playerNotFound": {
+    "title": "Player not found",
+    "body": "We couldn't find that player profile."
   }
 }

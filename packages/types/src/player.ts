@@ -103,5 +103,10 @@ export type PlayerProfile = {
   achievements: Achievement[];
   linkedAccounts: LinkedAccount[];
   /** Pills shown next to the name: "Captain · NSR", "★ KEC Sanctioned", etc. */
-  badges: { label: string; tone?: 'violet' | 'amber' | 'lime' | 'coral' | 'cyan' }[];
+  badges: {
+    label: string;
+    tone?: 'violet' | 'amber' | 'lime' | 'coral' | 'cyan';
+    /** When set, the badge renders as a link to this href (e.g. captain badge → team page). */
+    href?: string;
+  }[];
 };
