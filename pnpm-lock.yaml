@@ -286,6 +286,9 @@ importers:
       '@beat-em-all/types':
         specifier: workspace:*
         version: link:../types
+      '@beat-em-all/utils':
+        specifier: workspace:*
+        version: link:../utils
       zod:
         specifier: ^3.24.1
         version: 3.25.76
@@ -374,6 +377,9 @@ importers:
 
   packages/utils:
     dependencies:
+      '@beat-em-all/types':
+        specifier: workspace:*
+        version: link:../types
       zod:
         specifier: ^3.24.1
         version: 3.25.76
@@ -381,6 +387,9 @@ importers:
       typescript:
         specifier: ^5
         version: 5.9.3
+      vitest:
+        specifier: ^3.0.4
+        version: 3.2.4(@types/node@20.19.39)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.32.0)(yaml@2.8.3)
 
 packages:
 

@@ -13,6 +13,7 @@
   "dependencies": {
     "@beat-em-all/mock-data": "workspace:*",
     "@beat-em-all/types": "workspace:*",
+    "@beat-em-all/utils": "workspace:*",
     "zod": "^3.24.1",
     "zustand": "^5.0.3"
   },

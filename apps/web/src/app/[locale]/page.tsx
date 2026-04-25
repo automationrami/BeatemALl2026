@@ -1,7 +1,9 @@
 import { setRequestLocale } from 'next-intl/server';
 import { useTranslations } from 'next-intl';
+import { Wordmark } from '@beat-em-all/ui';
 import { PersonaSwitcher } from '@/components/PersonaSwitcher';
 import { LanguageToggle } from '@/components/LanguageToggle';
+import { HomeAuthGate } from '@/components/HomeAuthGate';
 
 type PageProps = {
   params: Promise<{ locale: string }>;
@@ -20,23 +22,15 @@ function HomeContent() {
     <main className="min-h-screen px-6 py-8 md:px-16 md:py-12">
       {/* Top bar */}
       <header className="flex items-center justify-between mb-12">
-        <div className="flex items-center gap-3">
-          <Wordmark />
-        </div>
+        <Wordmark />
         <div className="flex items-center gap-3">
           <LanguageToggle />
           <PersonaSwitcher />
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="mb-16">
-        <p className="bx-eyebrow mb-6">PHASE 1 · LOCALHOST · MOCK DATA</p>
-        <h1 className="font-display font-medium text-[64px] md:text-[96px] leading-[0.9] tracking-[-0.04em] mb-6">
-          {t('home.welcome')}
-        </h1>
-        <p className="text-[var(--t-3)] max-w-xl text-lg leading-relaxed">{t('home.subtitle')}</p>
-      </section>
+      {/* Hero (gated by signed-in state) */}
+      <HomeAuthGate />
 
       {/* Bento grid */}
       <section className="grid grid-cols-12 gap-4 md:gap-5">
@@ -112,22 +106,5 @@ function HomeContent() {
         <span className="font-mono">v0.0.1 · localhost</span>
       </footer>
     </main>
-  );
-}
-
-function Wordmark() {
-  return (
-    <div className="flex items-center gap-3">
-      <div
-        className="w-9 h-9 rounded-[10px] grid place-items-center font-display font-bold text-base"
-        style={{
-          background: 'linear-gradient(135deg, var(--violet) 0%, var(--violet-deep) 100%)',
-          boxShadow: 'var(--sh-glow)',
-        }}
-      >
-        Bx
-      </div>
-      <span className="font-display font-medium text-lg tracking-tight">Beat&apos;Em All</span>
-    </div>
   );
 }

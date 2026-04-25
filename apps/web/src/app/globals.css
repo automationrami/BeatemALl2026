@@ -108,3 +108,12 @@ html[dir="ltr"] body {
     opacity: 0.55;
   }
 }
+
+@keyframes bxSlide {
+  0% {
+    inset-inline-start: -40%;
+  }
+  100% {
+    inset-inline-start: 100%;
+  }
+}

@@ -20,6 +20,57 @@
   },
   "home": {
     "welcome": "Welcome to Beat'Em All.",
-    "subtitle": "Form a team. Find opponents nearby. Meet at a venue. Compete for real."
+    "subtitle": "Form a team. Find opponents nearby. Meet at a venue. Compete for real.",
+    "signedOutCta": "Sign in to start playing",
+    "signedOutHint": "No account yet? Phone number is all you need.",
+    "signOut": "Sign out"
+  },
+  "signIn": {
+    "eyebrow": "SIGN IN",
+    "title": "Welcome to the arena.",
+    "subtitle": "One number. One identity. Across every team you ever play on.",
+    "phoneLabel": "Phone number",
+    "phonePlaceholder": "5xxx xxxx",
+    "continue": "Continue",
+    "or": "OR",
+    "appleCta": "Continue with Apple",
+    "googleCta": "Continue with Google",
+    "termsPrefix": "By continuing, you agree to our",
+    "terms": "Terms",
+    "and": "and",
+    "privacy": "Privacy",
+    "errors": {
+      "invalid_phone": "That doesn't look like a valid phone number.",
+      "rate_limited": "Too many attempts. Try again in 15 minutes.",
+      "unknown": "Something went wrong. Try again."
+    }
+  },
+  "verify": {
+    "eyebrow": "VERIFICATION",
+    "title": "Check your texts.",
+    "subtitlePrefix": "We sent a 6-digit code to",
+    "verifyCta": "Verify",
+    "back": "Change number",
+    "resendIn": "Resend in {seconds}s",
+    "resendNow": "Resend code",
+    "lockoutWarning": "{remaining} attempts left. After 3 failed tries, your account is locked for 15 minutes.",
+    "errors": {
+      "invalid_code": "That code doesn't match. Try again.",
+      "expired_code": "That code expired. Request a new one.",
+      "rate_limited": "Locked for 15 minutes after 3 failed attempts."
+    }
+  },
+  "onboarding": {
+    "stepOf": "STEP {step} OF {total}",
+    "title": "Pick your games.",
+    "subtitle": "We'll find teams and tournaments that match. Choose at least one.",
+    "back": "Back",
+    "continue": "Continue",
+    "minOneGame": "Pick at least one game to continue."
+  },
+  "callback": {
+    "eyebrow": "SIGNING YOU IN",
+    "title": "One sec…",
+    "subtitle": "Verifying your credentials"
   }
 }
