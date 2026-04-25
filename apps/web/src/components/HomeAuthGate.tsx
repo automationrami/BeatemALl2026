@@ -16,6 +16,7 @@ import { useAuthDraft, signOut } from '@beat-em-all/api-client';
  */
 export function HomeAuthGate() {
   const t = useTranslations('home');
+  const tProfile = useTranslations('profile');
   const locale = useLocale();
   const router = useRouter();
   const mounted = useHasMounted();
@@ -30,11 +31,16 @@ export function HomeAuthGate() {
         {t('welcome')}
       </h1>
       <p className="text-[var(--t-3)] max-w-xl text-lg leading-relaxed mb-8">{t('subtitle')}</p>
-      <div className="min-h-[52px] flex items-center">
+      <div className="min-h-[52px] flex items-center gap-3 flex-wrap">
         {showSignedIn ? (
-          <Button tone="ghost" size="sm" onClick={() => signOut()}>
-            {t('signOut')}
-          </Button>
+          <>
+            <Button tone="primary" size="md" onClick={() => router.push(`/${locale}/me`)}>
+              {tProfile('viewProfile')} →
+            </Button>
+            <Button tone="ghost" size="sm" onClick={() => signOut()}>
+              {t('signOut')}
+            </Button>
+          </>
         ) : (
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <Button tone="primary" size="lg" onClick={() => router.push(`/${locale}/sign-in`)}>

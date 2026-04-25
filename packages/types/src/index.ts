@@ -5,3 +5,4 @@ export type Locale = 'en' | 'ar';
 
 export * from './auth';
 export * from './game';
+export * from './player';

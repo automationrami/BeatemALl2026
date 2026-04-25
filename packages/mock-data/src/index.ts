@@ -3,5 +3,6 @@
 
 export * from './country-dial-codes';
 export * from './games';
+export * from './player-profiles';
 
-export const MOCK_DATA_VERSION = '0.0.2';
+export const MOCK_DATA_VERSION = '0.0.3';

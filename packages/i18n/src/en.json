@@ -72,5 +72,33 @@
     "eyebrow": "SIGNING YOU IN",
     "title": "One sec…",
     "subtitle": "Verifying your credentials"
+  },
+  "profile": {
+    "viewProfile": "View profile",
+    "follow": "Follow",
+    "challengeCta": "Challenge to match",
+    "playerEyebrow": "PLAYER",
+    "joinedPrefix": "Joined",
+    "verified": "Verified",
+    "kecSanctioned": "★ KEC Sanctioned",
+    "captain": "Captain",
+    "winRate": "WIN RATE",
+    "rating": "RATING",
+    "matches": "MATCHES",
+    "streak": "STREAK",
+    "streakWin": "Wins",
+    "streakLoss": "Losses",
+    "ratingDeltaThisMonth": "{delta} this month",
+    "winsLossesSub": "{wins}W · {losses}L",
+    "recentMatches": "RECENT MATCHES",
+    "lastN": "Last {n}",
+    "achievements": "ACHIEVEMENTS",
+    "unlockedOf": "{unlocked} of {total}",
+    "linkedAccounts": "LINKED ACCOUNTS",
+    "noLinkedAccounts": "No accounts linked yet.",
+    "emptyMatches": "No matches played yet. Send a challenge to be the first.",
+    "emptyAchievements": "Earn your first badge by completing a match.",
+    "pentagonCaption": "Calculated from last {sample} ranked matches",
+    "noPentagon": "Play a few ranked matches to unlock your stat pentagon."
   }
 }

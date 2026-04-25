@@ -72,5 +72,33 @@
     "eyebrow": "جارٍ تسجيل الدخول",
     "title": "لحظة واحدة…",
     "subtitle": "نتحقق من بياناتك"
+  },
+  "profile": {
+    "viewProfile": "عرض الملف",
+    "follow": "متابعة",
+    "challengeCta": "تحدّى الآن",
+    "playerEyebrow": "لاعب",
+    "joinedPrefix": "انضم في",
+    "verified": "موثّق",
+    "kecSanctioned": "★ معتمد من النادي",
+    "captain": "قائد الفريق",
+    "winRate": "نسبة الفوز",
+    "rating": "التقييم",
+    "matches": "المباريات",
+    "streak": "السلسلة",
+    "streakWin": "انتصارات",
+    "streakLoss": "هزائم",
+    "ratingDeltaThisMonth": "{delta} هذا الشهر",
+    "winsLossesSub": "{wins}ف · {losses}خ",
+    "recentMatches": "آخر المباريات",
+    "lastN": "آخر {n}",
+    "achievements": "الإنجازات",
+    "unlockedOf": "{unlocked} من {total}",
+    "linkedAccounts": "حسابات مربوطة",
+    "noLinkedAccounts": "لم تربط أي حساب بعد.",
+    "emptyMatches": "لا توجد مباريات بعد. أرسل تحدياً لتكون الأول.",
+    "emptyAchievements": "اكسب أول وسام بإكمال مباراة.",
+    "pentagonCaption": "محسوب من آخر {sample} مباراة مصنّفة",
+    "noPentagon": "العب بضع مباريات مصنّفة لفتح خماسي مهاراتك."
   }
 }
