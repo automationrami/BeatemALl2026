@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { Button, OtpInput } from '@beat-em-all/ui';
+import { Button, OtpInput, useHasMounted } from '@beat-em-all/ui';
 import { useAuthDraft, verifyOtp } from '@beat-em-all/api-client';
 
 const RESEND_SECONDS = 30;
@@ -14,16 +14,18 @@ export function VerifyForm() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
+  const mounted = useHasMounted();
   const phone = useAuthDraft((s) => s.phone);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [attemptsLeft, setAttemptsLeft] = useState(3);
   const [secondsUntilResend, setSecondsUntilResend] = useState(RESEND_SECONDS);
 
-  // If somebody hits /verify directly without a stored phone, route back to /sign-in
+  // Only redirect AFTER the persisted store has hydrated. Otherwise we'd race against
+  // the Zustand persist middleware on first paint and bounce the user back to /sign-in.
   useEffect(() => {
-    if (!phone) router.replace(`/${locale}/sign-in`);
-  }, [phone, router, locale]);
+    if (mounted && !phone) router.replace(`/${locale}/sign-in`);
+  }, [mounted, phone, router, locale]);
 
   // Countdown for the resend button
   useEffect(() => {
@@ -51,6 +53,10 @@ export function VerifyForm() {
     startTransition(() => router.push(`/${locale}/onboarding`));
   }
 
+  // Render a stable placeholder until hydration finishes; prevents layout flicker.
+  if (!mounted) {
+    return <div className="min-h-[480px]" aria-hidden />;
+  }
   if (!phone) return null;
 
   // Mask phone for display: +965 5•••• 4287

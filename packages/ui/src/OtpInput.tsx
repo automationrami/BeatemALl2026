@@ -85,7 +85,12 @@ export function OtpInput({
   }
 
   return (
-    <div className="flex gap-2 max-w-[400px]" role="group" aria-label="One-time code">
+    <div
+      className="grid gap-2 w-full"
+      style={{ gridTemplateColumns: `repeat(${length}, minmax(0, 1fr))` }}
+      role="group"
+      aria-label="One-time code"
+    >
       {digits.map((d, idx) => {
         const filled = !!d;
         const focused = activeIdx === idx;
@@ -105,6 +110,7 @@ export function OtpInput({
             inputMode="numeric"
             autoComplete={idx === 0 ? 'one-time-code' : 'off'}
             maxLength={1}
+            size={1}
             value={d}
             onChange={(e) => setDigit(idx, e.target.value)}
             onKeyDown={(e) => handleKey(idx, e)}
@@ -112,7 +118,7 @@ export function OtpInput({
             onFocus={() => setActiveIdx(idx)}
             aria-label={`Digit ${idx + 1}`}
             className={[
-              'flex-1 min-w-0 h-14 text-center text-2xl font-display font-medium text-white rounded-xl border transition-colors',
+              'w-full min-w-0 h-14 text-center text-2xl font-display font-medium text-white rounded-xl border transition-colors',
               'outline-none focus:ring-0',
               slotState,
             ].join(' ')}

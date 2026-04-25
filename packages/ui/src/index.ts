@@ -7,3 +7,4 @@ export * from './OtpInput';
 export * from './StepIndicator';
 export * from './TextInput';
 export * from './Wordmark';
+export * from './useHasMounted';
