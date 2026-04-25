@@ -1,0 +1,86 @@
+/* @beat-em-all/design-tokens — canonical CSS custom properties.
+   Imported once at the app root (apps/web/src/app/[locale]/layout.tsx, apps/admin/...).
+   Mirrors src/index.ts; keep them in sync. */
+
+:root {
+  /* Surfaces */
+  --bg-0: #0a0b0f;
+  --bg-1: #0f1015;
+  --bg-2: #14161d;
+  --bg-3: #1a1d26;
+  --bg-elev: #1e212c;
+
+  /* Lines */
+  --line: rgba(255, 255, 255, 0.06);
+  --line-2: rgba(255, 255, 255, 0.1);
+  --line-strong: rgba(255, 255, 255, 0.18);
+
+  /* Text */
+  --t-1: #ffffff;
+  --t-2: rgba(255, 255, 255, 0.78);
+  --t-3: rgba(255, 255, 255, 0.55);
+  --t-4: rgba(255, 255, 255, 0.35);
+  --t-5: rgba(255, 255, 255, 0.18);
+
+  /* Brand */
+  --violet: #8b5cf6;
+  --violet-2: #a78bfa;
+  --violet-deep: #5b21b6;
+  --violet-glow: rgba(139, 92, 246, 0.35);
+  --cyan: #06b6d4;
+  --cyan-2: #22d3ee;
+  --coral: #fb7185;
+  --coral-2: #fda4af;
+  --lime: #bef264;
+  --amber: #fbbf24;
+
+  /* Country accents */
+  --c-kw: #fb7185;
+  --c-ksa: #a78bfa;
+  --c-ae: #22d3ee;
+  --c-bh: #bef264;
+  --c-qa: #fbbf24;
+  --c-om: #fda4af;
+
+  /* Semantic */
+  --positive: #bef264;
+  --negative: #fb7185;
+  --warn: #fbbf24;
+  --info: #22d3ee;
+  --live: #fb7185;
+
+  /* Type */
+  --f-display: "Space Grotesk", "Söhne", "Neue Haas Grotesk Display", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+  --f-arabic: "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --f-body-en: "Inter", system-ui, sans-serif;
+
+  /* Radii */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+
+  /* Shadows */
+  --sh-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 0 0 1px rgba(255, 255, 255, 0.05), 0 30px
+    60px -30px rgba(0, 0, 0, 0.6);
+  --sh-glow: 0 0 0 1px rgba(139, 92, 246, 0.35), 0 0 60px -10px rgba(139, 92, 246, 0.45);
+  --sh-prize: 0 0 0 1px rgba(139, 92, 246, 0.08), 0 30px 80px -30px rgba(139, 92, 246, 0.45);
+}
+
+/* RTL: when html[dir="rtl"], swap to Arabic font for body. */
+html[dir="rtl"] body {
+  font-family: var(--f-arabic);
+}
+
+html[dir="ltr"] body {
+  font-family: var(--f-body-en);
+}
+
+html,
+body {
+  background: var(--bg-0);
+  color: var(--t-1);
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.01em;
+}

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://claude.com/schemas/claude-code/settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(pnpm:*)",
+      "Bash(npx:*)",
+      "Bash(node:*)",
+      "Bash(turbo:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git switch:*)",
+      "Bash(git stash:*)",
+      "Bash(curl:*)",
+      "Bash(netstat:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(rm -rf /:*)",
+      "Edit(D:\\BeatEmAll\\Beatemall\\docs\\**)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const f=process.env.CLAUDE_TOOL_FILE_PATH||''; if(/\\.(ts|tsx|js|jsx|json|css|md)$/.test(f) && !f.includes('node_modules') && !f.includes('.next') && !f.includes('Screens')) { require('child_process').execSync('npx --yes @biomejs/biome format --write ' + JSON.stringify(f), {stdio:'inherit'}); }\""
+          }
+        ]
+      }
+    ]
+  }
+}

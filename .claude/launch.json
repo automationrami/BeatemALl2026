@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web (player app)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@beat-em-all/web", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "admin (KEC console)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@beat-em-all/admin", "dev"],
+      "port": 3001
+    },
+    {
+      "name": "all (turbo dev)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev"],
+      "port": 3000
+    }
+  ]
+}

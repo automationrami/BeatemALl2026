@@ -1,0 +1,74 @@
+{
+  "name": "beat-em-all",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Beat'Em All — GCC-first competitive gaming platform. Localhost web monorepo.",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "knip": "knip",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@commitlint/cli": "^19.6.1",
+    "@commitlint/config-conventional": "^19.6.0",
+    "@typescript-eslint/eslint-plugin": "^8.20.0",
+    "@typescript-eslint/parser": "^8.20.0",
+    "eslint": "^9.18.0",
+    "eslint-config-next": "^15.1.4",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-security": "^3.0.1",
+    "eslint-plugin-tailwindcss": "^3.18.0",
+    "husky": "^9.1.7",
+    "knip": "^5.43.6",
+    "lint-staged": "^15.4.1",
+    "turbo": "^2.3.4",
+    "typescript": "^5.7.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@biomejs/biome",
+      "@tailwindcss/oxide",
+      "esbuild",
+      "sharp",
+      "unrs-resolver"
+    ]
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,md,css}": ["biome format --write"]
+  },
+  "commitlint": {
+    "extends": ["@commitlint/config-conventional"],
+    "rules": {
+      "type-enum": [
+        2,
+        "always",
+        [
+          "feat",
+          "fix",
+          "chore",
+          "docs",
+          "refactor",
+          "test",
+          "perf",
+          "style",
+          "ci",
+          "build",
+          "revert"
+        ]
+      ]
+    }
+  }
+}

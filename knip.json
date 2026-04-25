@@ -1,0 +1,21 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["turbo.json"],
+      "ignore": ["Screens/**"]
+    },
+    "apps/*": {
+      "entry": [
+        "src/app/**/{page,layout,template,error,loading,not-found,route}.tsx",
+        "src/middleware.ts",
+        "next.config.{js,ts,mjs}"
+      ],
+      "project": ["src/**/*.{ts,tsx}"]
+    },
+    "packages/*": {
+      "entry": ["src/index.ts", "src/index.tsx"],
+      "project": ["src/**/*.{ts,tsx}"]
+    }
+  }
+}

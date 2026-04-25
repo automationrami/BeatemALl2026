@@ -1,0 +1,25 @@
+{
+  "app": {
+    "name": "Beat'Em All",
+    "tagline": "The home of competitive gaming in the GCC."
+  },
+  "nav": {
+    "home": "Home",
+    "discover": "Discover",
+    "challenges": "Challenges",
+    "tournaments": "Tournaments",
+    "profile": "Profile"
+  },
+  "actAs": {
+    "label": "Acting as",
+    "khaled": "Khaled · Player (Kuwait)",
+    "sara": "Sara · Player (Hawally)",
+    "ahmad": "Ahmad · KEC Tournament Manager",
+    "omar": "Omar · DXE Fuel (Venue Owner)",
+    "fatima": "Fatima · Zain Brand Marketing"
+  },
+  "home": {
+    "welcome": "Welcome to Beat'Em All.",
+    "subtitle": "Form a team. Find opponents nearby. Meet at a venue. Compete for real."
+  }
+}
