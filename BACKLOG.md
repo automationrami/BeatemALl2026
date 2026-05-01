@@ -43,14 +43,14 @@ Source: `Beatemall/docs/epics/E2-team-formation.md`. Depends on E1 (real users).
 
 | Story | Title | Status |
 |---|---|---|
-| E2-S0 | Team profile public page (S-E2-01) — frontend-only mock | ✅ shipped pre-pivot, mock-data backed |
-| E2-S1 | DB tables: teams, team_members, team_games, team_invitations | 🔴 |
-| E2-S2 | Create team API + onboarding (S-E2-02) | 🔴 |
-| E2-S3 | Invite player flow + invitation acceptance | 🔴 |
-| E2-S4 | Roles + role transitions (captain transfer) | 🔴 |
-| E2-S5 | Team management dashboard (S-E2-03) | 🔴 |
-| E2-S6 | Disband team flow | 🔴 |
-| E2-S7 | Replace `/teams/[slug]` mock with DB read | 🔴 |
+| E2-S0 | Team profile public page (S-E2-01) — frontend mock | ✅ shipped pre-pivot |
+| **E2-S1** | DB tables: teams, team_members, team_games | ✅ Migration `0002_faulty_korath.sql` applied; 3 teams seeded |
+| **E2-S7** | Replace `/teams/[slug]` mock with DB read | ✅ `curl https://beat-em-all.vercel.app/api/teams/sandstorm` returns DB-backed Team |
+| E2-S2 | Create team API + onboarding (S-E2-02) | 🔴 (post-auth) |
+| E2-S3 | Invite player flow + invitation acceptance | 🔴 (post-auth) |
+| E2-S4 | Roles + role transitions (captain transfer) | 🔴 (post-auth) |
+| E2-S5 | Team management dashboard (S-E2-03) | 🔴 (post-auth) |
+| E2-S6 | Disband team flow | 🔴 (post-auth) |
 
 ---
 

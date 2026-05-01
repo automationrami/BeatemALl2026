@@ -23,6 +23,7 @@
   "dependencies": {
     "@beat-em-all/mock-data": "workspace:*",
     "@beat-em-all/types": "workspace:*",
+    "@beat-em-all/utils": "workspace:*",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.36.4",
     "postgres": "^3.4.5",

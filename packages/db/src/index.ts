@@ -22,6 +22,15 @@ export { teams } from './schema/teams';
 export { teamMembers } from './schema/team_members';
 export { teamGames } from './schema/team_games';
 export {
+  organizations,
+  organizationTierEnum,
+  verificationStatusEnum,
+} from './schema/organizations';
+export { memberships, membershipRoleEnum } from './schema/memberships';
+export { venues, cancellationPolicyEnum } from './schema/venues';
+export { venueGames } from './schema/venue_games';
+export { tournaments, tournamentFormatEnum, tournamentStatusEnum } from './schema/tournaments';
+export {
   localeEnum,
   proficiencyLevelEnum,
   linkedAccountProviderEnum,

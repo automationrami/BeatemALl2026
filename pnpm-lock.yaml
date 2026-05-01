@@ -333,6 +333,9 @@ importers:
       '@beat-em-all/types':
         specifier: workspace:*
         version: link:../types
+      '@beat-em-all/utils':
+        specifier: workspace:*
+        version: link:../utils
       dotenv:
         specifier: ^16.4.7
         version: 16.6.1
