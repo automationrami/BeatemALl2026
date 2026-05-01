@@ -2,7 +2,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Wordmark } from '@beat-em-all/ui';
-import { getPlayerProfileForSlug } from '@beat-em-all/api-client';
+import { loadPlayerProfileBySlug } from '@beat-em-all/db/queries';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { PersonaSwitcher } from '@/components/PersonaSwitcher';
 import { PlayerProfileBySlug } from '@/components/PlayerProfileBySlug';
@@ -15,9 +15,12 @@ export default async function PlayerSlugPage({ params }: PageProps) {
   const { locale, slug } = await params;
   setRequestLocale(locale);
 
-  const profile = getPlayerProfileForSlug(slug);
+  // DB-backed player profile (Phase 1 hybrid: real identity from Postgres + mock-data
+  // fallback for rich fields not yet modelled — pentagon, stats, recent matches, etc.).
+  const profile = await loadPlayerProfileBySlug(slug);
   if (!profile) notFound();
-  await getTranslations('profile'); // primes the locale
+
+  await getTranslations('profile'); // primes the locale for the client subtree
 
   return (
     <main className="min-h-screen px-6 py-8 md:px-16 md:py-12">
@@ -30,7 +33,7 @@ export default async function PlayerSlugPage({ params }: PageProps) {
           <PersonaSwitcher />
         </div>
       </header>
-      <PlayerProfileBySlug slug={slug} />
+      <PlayerProfileBySlug profile={profile} />
     </main>
   );
 }

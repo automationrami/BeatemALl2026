@@ -8,6 +8,11 @@
 export { getDb, getSql } from './client';
 export * as schema from './schema';
 
+/**
+ * Note: server-only query helpers live at `@beat-em-all/db/queries`. Importing them from
+ * a `'use client'` component is a build-time error (`server-only` package guard).
+ */
+
 /** Re-export every table so callers can do `import { users, players } from '@beat-em-all/db'`. */
 export { users } from './schema/users';
 export { players } from './schema/players';
