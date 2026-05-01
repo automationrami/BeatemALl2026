@@ -12,6 +12,28 @@ deployment URL and are dated.
 
 Build queue priority pivot 2026-05-02: skip Phone OTP, populate DB with demo data so every model can be tested without auth.
 
+### E2-S1 + E2-S7 — Teams DB-backed (commit `2cfceea`)
+- 3 new tables (teams, team_members, team_games) + 2 enums (team_member_role, team_invitation_status) — migration `0002_faulty_korath.sql`
+- 3 teams seeded (Sandstorm + Falcon Squad + Desert Dragons); Khaled = Sandstorm captain
+- `loadTeamBySlug` query (hybrid DB + mock-data overlay)
+- `/api/teams/[slug]` Vercel Function
+- Server page `/[locale]/teams/[slug]` rewired to call DB query directly
+- `getTeamForSlug` in api-client now async / fetches `/api/teams/[slug]`
+
+### ORG-1 + venues + tournaments + composed home feed (commit `31a42ba`, deploy `dpl_<latest>`)
+- Schema migration `0003_sturdy_vertigo.sql`:
+  - organizations + memberships per DOMAIN_MODEL.md §3 (federation/brand/venue/community/personal tiers)
+  - venues + venue_games per §6 (Phase-1 lat/lng as numerics; PostGIS deferred)
+  - tournaments per §9.1 (organization_id + game_id + status + prize_pool_kwd + sanctioned flag)
+- Seeds:
+  - 5 organizations (KEC = Organization #1, Beat'Em All admin, Zain Kuwait, GG Arena Holdings, DXE Fuel)
+  - 5 venues (GG Arena Salmiya, Pixel House Hawally, ARC Esports Kuwait City, Q-Mark Farwaniya, DXE Fuel Riyadh)
+  - 6 tournaments (KEC Spring '26 in_progress, KEC Summer Series, KEC Tekken Trophy, KEC Mobile Showdown, Zain×DXE EAFC Cup, Hawally Hornets Open)
+- Server-only queries: `loadOrganizationBySlug`, `listVenues`/`loadVenueBySlug`, `listSurfaceableTournaments`/`loadTournamentBySlug`, `loadHomeFeed(personaId)`
+- Public Vercel Functions: `/api/orgs/[slug]`, `/api/venues/[slug]`, `/api/tournaments/[slug]`, `/api/home?personaId=<slug>`
+- HomeFeed component now fetches `/api/home` instead of calling sync mock; skeleton + error states preserved
+- All endpoints verified on prod with curl
+
 ### E1-S0.5 — Demo seed shipped (commit `32c900a`)
 - `packages/db/src/seed/games.ts` — 6 games (cs2, valorant, lol, eafc, codm, tekken8)
 - `packages/db/src/seed/personas.ts` — 5 personas (Khaled, Sara, Ahmad, Omar, Fatima)

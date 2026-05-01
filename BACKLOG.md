@@ -9,9 +9,19 @@
 ## Where we are right now (2026-05-02)
 
 **Live URL:** https://beat-em-all.vercel.app
-**Stack:** Vercel-native — Vercel Functions + Vercel Postgres (Neon, fra1) + Drizzle ORM + Auth.js v5 + Vercel Blob (planned)
-**Build phase:** E1 (Player Identity) — story 1 shipped, story 2 next
+**Stack:** Vercel-native — Vercel Functions + Vercel Postgres (Neon, fra1) + Drizzle ORM + Auth.js v5 (deferred) + Vercel Blob (planned)
+**Build phase:** Full data layer (read paths) for E1 + E2 + ORG-1 + venues + tournaments shipped without auth. Auth (E1-S2) deferred per founder directive.
 **Deploy method:** `vercel deploy --prod` from local (no auto-deploy on git push — see `~/.claude/projects/D--BeatEmAll/memory/github-accounts.md` for the why)
+
+**What works end-to-end (2026-05-02):**
+- `GET /api/health` — app + DB status
+- `GET /api/players/[slug]` — DB-backed Khaled / Sara / Ahmad / Omar / Fatima
+- `GET /api/teams/[slug]` — DB-backed Sandstorm / Falcon Squad / Desert Dragons
+- `GET /api/orgs/[slug]` — DB-backed KEC / Beat'Em All / Zain / venue orgs
+- `GET /api/venues/[slug]` — DB-backed GG Arena, Pixel House, ARC, Q-Mark, DXE Fuel
+- `GET /api/tournaments/[slug]` — DB-backed 6 KEC + community tournaments
+- `GET /api/home?personaId=<slug>` — composed Home Feed payload (real DB sections + mock fallback for hero upcomingMatch + recent activity)
+- Frontend `/[locale]/players/[slug]`, `/[locale]/teams/[slug]`, `/[locale]` (Home Feed) all wired to real DB
 
 ---
 
@@ -60,11 +70,11 @@ Source: `Beatemall/docs/epics/ORG-1-organization-core.md`. Depends on E1.
 
 | Story | Title | Status |
 |---|---|---|
-| ORG-1-S1 | DB tables: organizations, memberships | 🔴 |
-| ORG-1-S2 | Seed KEC as Organization #1 + Beat'Em All admin org | 🔴 |
-| ORG-1-S3 | Public org profile + directory (S-ORG-01, S-ORG-02) | 🔴 |
-| ORG-1-S4 | Org admin dashboard (S-ORG-03) | 🔴 |
-| ORG-1-S5 | Member invite + role mgmt (S-ORG-04) | 🔴 |
+| **ORG-1-S1** | DB tables: organizations, memberships | ✅ Migration `0003_sturdy_vertigo.sql` |
+| **ORG-1-S2** | Seed KEC as Organization #1 + Beat'Em All admin org | ✅ 5 orgs seeded; KEC verified |
+| **ORG-1-S3** *(partial — public profile API only, frontend dir post-auth)* | Public org profile + directory | 🟡 `/api/orgs/[slug]` works; frontend `/orgs/[slug]` page post-auth |
+| ORG-1-S4 | Org admin dashboard (S-ORG-03) | 🔴 (post-auth) |
+| ORG-1-S5 | Member invite + role mgmt (S-ORG-04) | 🔴 (post-auth) |
 
 ---
 
@@ -90,7 +100,17 @@ Status: 🔴. Depends on FED-1.
 
 ## Epic E3 — Venue Onboarding & Listing
 
-Source: `Beatemall/docs/epics/E3-venue-onboarding.md`. Status: 🔴.
+Source: `Beatemall/docs/epics/E3-venue-onboarding.md`.
+
+| Story | Title | Status |
+|---|---|---|
+| **E3-S1** | DB tables: venues, venue_games | ✅ Migration `0003_sturdy_vertigo.sql` |
+| **E3-S2** | Seed 5 venues (KW + KSA) | ✅ |
+| **E3-S3** | `/api/venues/[slug]` public read | ✅ |
+| E3-S4 | Venue verification queue (S-E3-05, P-3) | 🔴 (post-auth) |
+| E3-S5 | Venue onboarding wizard (S-E3-03) | 🔴 (post-auth) |
+| E3-S6 | Venue owner dashboard (S-E3-04) | 🔴 (post-auth) |
+| E3-S7 | Frontend pages `/venues` + `/venues/[slug]` | 🔵 next |
 
 ---
 
@@ -123,7 +143,21 @@ Source: `Beatemall/docs/epics/E6-challenge-negotiation.md`. Status: 🔴.
 
 ## Epic TM-1...TM-7 — Tournament Management
 
-Source: `Beatemall/docs/epics/TM-*.md`. KEC's primary need per `MVP_SCOPE.md` Path-A. Status: 🔴.
+Source: `Beatemall/docs/epics/TM-*.md`. KEC's primary need per `MVP_SCOPE.md` Path-A.
+
+| Story | Title | Status |
+|---|---|---|
+| **TM-S1** | DB table: tournaments | ✅ Migration `0003_sturdy_vertigo.sql` |
+| **TM-S2** | Seed 6 tournaments (4 KEC sanctioned + Zain×DXE + Hawally Hornets) | ✅ |
+| **TM-S3** | `/api/tournaments/[slug]` public read | ✅ |
+| TM-1 | Tournament creation wizard (S-TM-06) | 🔴 (post-auth) |
+| TM-2 | Registration + check-in (S-TM-02 + S-TM-04) | 🔴 (post-auth) |
+| TM-3 | Bracketing engine (S-TM-09 + S-TM-03) | 🔴 |
+| TM-4 | Match lifecycle, results, disputes | 🔴 |
+| TM-5 | Prizes + payouts | 🔴 (depends on P-2) |
+| TM-6 | Live ops + admin console | 🔴 |
+| TM-7 | Analytics + post-tournament reports | 🔴 |
+| Frontend | `/tournaments` + `/tournaments/[slug]` | 🔵 next |
 
 ---
 
@@ -154,16 +188,16 @@ Source: `Beatemall/docs/epics/TM-*.md`. KEC's primary need per `MVP_SCOPE.md` Pa
 
 ## Active backlog — what to ship next (prioritized)
 
-> **Priority pivot 2026-05-02:** Founder asked to skip Phone OTP for now and build demo accounts so every model can be tested without auth. Order below reflects that — auth deferred until the data layer is fully populated.
+**Phase 1 read-path data layer is COMPLETE.** Players, teams, orgs, venues, tournaments, and the composed Home Feed all serve real DB data on prod. Founder can poke every model without auth.
 
-1. **E1-S0.5** *(new story — added 2026-05-02)* — Demo seed for `users` + `players` + `games` + `player_games`. 5 persona rows (Khaled, Sara, Ahmad, Omar, Fatima) so every authenticated-viewer page can be poked with real DB data without sign-in. Idempotent script under `packages/db/src/seed/`.
-2. **E1-S6** — Replace `/players/[slug]` mock-data with real `/api/players/[slug]` DB read. Frontend `PlayerProfileBySlug` wired to fetch from API.
-3. **E2-S1 + E2-S7** — Teams tables (`teams`, `team_members`, `team_games`) + seed (Sandstorm, Falcon Squad, Desert Dragons) + `/api/teams/[slug]` + frontend wiring.
-4. **ORG-1-S1 + S2** — `organizations` + `memberships` tables + seed KEC as Organization #1.
-5. **TM tables + seed** — `tournaments`, `tournament_registrations`, `prize_pools` + seed KEC's spring/summer/tekken/mobile-showdown tournaments.
-6. **E3 venue tables + seed** — `venues` + amenities + seed (GG Arena, Pixel House, ARC Esports, Q-Mark, DXE Fuel).
-7. **`/api/home`** composed read — replaces `getHomeFeed()` mock with real DB-backed accessor.
-8. **E1-S2** *(deferred)* — Phone OTP via Auth.js v5 + Unifonic. Lands once data layer is fully exercised.
+Next priorities:
+
+1. **Frontend pages for venues + tournaments** — currently the APIs exist but there's no page at `/venues/[slug]` or `/tournaments/[slug]`. Mirror the Player Profile + Team Profile pattern (server page calls `loadVenueBySlug` / `loadTournamentBySlug` → passes to client renderer).
+2. **Persona switcher → URL routing wiring** — when persona changes, route the user to a "view as Khaled" Home Feed instead of just changing the API query param. Already partially works.
+3. **E1-S2** Phone OTP via Auth.js v5 + Unifonic. **The "demo seeds first" pivot is complete; auth is now the highest-leverage next thing.**
+4. **E1-S3** Profile creation API + onboarding wiring (depends on E1-S2).
+5. **TM-1** Tournament creation wizard (S-TM-06) — KEC's headline use-case (depends on E1-S2 + ORG-1-S4).
+6. **PostGIS + E5** — enable `postgis` extension on Neon, add `players.geo_location` + `teams.geo_location` + `venues.geo_location` columns, build `/api/discover/teams` and `/api/discover/tournaments`.
 
 ---
 
