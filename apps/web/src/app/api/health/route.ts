@@ -45,12 +45,11 @@ export async function GET() {
 async function pingDb(): Promise<DbState> {
   try {
     const sql = getSql();
-    const rows = await sql`SELECT now() AS server_time`;
+    const rows = await sql<{ server_time: Date }[]>`SELECT now() AS server_time`;
     const first = rows[0];
-    const serverTime =
-      first && typeof first.server_time !== 'undefined'
-        ? new Date(first.server_time as string | number | Date).toISOString()
-        : new Date().toISOString();
+    const serverTime = first?.server_time
+      ? new Date(first.server_time).toISOString()
+      : new Date().toISOString();
     return { connected: true, serverTime };
   } catch (err) {
     return {

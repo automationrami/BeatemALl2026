@@ -7,14 +7,15 @@
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "env": [
         "NODE_ENV",
+        "POSTGRES_URL",
+        "POSTGRES_URL_NON_POOLING",
+        "POSTGRES_PRISMA_URL",
+        "POSTGRES_HOST",
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_DATABASE",
         "DATABASE_URL",
         "DATABASE_URL_UNPOOLED",
-        "POSTGRES_URL",
-        "POSTGRES_PRISMA_URL",
-        "PGHOST",
-        "PGUSER",
-        "PGPASSWORD",
-        "PGDATABASE",
         "AUTH_SECRET",
         "BLOB_READ_WRITE_TOKEN",
         "UNIFONIC_APP_SID",
@@ -26,7 +27,7 @@
     },
     "db:migrate": {
       "cache": false,
-      "env": ["DATABASE_URL", "DATABASE_URL_UNPOOLED", "POSTGRES_URL"]
+      "env": ["POSTGRES_URL", "POSTGRES_URL_NON_POOLING", "DATABASE_URL", "DATABASE_URL_UNPOOLED"]
     },
     "dev": {
       "cache": false,

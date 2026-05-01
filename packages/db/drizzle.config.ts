@@ -1,11 +1,16 @@
 import 'dotenv/config';
 import type { Config } from 'drizzle-kit';
 
-const url = process.env.DATABASE_URL ?? process.env.POSTGRES_URL;
+// Prefer the non-pooling connection for drizzle-kit (push, generate against introspection).
+const url =
+  process.env.POSTGRES_URL_NON_POOLING ??
+  process.env.DATABASE_URL_UNPOOLED ??
+  process.env.POSTGRES_URL ??
+  process.env.DATABASE_URL;
 if (!url) {
   // eslint-disable-next-line no-console
   console.warn(
-    '[drizzle.config] No DATABASE_URL or POSTGRES_URL env var set — drizzle-kit commands will fail until one is provided.',
+    '[drizzle.config] No POSTGRES_URL_NON_POOLING / POSTGRES_URL / DATABASE_URL env var set — drizzle-kit commands will fail until one is provided.',
   );
 }
 
