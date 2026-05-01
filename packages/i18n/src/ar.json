@@ -23,7 +23,77 @@
     "subtitle": "كوّن فريقك. ابحث عن خصوم قريبين. التقوا في صالة. تنافسوا فعلياً.",
     "signedOutCta": "سجّل الدخول لتبدأ اللعب",
     "signedOutHint": "لا تملك حساباً بعد؟ يكفي رقم هاتفك.",
-    "signOut": "تسجيل الخروج"
+    "signOut": "تسجيل الخروج",
+    "phaseBanner": "المرحلة الأولى · محلي · بيانات تجريبية",
+    "greeting": {
+      "morning": "صباح الخير، {name}.",
+      "afternoon": "مساء الخير، {name}.",
+      "evening": "مساء الخير، {name}.",
+      "night": "سهرانة الليلة يا {name}؟"
+    },
+    "hero": {
+      "nextMatchEyebrow": "المباراة القادمة",
+      "nextMatchVenuePrefix": "📍",
+      "viewMatch": "عرض المباراة",
+      "openDirections": "فتح الاتجاهات",
+      "tournamentEyebrow": "بطولة على الأبواب",
+      "openTournament": "فتح البطولة",
+      "soloEyebrow": "جدولك فاضي",
+      "soloTitle": "تبي مباراة هالأسبوع؟",
+      "soloPrimaryCta": "ابحث عن فريق لتتحدّاه",
+      "soloSecondaryCta": "تصفّح البطولات المفتوحة",
+      "incompleteEyebrow": "أكمل ملفك",
+      "incompleteTitle": "خطوة أخيرة لتبدأ اللعب.",
+      "incompleteBody": "اختر الألعاب اللي تتنافس فيها وراح نقترح عليك فرقاً وبطولات وصالات تناسبك.",
+      "incompleteCta": "أكمل الإعداد",
+      "idleEyebrow": "هدوء تام",
+      "idleTitle": "لا توجد مباريات قادمة.",
+      "idleBody": "اختر تحدياً أو ادخل بطولة — كلاهما على بُعد نقرة واحدة."
+    },
+    "recommendedTeams": {
+      "eyebrow": "مقترحة لك · قريبة منك",
+      "title": "فرق مقترحة",
+      "viewTeam": "عرض",
+      "challenge": "تحدّي",
+      "recruiting": "يبحث عن لاعبين",
+      "distanceLabel": "{km} كم · {city}",
+      "empty": "لا توجد فرق قريبة تلعب {game} بعد. وسّع نطاقك أو أضف لعبة أخرى من الإعدادات."
+    },
+    "quickActions": {
+      "eyebrow": "إجراءات سريعة",
+      "challengeTitle": "تحدّى فريقاً",
+      "challengeCaption": "ابحث عن فرق قريبة وأرسل تحدياً.",
+      "tournamentsTitle": "تصفّح البطولات",
+      "tournamentsCaption": "بطولات النادي وكؤوس المجتمع.",
+      "venuesTitle": "اعثر على صالة",
+      "venuesCaption": "صالات ألعاب موثّقة في الخليج."
+    },
+    "tournaments": {
+      "eyebrow": "بطولات · مفتوحة أو قريبة",
+      "title": "بطولات لك",
+      "viewAll": "عرض الكل",
+      "sanctioned": "معتمدة",
+      "registrationOpen": "التسجيل مفتوح",
+      "free": "دخول مجاني",
+      "prizePoolLabel": "{amount} د.ك",
+      "empty": "لا توجد بطولات تناسب ألعابك بعد. ستظهر هنا أول بطولة معتمدة من النادي."
+    },
+    "venues": {
+      "eyebrow": "صالات · الأقرب",
+      "title": "صالات قريبة منك",
+      "viewAll": "عرض الكل",
+      "perHour": "{rate} د.ك/ساعة",
+      "distanceLabel": "{km} كم",
+      "empty": "لا توجد صالات موثّقة قريبة بعد. نطلق شركاء الصالات في الكويت أولاً."
+    },
+    "activity": {
+      "eyebrow": "النتائج · فرقك",
+      "title": "آخر النشاط",
+      "viewAll": "عرض الفريق",
+      "soloEmptyTitle": "ما إن تنضم إلى فريق ستظهر هنا سجلات مبارياته.",
+      "soloEmptyCta": "تصفّح الفرق",
+      "activeEmptyTitle": "لا توجد مباريات بعد — أول نتيجة تظهر هنا."
+    }
   },
   "signIn": {
     "eyebrow": "تسجيل الدخول",

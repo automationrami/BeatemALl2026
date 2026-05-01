@@ -23,7 +23,77 @@
     "subtitle": "Form a team. Find opponents nearby. Meet at a venue. Compete for real.",
     "signedOutCta": "Sign in to start playing",
     "signedOutHint": "No account yet? Phone number is all you need.",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "phaseBanner": "PHASE 1 · LOCALHOST · MOCK DATA",
+    "greeting": {
+      "morning": "Good morning, {name}.",
+      "afternoon": "Good afternoon, {name}.",
+      "evening": "Good evening, {name}.",
+      "night": "Up late, {name}?"
+    },
+    "hero": {
+      "nextMatchEyebrow": "NEXT MATCH",
+      "nextMatchVenuePrefix": "📍",
+      "viewMatch": "View match",
+      "openDirections": "Open directions",
+      "tournamentEyebrow": "TOURNAMENT STARTING",
+      "openTournament": "Open tournament",
+      "soloEyebrow": "NOTHING ON YOUR CALENDAR",
+      "soloTitle": "Want a match this weekend?",
+      "soloPrimaryCta": "Find a team to challenge",
+      "soloSecondaryCta": "Browse open tournaments",
+      "incompleteEyebrow": "FINISH YOUR PROFILE",
+      "incompleteTitle": "One more step to start playing.",
+      "incompleteBody": "Pick the games you compete in and we'll surface teams, tournaments, and venues that match.",
+      "incompleteCta": "Finish setup",
+      "idleEyebrow": "ALL QUIET",
+      "idleTitle": "No upcoming match scheduled.",
+      "idleBody": "Pick a fight or jump into a tournament — both are one tap away."
+    },
+    "recommendedTeams": {
+      "eyebrow": "FOR YOU · NEARBY",
+      "title": "Recommended teams",
+      "viewTeam": "View",
+      "challenge": "Challenge",
+      "recruiting": "Recruiting",
+      "distanceLabel": "{km} km · {city}",
+      "empty": "No teams nearby playing {game} yet. Widen your radius or add another game in settings."
+    },
+    "quickActions": {
+      "eyebrow": "QUICK ACTIONS",
+      "challengeTitle": "Challenge a team",
+      "challengeCaption": "Search teams nearby and send a challenge.",
+      "tournamentsTitle": "Browse tournaments",
+      "tournamentsCaption": "KEC events and community cups.",
+      "venuesTitle": "Find a venue",
+      "venuesCaption": "Verified gaming cafés across the GCC."
+    },
+    "tournaments": {
+      "eyebrow": "TOURNAMENTS · OPEN OR UPCOMING",
+      "title": "Tournaments for you",
+      "viewAll": "View all",
+      "sanctioned": "Sanctioned",
+      "registrationOpen": "Registration open",
+      "free": "Free entry",
+      "prizePoolLabel": "{amount} KWD",
+      "empty": "No tournaments matching your games yet. KEC's next sanctioned event will show up here."
+    },
+    "venues": {
+      "eyebrow": "VENUES · NEAREST",
+      "title": "Nearby venues",
+      "viewAll": "View all",
+      "perHour": "{rate} KWD/hr",
+      "distanceLabel": "{km} km",
+      "empty": "No verified venues near you yet. We're rolling out venue partners across Kuwait first."
+    },
+    "activity": {
+      "eyebrow": "FORM · YOUR TEAMS",
+      "title": "Recent activity",
+      "viewAll": "View team",
+      "soloEmptyTitle": "Once you join a team, your match history will live here.",
+      "soloEmptyCta": "Browse teams",
+      "activeEmptyTitle": "No matches yet — your first result will appear here."
+    }
   },
   "signIn": {
     "eyebrow": "SIGN IN",

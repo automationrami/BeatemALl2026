@@ -3,7 +3,12 @@
 
 export * from './country-dial-codes';
 export * from './games';
+export * from './geo-points';
+export * from './persona-context';
 export * from './player-profiles';
+export * from './recent-activity';
 export * from './teams';
+export * from './tournaments';
+export * from './venues';
 
-export const MOCK_DATA_VERSION = '0.0.4';
+export const MOCK_DATA_VERSION = '0.0.5';

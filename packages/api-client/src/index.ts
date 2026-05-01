@@ -5,7 +5,8 @@
 
 export * from './persona-store';
 export * from './auth';
+export * from './home';
 export * from './player';
 export * from './team';
 
-export const API_CLIENT_VERSION = '0.0.4';
+export const API_CLIENT_VERSION = '0.0.5';
