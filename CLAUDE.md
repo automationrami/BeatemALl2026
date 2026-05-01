@@ -24,7 +24,7 @@ The 59 designed-screen prototypes from Claude Design live at `Screens\beat-em-al
 
 ## What this project is, in one paragraph
 
-Beat'Em All is a GCC-first competitive gaming platform. Phase 1 (this scaffold) is **localhost web only** — no Supabase, no Tap, no real auth, no mobile. Mock data + persona-switcher (Khaled / Sara / Ahmad / Omar / Fatima) lets the founder act as every user role. Real Supabase + payments + mobile come in Phase 9 per `MVP_SCOPE.md`.
+Beat'Em All is a GCC-first competitive gaming platform. **As of 2026-05 the architecture pivoted to Vercel-native** — Vercel Functions for backend APIs, Vercel Postgres (Neon-backed) for storage, Vercel Blob for files, Auth.js v5 for sessions, Unifonic for SMS OTP, Tap Payments for payments. Each epic now ships its DB tables, Functions, and frontend wiring in a single PR (no more "Phase 1 = localhost only / Phase 9 = backend"). Mock data + persona-switcher (Khaled / Sara / Ahmad / Omar / Fatima) remains as a dev-only override for unauthenticated browsing while real auth + DB are in flight.
 
 ---
 
@@ -43,6 +43,17 @@ Beat'Em All is a GCC-first competitive gaming platform. Phase 1 (this scaffold) 
 | Server data | TanStack Query (against `@beat-em-all/api-client`) |
 | Client state | Zustand |
 | Animation | Framer Motion |
+| Backend runtime | **Vercel Functions** (Node + Edge) under `apps/web/src/app/api/**/route.ts` |
+| Database | **Vercel Postgres** (Neon-backed) via `@neondatabase/serverless` + **Drizzle ORM** |
+| Migrations | **drizzle-kit** generate + `pnpm --filter @beat-em-all/db db:migrate` against `DATABASE_URL_UNPOOLED` |
+| Auth | **Auth.js v5** (NextAuth) with credentials provider that calls Unifonic for phone-OTP |
+| File storage | **Vercel Blob** (avatars, civil ID images) |
+| Cache / sessions | **Vercel KV** (Upstash Redis) — added when an epic needs it |
+| Scheduled jobs | **Vercel Cron Jobs** — added when first needed |
+| Feature flags | **Vercel Edge Config** — added when first needed |
+| SMS / WhatsApp | **Unifonic** (regional necessity, not replaceable) |
+| Email | **Resend** |
+| Payments | **Tap Payments** (regional necessity) |
 | Format | Biome (formatter only) |
 | Lint | ESLint + typescript-eslint + react-hooks + tailwindcss + security |
 | Dead-code | Knip |
@@ -78,14 +89,15 @@ Country accents: KW=coral, KSA=violet, AE=cyan, BH=lime, QA=amber, OM=coral-2.
 ```
 app/
 ├── apps/
-│   ├── web/                # Next.js — player web (port 3000)
+│   ├── web/                # Next.js — player web (port 3000), also hosts /api/* Vercel Functions
 │   └── admin/              # Next.js — admin console (port 3001)
 ├── packages/
 │   ├── ui/                 # Shared shadcn-style components
 │   ├── design-tokens/      # CSS variables + TypeScript token exports
 │   ├── types/              # TypeScript types from DOMAIN_MODEL.md
-│   ├── mock-data/          # KEC + 5 personas + 3 teams + 5 venues + 1 tournament
-│   ├── api-client/         # Typed data-access — wraps mock-data now, Supabase later
+│   ├── mock-data/          # KEC + 5 personas + 3 teams + 5 venues + 1 tournament (dev-only)
+│   ├── api-client/         # Typed data-access — wraps mock-data + (per-epic) real /api calls
+│   ├── db/                 # Drizzle schema, migrations, Neon-serverless client
 │   ├── i18n/               # en.json + ar.json
 │   ├── utils/              # Zod schemas + helpers
 │   └── config/             # Shared eslint + biome + tailwind presets
@@ -96,6 +108,7 @@ app/
 ├── .husky/
 │   ├── pre-commit          # lint-staged
 │   └── commit-msg          # commitlint
+├── .env.example            # template for local DATABASE_URL etc. (copy to .env.local)
 └── (root configs: package.json, pnpm-workspace.yaml, turbo.json, tsconfig.base.json,
                   biome.json, knip.json, .gitignore, .gitattributes, .nvmrc)
 ```

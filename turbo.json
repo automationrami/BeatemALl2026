@@ -5,7 +5,28 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
-      "env": ["NODE_ENV"]
+      "env": [
+        "NODE_ENV",
+        "DATABASE_URL",
+        "DATABASE_URL_UNPOOLED",
+        "POSTGRES_URL",
+        "POSTGRES_PRISMA_URL",
+        "PGHOST",
+        "PGUSER",
+        "PGPASSWORD",
+        "PGDATABASE",
+        "AUTH_SECRET",
+        "BLOB_READ_WRITE_TOKEN",
+        "UNIFONIC_APP_SID",
+        "UNIFONIC_SENDER_ID"
+      ]
+    },
+    "db:generate": {
+      "cache": false
+    },
+    "db:migrate": {
+      "cache": false,
+      "env": ["DATABASE_URL", "DATABASE_URL_UNPOOLED", "POSTGRES_URL"]
     },
     "dev": {
       "cache": false,

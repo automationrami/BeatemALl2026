@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@beat-em-all/api-client": "workspace:*",
+    "@beat-em-all/db": "workspace:*",
     "@beat-em-all/design-tokens": "workspace:*",
     "@beat-em-all/i18n": "workspace:*",
     "@beat-em-all/mock-data": "workspace:*",
