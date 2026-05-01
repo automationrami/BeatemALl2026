@@ -10,7 +10,23 @@ deployment URL and are dated.
 
 ## [Unreleased]
 
-Nothing yet — next is **E1-S2 (Phone OTP via Auth.js v5 + Unifonic)**.
+Build queue priority pivot 2026-05-02: skip Phone OTP, populate DB with demo data so every model can be tested without auth.
+
+### E1-S0.5 — Demo seed shipped (commit `32c900a`)
+- `packages/db/src/seed/games.ts` — 6 games (cs2, valorant, lol, eafc, codm, tekken8)
+- `packages/db/src/seed/personas.ts` — 5 personas (Khaled, Sara, Ahmad, Omar, Fatima)
+- `packages/db/src/seed/index.ts` — idempotent runner with `ON CONFLICT DO UPDATE`
+- New `players.slug` column (migration `0001_wandering_ego.sql`) for `/players/[slug]` routing
+- New scripts: `db:seed`, `db:inspect`
+- Verified: 5 users, 5 players, 6 games, 4 player_games rows in Neon
+
+### E1-S6 — Player profile API DB-backed (commit `ea99922`, deploy `dpl_EbBqhVrvMTEJ3cEpYHAuQeUE42ya`)
+- `packages/db/src/queries/player.ts` — `loadPlayerProfileBySlug()` server-only query, hybrid (DB core + mock-data fallback for not-yet-modelled fields like pentagon, stats, recent matches, achievements)
+- `packages/db` exports `./queries` subpath; `server-only` import enforces server-side usage
+- `apps/web/src/app/api/players/[slug]/route.ts` — first DB-backed Vercel Function, returns canonical PlayerProfile JSON, 404 for unknown slugs
+- Server page `/[locale]/players/[slug]/page.tsx` calls the DB query directly (zero HTTP roundtrip), passes profile down as prop
+- `packages/api-client/src/player.ts` — `getPlayerProfileForSlug` now async, fetches `/api/players/[slug]` for client-side consumers
+- Verified prod: `curl https://beat-em-all.vercel.app/api/players/khaled-al-mutairi` returns full DB-backed profile
 
 ---
 

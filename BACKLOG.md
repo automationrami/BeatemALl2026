@@ -22,12 +22,12 @@ Source: `Beatemall/docs/epics/E1-player-identity.md`. MVP target.
 | Story | Title | Status | Verification |
 |---|---|---|---|
 | **E1-S1** | DB scaffold + Vercel Postgres provisioning | ✅ | `curl https://beat-em-all.vercel.app/api/health` returns `database.connected:true` |
-| **E1-S0.5** *(new — demo-seeds-first pivot)* | Demo seed: 5 persona users + players + games + per-persona player_games | 🔵 | `pnpm --filter @beat-em-all/db db:seed` populates DB; `SELECT count(*) FROM users` returns 5 |
+| **E1-S0.5** *(demo-seeds-first pivot)* | Demo seed: 5 persona users + players + games + per-persona player_games | ✅ | 5 users / 5 players / 6 games / 4 player_games rows in Neon |
+| **E1-S6** | Public player profile API (replaces mock) | ✅ | `curl https://beat-em-all.vercel.app/api/players/khaled-al-mutairi` returns DB-backed PlayerProfile |
 | E1-S2 | Phone OTP send/verify Functions (Auth.js v5 + Unifonic) — **deferred** | ⚪ deferred | `POST /api/auth/otp/send` + `POST /api/auth/otp/verify` returns session cookie |
 | E1-S3 | Profile creation API + onboarding wiring | 🔴 | `GET /api/me` + `PATCH /api/me` round-trips |
 | E1-S4 | Avatar upload via Vercel Blob | 🔴 | Upload + `users.avatar_url` reflects new blob URL |
 | E1-S5 | Civil ID verification flow (manual review at MVP) | 🔴 | Upload + admin review queue + `players.civil_id_verified_at` set |
-| E1-S6 | Public player profile API (replace mock) | 🔴 | `/api/players/[slug]` returns DB row; PlayerProfileView consumes it |
 | E1-S7 | Account linking — Steam OpenID | 🔴 | Link Steam → `linked_accounts` row + rank visible on profile |
 | E1-S8 | Account linking — Riot RSO | ⚪ | Riot RSO requires app approval; deferred until that's secured |
 | E1-S9 | Privacy + notification preferences | 🔴 | `PATCH /api/me/preferences` |
