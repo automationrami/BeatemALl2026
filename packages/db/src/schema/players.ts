@@ -21,6 +21,12 @@ export const players = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
 
+    /**
+     * URL-safe public slug — drives `/players/[slug]` routing. Derived from displayName
+     * at signup; user can customise post-MVP per DOMAIN_MODEL.md §15 open question.
+     */
+    slug: text('slug').notNull(),
+
     /** ISO 3166-1 alpha-2 — `KW`, `SA`, `AE`, etc. Two chars. */
     countryCode: text('country_code').notNull(),
     city: text('city'),
@@ -43,6 +49,7 @@ export const players = pgTable(
   },
   (table) => ({
     userIdIdx: uniqueIndex('players_user_id_idx').on(table.userId),
+    slugIdx: uniqueIndex('players_slug_idx').on(table.slug),
   }),
 );
 
