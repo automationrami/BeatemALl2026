@@ -24,3 +24,18 @@ export const linkedAccountProviderEnum = pgEnum('linked_account_provider', [
   'xbox',
   'epic',
 ]);
+
+export const teamMemberRoleEnum = pgEnum('team_member_role', [
+  'captain',
+  'co_captain',
+  'starter',
+  'substitute',
+  'coach',
+  'manager',
+]);
+
+export const teamInvitationStatusEnum = pgEnum('team_invitation_status', [
+  'pending',
+  'accepted',
+  'rejected',
+]);

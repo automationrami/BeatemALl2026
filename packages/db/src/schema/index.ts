@@ -10,4 +10,7 @@ export * from './enums';
 export * from './games';
 export * from './players';
 export * from './player_games';
+export * from './teams';
+export * from './team_games';
+export * from './team_members';
 export * from './users';

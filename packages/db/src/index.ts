@@ -18,7 +18,16 @@ export { users } from './schema/users';
 export { players } from './schema/players';
 export { playerGames } from './schema/player_games';
 export { games } from './schema/games';
-export { localeEnum, proficiencyLevelEnum, linkedAccountProviderEnum } from './schema/enums';
+export { teams } from './schema/teams';
+export { teamMembers } from './schema/team_members';
+export { teamGames } from './schema/team_games';
+export {
+  localeEnum,
+  proficiencyLevelEnum,
+  linkedAccountProviderEnum,
+  teamMemberRoleEnum,
+  teamInvitationStatusEnum,
+} from './schema/enums';
 
 export type {
   UserRow,
@@ -36,5 +45,17 @@ export type {
   GameRow,
   GameInsert,
 } from './schema/games';
+export type {
+  TeamRow,
+  TeamInsert,
+} from './schema/teams';
+export type {
+  TeamMemberRow,
+  TeamMemberInsert,
+} from './schema/team_members';
+export type {
+  TeamGameRow,
+  TeamGameInsert,
+} from './schema/team_games';
 
 export const DB_VERSION = '0.0.1';

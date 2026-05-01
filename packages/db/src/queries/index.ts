@@ -8,3 +8,4 @@
 import 'server-only';
 
 export * from './player';
+export * from './team';

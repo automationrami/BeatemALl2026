@@ -2,7 +2,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Avatar, Button, Pill, StatCard, TeamCrest, VsBlock, Wordmark } from '@beat-em-all/ui';
-import { getTeamForSlug } from '@beat-em-all/api-client';
+import { loadTeamBySlug } from '@beat-em-all/db/queries';
 import { GAMES } from '@beat-em-all/mock-data';
 import type { TeamMember, TeamRole } from '@beat-em-all/types';
 import { LanguageToggle } from '@/components/LanguageToggle';
@@ -16,7 +16,9 @@ export default async function TeamPage({ params }: PageProps) {
   const { locale, slug } = await params;
   setRequestLocale(locale);
 
-  const team = getTeamForSlug(slug);
+  // DB-backed team profile (Phase 1 hybrid: real identity + members + games from
+  // Postgres, mock-data overlay for stats / upcomingMatch / mock-only roster members).
+  const team = await loadTeamBySlug(slug);
   if (!team) notFound();
 
   const t = await getTranslations('team');
