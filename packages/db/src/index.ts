@@ -30,6 +30,8 @@ export { memberships, membershipRoleEnum } from './schema/memberships';
 export { venues, cancellationPolicyEnum } from './schema/venues';
 export { venueGames } from './schema/venue_games';
 export { tournaments, tournamentFormatEnum, tournamentStatusEnum } from './schema/tournaments';
+export { challenges, challengeNegotiations, challengeStatusEnum } from './schema/challenges';
+export { matches, matchTypeEnum, matchStatusEnum } from './schema/matches';
 export {
   localeEnum,
   proficiencyLevelEnum,

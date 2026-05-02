@@ -6,8 +6,10 @@
  * team_members + team_games, E3/E4 → venues + bookings + payments, etc.
  */
 
+export * from './challenges';
 export * from './enums';
 export * from './games';
+export * from './matches';
 export * from './memberships';
 export * from './organizations';
 export * from './players';

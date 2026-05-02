@@ -7,6 +7,7 @@ import { GAMES } from '@beat-em-all/mock-data';
 import type { TeamMember, TeamRole } from '@beat-em-all/types';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { PersonaSwitcher } from '@/components/PersonaSwitcher';
+import { ChallengeButton } from '@/components/challenge/ChallengeButton';
 
 type PageProps = {
   params: Promise<{ locale: string; slug: string }>;
@@ -47,9 +48,12 @@ export default async function TeamPage({ params }: PageProps) {
             {t('applyToJoin')}
           </Button>
         )}
-        <Button tone="primary" size="sm">
-          {t('challengeTeam')} →
-        </Button>
+        <ChallengeButton
+          targetTeamSlug={team.slug}
+          targetTeamName={team.name}
+          targetTeamGames={team.games}
+          gameLabels={Object.fromEntries(team.games.map((g) => [g, GAMES[g]?.shortName ?? g]))}
+        />
       </div>
 
       {/* Hero card */}

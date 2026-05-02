@@ -54,8 +54,9 @@ export const TEAM_SEEDS: TeamSeed[] = [
       foundedAt: '2024-07-01',
     },
     gameSlugs: ['valorant'],
-    // No personas on this team — full roster comes from mock-data overlay.
-    members: [],
+    // Sara is Falcon Squad captain in our demo (overrides her mock-only CodM identity)
+    // so the challenge flow has two persona-controlled teams to test against.
+    members: [{ personaSlug: 'sara-al-awadhi', role: 'captain', inGameRole: 'IGL' }],
   },
   {
     team: {

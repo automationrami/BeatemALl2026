@@ -210,6 +210,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.65.1
         version: 5.100.3(react@19.2.4)
+      drizzle-orm:
+        specifier: ^0.36.4
+        version: 0.36.4(@neondatabase/serverless@0.10.4)(@types/pg@8.11.6)(@types/react@19.2.14)(postgres@3.4.9)(react@19.2.4)
       framer-motion:
         specifier: ^11.18.2
         version: 11.18.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)

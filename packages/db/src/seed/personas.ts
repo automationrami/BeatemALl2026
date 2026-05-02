@@ -70,9 +70,10 @@ export const PERSONA_SEEDS: PersonaSeed[] = [
       timezone: 'Asia/Kuwait',
       isOpenToTeamInvites: true,
       isProfilePublic: true,
-      gameSlugs: ['codm'],
-      inGameIds: ['SARA#KW'],
-      inGameRanks: ['Legendary'],
+      // Sara captains Falcon Squad (Valorant) for the demo flow + plays CodM solo.
+      gameSlugs: ['valorant', 'codm'],
+      inGameIds: ['SARA#KW', 'SARA#KW'],
+      inGameRanks: ['Diamond II', 'Legendary'],
     },
   },
   {

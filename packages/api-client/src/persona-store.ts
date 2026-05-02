@@ -8,6 +8,11 @@ export type PersonaId = (typeof PERSONA_IDS)[number];
 
 export type Persona = {
   id: PersonaId;
+  /**
+   * URL-safe player slug — matches the `players.slug` column in the DB. Server-side
+   * helpers (`getCurrentUser`) resolve this from the `bx-current-persona` cookie.
+   */
+  slug: string;
   displayName: string;
   arabicName: string;
   role: 'player' | 'tournament_manager' | 'venue_owner' | 'brand_marketer';
@@ -20,6 +25,7 @@ export type Persona = {
 export const PERSONAS: Record<PersonaId, Persona> = {
   khaled: {
     id: 'khaled',
+    slug: 'khaled-al-mutairi',
     displayName: 'Khaled Al-Mutairi',
     arabicName: 'خالد المطيري',
     role: 'player',
@@ -29,6 +35,7 @@ export const PERSONAS: Record<PersonaId, Persona> = {
   },
   sara: {
     id: 'sara',
+    slug: 'sara-al-awadhi',
     displayName: 'Sara Al-Awadhi',
     arabicName: 'سارة العوضي',
     role: 'player',
@@ -38,6 +45,7 @@ export const PERSONAS: Record<PersonaId, Persona> = {
   },
   ahmad: {
     id: 'ahmad',
+    slug: 'ahmad-al-rashed',
     displayName: 'Ahmad Al-Rashed',
     arabicName: 'أحمد الراشد',
     role: 'tournament_manager',
@@ -48,6 +56,7 @@ export const PERSONAS: Record<PersonaId, Persona> = {
   },
   omar: {
     id: 'omar',
+    slug: 'omar-al-saud',
     displayName: 'Omar Al-Saud',
     arabicName: 'عمر آل سعود',
     role: 'venue_owner',
@@ -58,6 +67,7 @@ export const PERSONAS: Record<PersonaId, Persona> = {
   },
   fatima: {
     id: 'fatima',
+    slug: 'fatima-al-mansour',
     displayName: 'Fatima Al-Mansour',
     arabicName: 'فاطمة المنصور',
     role: 'brand_marketer',
@@ -67,6 +77,8 @@ export const PERSONAS: Record<PersonaId, Persona> = {
     org: 'Zain Kuwait',
   },
 };
+
+export const PERSONA_COOKIE_NAME = 'bx-current-persona';
 
 type PersonaState = {
   activePersonaId: PersonaId;

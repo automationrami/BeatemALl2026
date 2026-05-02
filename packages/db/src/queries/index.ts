@@ -7,6 +7,8 @@
 
 import 'server-only';
 
+export * from './challenge';
+export * from './current_user';
 export * from './home';
 export * from './organization';
 export * from './player';
