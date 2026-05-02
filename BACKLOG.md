@@ -10,7 +10,7 @@
 
 **Live URL:** https://beat-em-all.vercel.app
 **Stack:** Vercel-native — Vercel Functions + Vercel Postgres (Neon, fra1) + Drizzle ORM + Auth.js v5 (deferred) + Vercel Blob (planned)
-**Build phase:** Full data layer (read paths) for E1 + E2 + ORG-1 + venues + tournaments shipped without auth. Auth (E1-S2) deferred per founder directive.
+**Build phase:** Full read-layer shipped (E1 + E2 + ORG-1 + venues + tournaments) **and** the first action-bearing vertical slice (E6 Challenge a team) is live with real DB writes. Auth (E1-S2) still deferred — the persona cookie is the temporary auth proxy.
 **Deploy method:** `vercel deploy --prod` from local (no auto-deploy on git push — see `~/.claude/projects/D--BeatEmAll/memory/github-accounts.md` for the why)
 
 **What works end-to-end (2026-05-02):**
@@ -21,16 +21,20 @@
 - `GET /api/venues/[slug]` — DB-backed GG Arena, Pixel House, ARC, Q-Mark, DXE Fuel
 - `GET /api/tournaments/[slug]` — DB-backed 6 KEC + community tournaments
 - `GET /api/home?personaId=<slug>` — composed Home Feed payload (real DB sections + mock fallback for hero upcomingMatch + recent activity)
+- `GET/POST /api/challenges`, `GET/PATCH /api/challenges/[id]` — full challenge lifecycle with transactional accept and idempotent re-accept
+- `GET /api/me/team` — lightweight current-persona-team lookup powering the challenge modal's intersection check
 
 **Frontend pages live on prod:**
 - `/[locale]` — Home Feed
 - `/[locale]/players/[slug]` — DB-backed player profile
-- `/[locale]/teams/[slug]` — DB-backed team profile
+- `/[locale]/teams/[slug]` — DB-backed team profile, **with working "Challenge" CTA**
 - `/[locale]/venues` — verified venue grid
 - `/[locale]/venues/[slug]` — venue detail page
 - `/[locale]/tournaments` — open + upcoming tournament list (sanctioned KEC events get cyan accent)
 - `/[locale]/tournaments/[slug]` — tournament detail with gradient hero
 - `/[locale]/orgs/[slug]` — organization profile with tier pill + verified badge
+- `/[locale]/challenges` — challenge inbox (Incoming / Outgoing / All tabs)
+- `/[locale]/challenges/[id]` — challenge detail with Accept / Reject / Counter actions, negotiation history, locale-aware Asia/Kuwait dates
 
 ---
 
@@ -146,7 +150,19 @@ Source: `Beatemall/docs/epics/E5-discovery-geo.md`. PostGIS extension required.
 
 ## Epic E6 — Challenge, Negotiation & Match Lifecycle
 
-Source: `Beatemall/docs/epics/E6-challenge-negotiation.md`. Status: 🔴.
+Source: `Beatemall/docs/epics/E6-challenge-negotiation.md`.
+
+| Story | Title | Status | Verification |
+|---|---|---|---|
+| **E6-S1** | DB tables: challenges + challenge_negotiations + matches | ✅ | Migration applied; transactional accept verified on prod |
+| **E6-S2** | Create / list / detail challenge APIs (POST + GET routes) | ✅ | Khaled-as-Sandstorm POST → 201 with challenge id `2721b6ab-...` |
+| **E6-S3** | PATCH `/api/challenges/[id]` — accept (transactional + idempotent), reject, counter | ✅ | Sara-as-Falcon-Squad accept → matchId `27bc628d-...`; re-accept returns same matchId; 403 when challenger tries to self-accept |
+| **E6-S4** | Persona-as-current-user cookie pattern (proxy until E1-S2 lands) | ✅ | `bx-current-persona` cookie set by `PersonaSwitcher`; server reads via `apps/web/src/lib/current-user.ts` |
+| **E6-S5** | UI: ChallengeModal on team profile + inbox + detail page with actions | ✅ | Browser screenshot of `/en/challenges/[id]` showing ACCEPTED pill + green match notice |
+| E6-S6 | Counter-proposal richer flow + multi-round negotiation UI | 🔴 next polish |
+| E6-S7 | Expiry job — flip pending past `expires_at` to `expired` (Vercel Cron) | 🔴 next |
+| E6-S8 | Notifications on challenge events (incoming, accepted, rejected, expired) — depends on P-1 | 🔴 |
+| E6-S9 | Match lifecycle: scheduled → in_progress → results → disputes | 🔴 |
 
 ---
 
@@ -197,16 +213,17 @@ Source: `Beatemall/docs/epics/TM-*.md`. KEC's primary need per `MVP_SCOPE.md` Pa
 
 ## Active backlog — what to ship next (prioritized)
 
-**Phase 1 read-path data + UI layer is COMPLETE.** Every model has real DB-backed APIs AND frontend pages. Founder can browse Home Feed, player profiles, team profiles, venue list/detail, tournament list/detail, and org profiles without authenticating.
+**Phase 1 read-path data + UI layer is COMPLETE.** Every model has real DB-backed APIs AND frontend pages. **First action-bearing slice (E6 Challenge a team) is also complete** — users can click and actually do something with real DB writes.
 
-Next priorities:
+Next priorities — same vertical-slice pattern (schema → queries → API → UI → silent-failure scan → live verification), one usable feature at a time:
 
-1. **E1-S2** Phone OTP via Auth.js v5 + Unifonic. The demo-seeds-first phase is complete; **auth is now the highest-leverage next thing**. Unblocks edit profile, create team, register for tournament, book venue, file dispute, etc.
-2. **E1-S3** Profile creation API + onboarding wiring (depends on E1-S2).
-3. **PostGIS + E5** — enable `postgis` on Neon, add `players.geo_location` + `teams.geo_location` + `venues.geo_location` columns, build `/api/discover/teams` and `/api/discover/tournaments`.
-4. **TM-1** Tournament creation wizard (S-TM-06) — KEC's headline use-case (depends on E1-S2 + ORG-1 admin).
-5. **/players, /teams, /orgs directory pages** — small low-risk additions.
-6. **Persona switcher → URL routing** — small UX polish; deep-linkable persona views.
+1. **E4-S1 Book a venue (vertical slice)** — founder explicitly called this gap out ("i cant manage venue"). Khaled picks GG Arena, picks 2-hour slot, picks game, hits Book → row in `venue_bookings`, confirmation page renders. Defers payment (Tap is P-2) — bookings start in `pending_payment` status.
+2. **E2-S2 Create a team (vertical slice)** — currently teams are seed-only. Persona without a team should be able to create one and immediately become its captain. Unlocks the modal's "no team" state in production.
+3. **TM-2 Register a team for a tournament (vertical slice)** — Sara's Falcon Squad joins KEC Summer Series → row in `tournament_registrations`. KEC's flagship moment.
+4. **E6-S7 Challenge expiry Cron** — Vercel Cron flips pending challenges past `expires_at` to `expired`. Tiny but it closes the lifecycle hole the silent-failure-hunter flagged.
+5. **E1-S2** Phone OTP via Auth.js v5 + Unifonic — replaces the persona cookie shim. Becomes urgent once we have multiple write paths in production.
+6. **PostGIS + E5** — enable `postgis` on Neon, add `players.geo_location` + `teams.geo_location` + `venues.geo_location` columns, build `/api/discover/teams` and `/api/discover/tournaments`.
+7. Smaller UX polish: persona switcher → URL routing, /players + /teams + /orgs directory pages.
 
 ---
 

@@ -12,6 +12,43 @@ deployment URL and are dated.
 
 Build queue priority pivot 2026-05-02: skip Phone OTP, populate DB with demo data so every model can be tested without auth.
 
+### E6 — Challenge a team, end-to-end (commit `ece1982`)
+
+First **action-bearing** vertical slice. Khaled's Sandstorm can challenge Sara's Falcon Squad for a Valorant match, Sara can accept (atomically creating a `matches` row) or reject or counter-propose. The first feature where users actually click and **do** something with real DB writes.
+
+- Schema migration: `challenges` + `challenge_negotiations` + `matches` tables. `challenge_status_enum` (pending/negotiating/accepted/rejected/expired/cancelled/booked), `match_type_enum`, `match_status_enum`. 7-day default expiry on challenges via `now() + interval '7 days'`. Matches FK back to challenges with `onDelete:'set null'` so deleting a challenge doesn't cascade-kill its match.
+- Domain layer in `packages/db/src/queries/challenge.ts`:
+  - `createChallenge` — validates challenger captain on team, validates intersection of supported games, inserts pending row.
+  - `acceptChallenge` — **transactional**: inserts `matches` row + flips challenge to accepted with `matchId` + `acceptedAt` in one txn. Idempotent fast-path (re-accept returns the existing matchId rather than erroring).
+  - `rejectChallenge`, `counterChallenge` (writes a negotiation row, sets status to `negotiating`).
+  - `intersectionGamesBetweenTeams` — used both by API and modal to disable submission when no shared game.
+  - `loadChallengeById`, `loadChallengeNegotiations`, `listChallengesForPlayer(direction)`.
+  - Typed `ChallengeError` class with discriminated `code` field — server logs the full error, the API leaks only the `message`.
+- Persona-as-current-user pattern (auth proxy until E1-S2 lands):
+  - `bx-current-persona` cookie carries the active persona slug.
+  - `packages/db/src/queries/current_user.ts` exports pure `loadUserByPersonaSlug(slug)` (zero `next/headers` import → keeps DB package framework-agnostic).
+  - `apps/web/src/lib/current-user.ts` is the bridge: reads the cookie via `next/headers` and calls into the pure query. Marked `'server-only'`.
+  - `PersonaSwitcher` writes the cookie + `router.refresh()` on change so the server picks up the new identity immediately.
+- Vercel Functions:
+  - `GET /api/challenges?direction=incoming|outgoing|all`
+  - `POST /api/challenges` — Zod-validated body (`challengedTeamSlug`, `gameSlug`, `format`, `dateRangeStart`, `dateRangeEnd`, optional `proposedVenueSlug` + `message`).
+  - `GET /api/challenges/[id]`
+  - `PATCH /api/challenges/[id]` — discriminated-union body (`{ action: "accept" | "reject" | "counter", ... }`).
+  - `GET /api/me/team` — lightweight endpoint the modal hits for the games-intersection check.
+- UI:
+  - Team profile gains a **"Challenge"** button → opens `ChallengeModal` (game / format / date-range / venue / message). Date-range pickers default to tomorrow → next week, locale-aware. Client-side guards for past dates and inverted ranges so users get instant feedback rather than a server 400.
+  - `/challenges` inbox with **Incoming / Outgoing / All** tabs, defaulting to **All** so the founder lands on a tab that surfaces the just-sent challenge regardless of which side they're on.
+  - `/challenges/[id]` detail with status pill, BO format, locale-aware date range (Asia/Kuwait via `Intl.DateTimeFormat`), proposal panel, accept/reject/counter actions for the challenged team, accepted-match notice, and full negotiation history.
+- Translations: 50+ new EN + AR keys under `challenge.*` (modalTitle, fieldGame, statusPending, errorNoSharedGames, etc.).
+- Mock fix: Sara now plays both `valorant` and `codm` so she can captain Falcon Squad against Sandstorm.
+- Verified end-to-end on prod (deploy `dpl_BupihsreMTG5QAfe4SzvyT2KqoRY`):
+  - Khaled creates challenge `2721b6ab-903a-4085-8ce6-f78ed92178e2` from Sandstorm → Falcon Squad.
+  - Sara accepts → `matchId 27bc628d-72f2-4b96-9ae7-cb0a21dafc5f` written, status flips pending→accepted.
+  - Re-accept is idempotent (returns same matchId, no error).
+  - 403 Forbidden when Khaled tries to accept his own challenge.
+  - Reject path works.
+  - Browser screenshot of the detail page renders correctly with the lime "Challenge accepted. Match scheduled" notice.
+
 ### E2-S1 + E2-S7 — Teams DB-backed (commit `2cfceea`)
 - 3 new tables (teams, team_members, team_games) + 2 enums (team_member_role, team_invitation_status) — migration `0002_faulty_korath.sql`
 - 3 teams seeded (Sandstorm + Falcon Squad + Desert Dragons); Khaled = Sandstorm captain
