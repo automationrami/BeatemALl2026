@@ -203,6 +203,17 @@ export function ChallengeModal({
                 {t('errorGeneric', { message: selfTeamError })}
               </p>
             ) : null}
+            <Button
+              tone="primary"
+              size="sm"
+              onClick={() => {
+                onClose();
+                router.push(`/${locale}/teams/new`);
+              }}
+              data-testid="challenge-create-team-cta"
+            >
+              {t('createTeamCta')} →
+            </Button>
             <Button tone="ghost" size="sm" onClick={onClose}>
               {t('cancelCta')}
             </Button>

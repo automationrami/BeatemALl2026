@@ -220,6 +220,17 @@ export function BookingModal({
 
         {selfTeamStatus.kind === 'loaded' && !selfTeam ? (
           <div className="mt-4 space-y-3">
+            <Button
+              tone="primary"
+              size="sm"
+              onClick={() => {
+                onClose();
+                router.push(`/${locale}/teams/new`);
+              }}
+              data-testid="booking-create-team-cta"
+            >
+              {t('createTeamCta')} →
+            </Button>
             <Button tone="ghost" size="sm" onClick={onClose}>
               {t('cancelCta')}
             </Button>
