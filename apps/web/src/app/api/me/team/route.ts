@@ -37,8 +37,9 @@ export async function GET() {
       { headers: { 'cache-control': 'no-store' } },
     );
   } catch (err) {
+    console.error('[GET /api/me/team] failed', err);
     return NextResponse.json(
-      { error: 'internal', message: err instanceof Error ? err.message : String(err) },
+      { error: 'internal', message: 'Something went wrong loading your team.' },
       { status: 500 },
     );
   }

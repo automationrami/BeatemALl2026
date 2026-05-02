@@ -4,9 +4,10 @@ import { notFound } from 'next/navigation';
 import { Star } from 'lucide-react';
 import { Button, Pill, Wordmark } from '@beat-em-all/ui';
 import { GAMES } from '@beat-em-all/mock-data';
-import { loadVenueBySlug } from '@beat-em-all/db/queries';
+import { listVenueSupportedGames, loadVenueBySlug } from '@beat-em-all/db/queries';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { PersonaSwitcher } from '@/components/PersonaSwitcher';
+import { BookingButton } from '@/components/booking/BookingButton';
 
 type PageProps = { params: Promise<{ locale: string; slug: string }> };
 
@@ -17,6 +18,7 @@ export default async function VenueDetailPage({ params }: PageProps) {
   const venue = await loadVenueBySlug(slug);
   if (!venue) notFound();
 
+  const supportedGames = await listVenueSupportedGames(slug);
   const t = await getTranslations('venue');
 
   return (
@@ -66,9 +68,12 @@ export default async function VenueDetailPage({ params }: PageProps) {
             </div>
           </div>
           <div className="md:text-end text-start flex flex-col gap-2">
-            <Button tone="primary" size="md">
-              {t('bookCta')} →
-            </Button>
+            <BookingButton
+              venueSlug={venue.slug}
+              venueName={venue.name}
+              venueHourlyRateKwd={venue.hourlyRateKWD}
+              supportedGames={supportedGames}
+            />
             <Button tone="ghost" size="sm">
               {t('directionsCta')}
             </Button>

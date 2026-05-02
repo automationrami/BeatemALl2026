@@ -7,6 +7,7 @@
 
 import 'server-only';
 
+export * from './booking';
 export * from './challenge';
 export * from './current_user';
 export * from './home';

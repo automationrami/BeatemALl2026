@@ -7,7 +7,7 @@
  * `packages/db` preserves the package boundary — the DB layer is framework-agnostic.
  */
 
-import { eq } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import { getDb } from '../client';
 import { players } from '../schema/players';
 import { users } from '../schema/users';
@@ -78,6 +78,10 @@ export async function loadUserByPersonaSlug(slug: PersonaSlug): Promise<CurrentU
     throw new Error(`[currentUser] No player row for persona slug "${slug}"`);
   }
 
+  // Order by team slug ASC so `[0]` is stable across deploys / queries — the booking
+  // flow uses `teamMemberships[0]` as the default booking team, so a non-deterministic
+  // order would mean the same persona could book on behalf of a different team across
+  // page loads. Multi-team UI picker is the proper fix; this ordering is the floor.
   const memberships = await db
     .select({
       teamId: teams.id,
@@ -87,7 +91,8 @@ export async function loadUserByPersonaSlug(slug: PersonaSlug): Promise<CurrentU
     })
     .from(teamMembers)
     .innerJoin(teams, eq(teams.id, teamMembers.teamId))
-    .where(eq(teamMembers.playerId, row.playerId));
+    .where(eq(teamMembers.playerId, row.playerId))
+    .orderBy(asc(teams.slug));
 
   return {
     userId: row.userId,
