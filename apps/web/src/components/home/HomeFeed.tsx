@@ -29,6 +29,9 @@ export function HomeFeed() {
   useEffect(() => {
     if (!mounted) return;
     let cancelled = false;
+    // We want a clean loading state on persona change; resetting state here is
+    // intentional (it's the actual "the persona changed" effect, not a render-cascade).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setError(null);
     setData(null);
 

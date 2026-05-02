@@ -198,5 +198,53 @@
   "playerNotFound": {
     "title": "Player not found",
     "body": "We couldn't find that player profile."
+  },
+  "venue": {
+    "indexEyebrow": "VENUES · GCC",
+    "indexTitle": "Verified gaming venues",
+    "indexSubtitle": "Authorised gaming cafés and esports centres ready to host your next match.",
+    "verified": "Verified",
+    "perHour": "{rate} KWD/hr",
+    "seatsLabel": "{count} seats",
+    "ratingLabel": "{rating} / 5",
+    "supportedGames": "SUPPORTED GAMES",
+    "amenities": "AMENITIES",
+    "location": "LOCATION",
+    "bookCta": "Book a slot",
+    "directionsCta": "Open in Maps",
+    "notFoundTitle": "Venue not found",
+    "notFoundBody": "We couldn't find that venue. It may have been delisted or never existed.",
+    "emptyList": "No verified venues yet."
+  },
+  "tournament": {
+    "indexEyebrow": "TOURNAMENTS",
+    "indexTitle": "Open and upcoming tournaments",
+    "indexSubtitle": "Sanctioned KEC events and community cups across the GCC.",
+    "sanctioned": "Sanctioned",
+    "registrationOpen": "Registration open",
+    "registrationClosed": "Registration closed",
+    "inProgress": "Live",
+    "free": "Free entry",
+    "prizePoolLabel": "{amount} KWD",
+    "format": "FORMAT",
+    "teamSize": "TEAM SIZE",
+    "rules": "RULES",
+    "registerCta": "Register team",
+    "viewBracketCta": "View bracket",
+    "notFoundTitle": "Tournament not found",
+    "notFoundBody": "We couldn't find that tournament.",
+    "emptyList": "No tournaments are scheduled right now."
+  },
+  "organization": {
+    "tierFederation": "Federation",
+    "tierBrand": "Brand",
+    "tierVenue": "Venue",
+    "tierCommunity": "Community",
+    "tierPersonal": "Personal",
+    "verified": "Verified",
+    "websiteLabel": "Website",
+    "contactLabel": "Contact",
+    "notFoundTitle": "Organization not found",
+    "notFoundBody": "We couldn't find that organization."
   }
 }

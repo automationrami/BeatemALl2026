@@ -27,7 +27,7 @@ const ACTIONS: Action[] = [
   {
     i18nKeyTitle: 'tournamentsTitle',
     i18nKeyCaption: 'tournamentsCaption',
-    href: '/discover/tournaments',
+    href: '/tournaments',
     icon: Trophy,
     accent: '#FBBF24',
     bg: 'rgba(251,191,36,0.10)',

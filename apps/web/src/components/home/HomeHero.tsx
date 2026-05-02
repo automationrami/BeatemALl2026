@@ -99,7 +99,7 @@ export function HomeHero({ hero }: Props) {
           <Button tone="primary" size="md" onClick={() => goto('/discover/teams')}>
             {t('soloPrimaryCta')} →
           </Button>
-          <Button tone="ghost" size="md" onClick={() => goto('/discover/tournaments')}>
+          <Button tone="ghost" size="md" onClick={() => goto('/tournaments')}>
             {t('soloSecondaryCta')}
           </Button>
         </div>
@@ -136,7 +136,7 @@ export function HomeHero({ hero }: Props) {
         <Button tone="primary" size="md" onClick={() => goto('/discover/teams')}>
           {t('soloPrimaryCta')} →
         </Button>
-        <Button tone="ghost" size="md" onClick={() => goto('/discover/tournaments')}>
+        <Button tone="ghost" size="md" onClick={() => goto('/tournaments')}>
           {t('soloSecondaryCta')}
         </Button>
       </div>

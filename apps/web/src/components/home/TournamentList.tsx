@@ -20,7 +20,7 @@ export function TournamentList({ tournaments }: Props) {
           <h2 className="font-display font-medium text-[20px] tracking-[-0.02em]">{t('title')}</h2>
         </div>
         <Link
-          href={`/${locale}/discover/tournaments`}
+          href={`/${locale}/tournaments`}
           className="text-xs font-display font-medium text-[var(--violet-2)] hover:text-white transition-colors"
         >
           {t('viewAll')} →

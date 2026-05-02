@@ -198,5 +198,53 @@
   "playerNotFound": {
     "title": "اللاعب غير موجود",
     "body": "لم نعثر على ملف اللاعب."
+  },
+  "venue": {
+    "indexEyebrow": "صالات · الخليج",
+    "indexTitle": "صالات ألعاب موثّقة",
+    "indexSubtitle": "صالات ومراكز ألعاب معتمدة جاهزة لاستضافة مباراتك القادمة.",
+    "verified": "موثّقة",
+    "perHour": "{rate} د.ك/ساعة",
+    "seatsLabel": "{count} مقعد",
+    "ratingLabel": "{rating} / 5",
+    "supportedGames": "الألعاب المدعومة",
+    "amenities": "المرافق",
+    "location": "الموقع",
+    "bookCta": "احجز موعداً",
+    "directionsCta": "افتح في الخرائط",
+    "notFoundTitle": "الصالة غير موجودة",
+    "notFoundBody": "لم نعثر على هذه الصالة. ربما أُلغيت أو لم تكن موجودة.",
+    "emptyList": "لا توجد صالات موثّقة بعد."
+  },
+  "tournament": {
+    "indexEyebrow": "بطولات",
+    "indexTitle": "بطولات مفتوحة وقادمة",
+    "indexSubtitle": "بطولات معتمدة من النادي وكؤوس مجتمع في الخليج.",
+    "sanctioned": "معتمدة",
+    "registrationOpen": "التسجيل مفتوح",
+    "registrationClosed": "التسجيل مغلق",
+    "inProgress": "مباشر",
+    "free": "دخول مجاني",
+    "prizePoolLabel": "{amount} د.ك",
+    "format": "النظام",
+    "teamSize": "حجم الفريق",
+    "rules": "القواعد",
+    "registerCta": "سجّل فريقك",
+    "viewBracketCta": "عرض الجدول",
+    "notFoundTitle": "البطولة غير موجودة",
+    "notFoundBody": "لم نعثر على هذه البطولة.",
+    "emptyList": "لا توجد بطولات مجدولة حالياً."
+  },
+  "organization": {
+    "tierFederation": "اتحاد",
+    "tierBrand": "علامة تجارية",
+    "tierVenue": "صالة",
+    "tierCommunity": "مجتمع",
+    "tierPersonal": "شخصي",
+    "verified": "موثّقة",
+    "websiteLabel": "الموقع",
+    "contactLabel": "للتواصل",
+    "notFoundTitle": "المنظمة غير موجودة",
+    "notFoundBody": "لم نعثر على هذه المنظمة."
   }
 }
