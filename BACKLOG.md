@@ -10,7 +10,7 @@
 
 **Live URL:** https://beat-em-all.vercel.app
 **Stack:** Vercel-native — Vercel Functions + Vercel Postgres (Neon, fra1) + Drizzle ORM + Auth.js v5 (deferred) + Vercel Blob (planned)
-**Build phase:** Full read-layer shipped (E1 + E2 + ORG-1 + venues + tournaments) **and** the first action-bearing vertical slice (E6 Challenge a team) is live with real DB writes. Auth (E1-S2) still deferred — the persona cookie is the temporary auth proxy.
+**Build phase:** Full read-layer shipped (E1 + E2 + ORG-1 + venues + tournaments) **and two action-bearing vertical slices** (E6 Challenge a team, E4 Book a venue) live with real DB writes. Auth (E1-S2) still deferred — the persona cookie is the temporary auth proxy.
 **Deploy method:** `vercel deploy --prod` from local (no auto-deploy on git push — see `~/.claude/projects/D--BeatEmAll/memory/github-accounts.md` for the why)
 
 **What works end-to-end (2026-05-02):**
@@ -22,7 +22,8 @@
 - `GET /api/tournaments/[slug]` — DB-backed 6 KEC + community tournaments
 - `GET /api/home?personaId=<slug>` — composed Home Feed payload (real DB sections + mock fallback for hero upcomingMatch + recent activity)
 - `GET/POST /api/challenges`, `GET/PATCH /api/challenges/[id]` — full challenge lifecycle with transactional accept and idempotent re-accept
-- `GET /api/me/team` — lightweight current-persona-team lookup powering the challenge modal's intersection check
+- `GET /api/me/team` — lightweight current-persona-team lookup powering the challenge + booking modals' intersection check
+- `GET/POST /api/venues/[slug]/bookings`, `GET /api/bookings`, `GET /api/bookings/[id]` — venue booking with race-safe advisory-locked overlap check, auth-gated detail endpoint
 
 **Frontend pages live on prod:**
 - `/[locale]` — Home Feed
@@ -35,6 +36,9 @@
 - `/[locale]/orgs/[slug]` — organization profile with tier pill + verified badge
 - `/[locale]/challenges` — challenge inbox (Incoming / Outgoing / All tabs)
 - `/[locale]/challenges/[id]` — challenge detail with Accept / Reject / Counter actions, negotiation history, locale-aware Asia/Kuwait dates
+- `/[locale]/venues/[slug]` — **with working "Book a slot" CTA** opening the booking modal
+- `/[locale]/bookings` — booking inbox for the active persona's teams
+- `/[locale]/bookings/[id]` — booking confirmation with venue / when / where / total breakdown, server-side auth-gated
 
 ---
 
@@ -129,7 +133,23 @@ Source: `Beatemall/docs/epics/E3-venue-onboarding.md`.
 
 ## Epic E4 — Booking, Payment & Cancellation
 
-Source: `Beatemall/docs/epics/E4-booking-payment.md`. Tap Payments dependency. Status: 🔴.
+Source: `Beatemall/docs/epics/E4-booking-payment.md`. Tap Payments dependency.
+
+| Story | Title | Status | Verification |
+|---|---|---|---|
+| **E4-S1** | DB table: `venue_bookings` + `venue_booking_status` enum | ✅ | Migration `0005_plain_mockingbird.sql` applied |
+| **E4-S1.1** | Domain layer: `createBooking` (race-safe via `pg_advisory_xact_lock`), `loadBookingById` (auth-gated), `listBookingsForPlayer`, `listVenueSupportedGames`, `BookingError` | ✅ | curl POST creates row, repeat hits 409 `slot_unavailable` once capacity full |
+| **E4-S1.2** | API endpoints: `POST/GET /api/venues/[slug]/bookings`, `GET /api/bookings`, `GET /api/bookings/[id]` | ✅ | All 7 happy + sad-path curl scenarios green on prod |
+| **E4-S1.3** | UI: BookingButton + BookingModal on venue detail; `/bookings` inbox; `/bookings/[id]` confirmation | ✅ | Manual click-through Khaled → GG Arena → Valorant → 3 seats → confirmation page |
+| E4-S2 | Cost-split between two teams (`booking_participants`) — depends on E1-S2 (real auth + multi-account) | 🔴 |
+| E4-S3 | Tap Payments checkout (KNET / Mada / Apple Pay / Google Pay) — depends on P-2 | 🔴 |
+| E4-S4 | Reschedule + cancel + refund flow per venue policy | 🔴 |
+| E4-S5 | Venue check-in (staff dashboard + player self-check-in) — depends on E3-S6 venue dashboard | 🔴 |
+| E4-S6 | Calendar invites (iCal) + WhatsApp + email confirmations — depends on P-1 | 🔴 |
+| E4-S7 | Booking expiry / cron — flip stale `pending_payment` to `cancelled` after N hours (Vercel Cron) | 🔴 next |
+
+**Known schema follow-up (P2 from silent-failure-hunter):** `total_amount_kwd` is `doublePrecision` today. Move to `numeric(10,3)` or store fils as integer **before** real-money flows ship in E4-S3. Documented but not yet ticketed.
+**Known UX follow-up (P0-4 fix-floor):** primary-team default for personas on multiple teams pinned to slug-ordering. Proper team picker in BookingModal + ChallengeModal is a small follow-up — currently no persona is on more than one team in seeds, so it's not biting.
 
 ---
 
@@ -213,14 +233,14 @@ Source: `Beatemall/docs/epics/TM-*.md`. KEC's primary need per `MVP_SCOPE.md` Pa
 
 ## Active backlog — what to ship next (prioritized)
 
-**Phase 1 read-path data + UI layer is COMPLETE.** Every model has real DB-backed APIs AND frontend pages. **First action-bearing slice (E6 Challenge a team) is also complete** — users can click and actually do something with real DB writes.
+**Phase 1 read-path data + UI layer is COMPLETE.** Every model has real DB-backed APIs AND frontend pages. **Two action-bearing slices are also complete: E6 Challenge a team and E4 Book a venue.** Users can click and actually do something with real DB writes — challenge another team for a Valorant match, accept/reject/counter, book a Valorant slot at GG Arena.
 
 Next priorities — same vertical-slice pattern (schema → queries → API → UI → silent-failure scan → live verification), one usable feature at a time:
 
-1. **E4-S1 Book a venue (vertical slice)** — founder explicitly called this gap out ("i cant manage venue"). Khaled picks GG Arena, picks 2-hour slot, picks game, hits Book → row in `venue_bookings`, confirmation page renders. Defers payment (Tap is P-2) — bookings start in `pending_payment` status.
-2. **E2-S2 Create a team (vertical slice)** — currently teams are seed-only. Persona without a team should be able to create one and immediately become its captain. Unlocks the modal's "no team" state in production.
-3. **TM-2 Register a team for a tournament (vertical slice)** — Sara's Falcon Squad joins KEC Summer Series → row in `tournament_registrations`. KEC's flagship moment.
-4. **E6-S7 Challenge expiry Cron** — Vercel Cron flips pending challenges past `expires_at` to `expired`. Tiny but it closes the lifecycle hole the silent-failure-hunter flagged.
+1. **E2-S2 Create a team (vertical slice)** — teams are seed-only today. Persona without a team should be able to create one and become its captain. Unlocks the "no team" branches in both ChallengeModal and BookingModal in production. Small + low-risk, no payment dependency.
+2. **TM-2 Register a team for a tournament (vertical slice)** — Sara's Falcon Squad joins KEC Summer Series → row in `tournament_registrations`. KEC's flagship moment.
+3. **E6-S7 + E4-S7 Lifecycle crons** — Vercel Cron flips stale pending challenges → expired and stale `pending_payment` bookings → cancelled. Tiny but closes both lifecycle holes the silent-failure-hunter flagged.
+4. **E4-S2 Cost-split** between two teams (`booking_participants`) — natural follow-up once E2-S2 lets us have multiple captains.
 5. **E1-S2** Phone OTP via Auth.js v5 + Unifonic — replaces the persona cookie shim. Becomes urgent once we have multiple write paths in production.
 6. **PostGIS + E5** — enable `postgis` on Neon, add `players.geo_location` + `teams.geo_location` + `venues.geo_location` columns, build `/api/discover/teams` and `/api/discover/tournaments`.
 7. Smaller UX polish: persona switcher → URL routing, /players + /teams + /orgs directory pages.

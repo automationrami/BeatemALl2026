@@ -12,6 +12,40 @@ deployment URL and are dated.
 
 Build queue priority pivot 2026-05-02: skip Phone OTP, populate DB with demo data so every model can be tested without auth.
 
+### E4 — Book a venue, end-to-end (commit `a415c3a`, deploy `dpl_3AdBiUXcb2vUpGDbaEDGFCzEqMno`)
+
+Second action-bearing vertical slice. Khaled clicks "Book a slot" on a venue page → picks game / start time / 1-2-3 hr / seats → row in `venue_bookings` → confirmation page renders. Defers payment to E4-S2 (bookings start in `pending_payment` and stay there until Tap is wired up).
+
+- **Schema:** new `venue_bookings` table + `venue_booking_status` enum (`pending_payment` / `confirmed` / `checked_in` / `completed` / `cancelled` / `no_show`) per DOMAIN_MODEL.md §7.6. Two indexes: `(venue, game, start, end)` for overlap scans, `(booker, created)` for the inbox. Migration `0005_plain_mockingbird.sql`.
+- **Domain layer (`packages/db/src/queries/booking.ts`):**
+  - `createBooking` runs schema validation (min 30min duration, no past dates, seats ≥ 1), checks venue is active+verified, checks the game is in `venue_games` for that venue, then enters a transaction that takes a `pg_advisory_xact_lock(hashtext(venue_id || '|' || game_id))` and re-runs the overlap check + insert atomically. Concurrent POSTs for the same `(venue, game)` slot serialise; other slots stay parallel.
+  - `loadBookingById` + auth gate (booker or teammate only).
+  - `listBookingsForPlayer(playerId, userId)` — bookings made by user OR for any of their teams.
+  - `listVenueSupportedGames(slug)` — feeds the modal's game picker with per-game capacity.
+  - `BookingError` typed class so the route never leaks DB internals.
+- **APIs:**
+  - `POST /api/venues/[slug]/bookings` — Zod-validated body, status mapping by error code (`insert_failed → 500` with generic message, never the DB error).
+  - `GET /api/venues/[slug]/bookings` — supported games + capacity for the modal.
+  - `GET /api/bookings` — inbox.
+  - `GET /api/bookings/[id]` — detail, gated to booker or teammate.
+- **UI:**
+  - `BookingButton` wires the existing "Book a slot" CTA on `/venues/[slug]` to a new `BookingModal`.
+  - `BookingModal` — game picker (intersection of venue's games + persona team's games), `datetime-local` start, 1/2/3 hr radio buttons, seat input clamped to per-game capacity, live price preview ("6 KWD × 3 seats × 2 hr = 36 KWD"). Three-state self-team load (`loading | error | loaded`) so a DB outage doesn't masquerade as "no team".
+  - `/[locale]/bookings` inbox + `/[locale]/bookings/[id]` confirmation page. Both `force-dynamic`, locale-aware Asia/Kuwait timezone via `Intl.DateTimeFormat`. Detail page gated server-side (returns notFound() to non-booker non-teammate viewers — doesn't leak existence).
+- **Persona-cookie auth proxy** reused. `current_user.loadUserByPersonaSlug` now `ORDER BY teams.slug ASC` so the primary-team default (`teamMemberships[0]`) is stable across deploys.
+- **Translations:** 46 new EN + AR `booking.*` keys.
+- **Silent-failure-hunter pass before deploy:** found 16 issues; all P0/P1 fixed (auth gate on detail, error masking in `/api/me/team`, oversell race via advisory lock, deterministic team ordering, double-submit guard, min-duration enforcement, seat-input non-rewriting, three-state loading UX). P2 issues filed in BACKLOG (notably: `total_amount_kwd` is `doublePrecision` — must move to `numeric(10,3)` or fils-as-integer before Tap reconciliation lands in E4-S2).
+- **Verified end-to-end on prod (`https://beat-em-all.vercel.app`, gitSha `a415c3a`):**
+  - Khaled (Sandstorm) creates booking `25072193-afe8-46be-bd8f-226c9138f01e` for 3 Valorant seats at GG Arena → 201, `total_amount_kwd: 36` matches `6 × 3 × 2`.
+  - Re-attempt for 2 more seats overlapping (would push to 5/4) → 409 `slot_unavailable`.
+  - Re-attempt for 1 more (3+1=4=capacity) → 201.
+  - Re-attempt for 1 more after capacity exhausted → 409 `slot_unavailable` with message `"0 VALORANT seat(s) free in that window — you asked for 1."`.
+  - Non-overlapping next-day booking → 201.
+  - Fatima (no team) tries to book → 403 `no_team`.
+  - Past date → 400 `invalid_date_range`.
+  - CS2 (not at GG Arena) → 400 `game_not_supported` with localised name.
+  - Detail endpoint: Khaled (booker) → 200, Fatima → 403, Sara (different team) → 403. Auth gate works.
+
 ### E6 — Challenge a team, end-to-end (commit `ece1982`)
 
 First **action-bearing** vertical slice. Khaled's Sandstorm can challenge Sara's Falcon Squad for a Valorant match, Sara can accept (atomically creating a `matches` row) or reject or counter-propose. The first feature where users actually click and **do** something with real DB writes.
