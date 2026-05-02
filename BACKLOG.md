@@ -21,7 +21,16 @@
 - `GET /api/venues/[slug]` — DB-backed GG Arena, Pixel House, ARC, Q-Mark, DXE Fuel
 - `GET /api/tournaments/[slug]` — DB-backed 6 KEC + community tournaments
 - `GET /api/home?personaId=<slug>` — composed Home Feed payload (real DB sections + mock fallback for hero upcomingMatch + recent activity)
-- Frontend `/[locale]/players/[slug]`, `/[locale]/teams/[slug]`, `/[locale]` (Home Feed) all wired to real DB
+
+**Frontend pages live on prod:**
+- `/[locale]` — Home Feed
+- `/[locale]/players/[slug]` — DB-backed player profile
+- `/[locale]/teams/[slug]` — DB-backed team profile
+- `/[locale]/venues` — verified venue grid
+- `/[locale]/venues/[slug]` — venue detail page
+- `/[locale]/tournaments` — open + upcoming tournament list (sanctioned KEC events get cyan accent)
+- `/[locale]/tournaments/[slug]` — tournament detail with gradient hero
+- `/[locale]/orgs/[slug]` — organization profile with tier pill + verified badge
 
 ---
 
@@ -188,16 +197,16 @@ Source: `Beatemall/docs/epics/TM-*.md`. KEC's primary need per `MVP_SCOPE.md` Pa
 
 ## Active backlog — what to ship next (prioritized)
 
-**Phase 1 read-path data layer is COMPLETE.** Players, teams, orgs, venues, tournaments, and the composed Home Feed all serve real DB data on prod. Founder can poke every model without auth.
+**Phase 1 read-path data + UI layer is COMPLETE.** Every model has real DB-backed APIs AND frontend pages. Founder can browse Home Feed, player profiles, team profiles, venue list/detail, tournament list/detail, and org profiles without authenticating.
 
 Next priorities:
 
-1. **Frontend pages for venues + tournaments** — currently the APIs exist but there's no page at `/venues/[slug]` or `/tournaments/[slug]`. Mirror the Player Profile + Team Profile pattern (server page calls `loadVenueBySlug` / `loadTournamentBySlug` → passes to client renderer).
-2. **Persona switcher → URL routing wiring** — when persona changes, route the user to a "view as Khaled" Home Feed instead of just changing the API query param. Already partially works.
-3. **E1-S2** Phone OTP via Auth.js v5 + Unifonic. **The "demo seeds first" pivot is complete; auth is now the highest-leverage next thing.**
-4. **E1-S3** Profile creation API + onboarding wiring (depends on E1-S2).
-5. **TM-1** Tournament creation wizard (S-TM-06) — KEC's headline use-case (depends on E1-S2 + ORG-1-S4).
-6. **PostGIS + E5** — enable `postgis` extension on Neon, add `players.geo_location` + `teams.geo_location` + `venues.geo_location` columns, build `/api/discover/teams` and `/api/discover/tournaments`.
+1. **E1-S2** Phone OTP via Auth.js v5 + Unifonic. The demo-seeds-first phase is complete; **auth is now the highest-leverage next thing**. Unblocks edit profile, create team, register for tournament, book venue, file dispute, etc.
+2. **E1-S3** Profile creation API + onboarding wiring (depends on E1-S2).
+3. **PostGIS + E5** — enable `postgis` on Neon, add `players.geo_location` + `teams.geo_location` + `venues.geo_location` columns, build `/api/discover/teams` and `/api/discover/tournaments`.
+4. **TM-1** Tournament creation wizard (S-TM-06) — KEC's headline use-case (depends on E1-S2 + ORG-1 admin).
+5. **/players, /teams, /orgs directory pages** — small low-risk additions.
+6. **Persona switcher → URL routing** — small UX polish; deep-linkable persona views.
 
 ---
 

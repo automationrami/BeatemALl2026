@@ -20,6 +20,16 @@ Build queue priority pivot 2026-05-02: skip Phone OTP, populate DB with demo dat
 - Server page `/[locale]/teams/[slug]` rewired to call DB query directly
 - `getTeamForSlug` in api-client now async / fetches `/api/teams/[slug]`
 
+### Frontend pages for venues + tournaments + orgs (commit `afa5c2f`)
+- `/[locale]/venues` — verified-venues grid (3-col on desktop, single on mobile) with rating/games/price
+- `/[locale]/venues/[slug]` — venue detail with hero, supported games + location panels, book + directions CTAs
+- `/[locale]/tournaments` — open + upcoming tournament list (sanctioned KEC events get cyan accent)
+- `/[locale]/tournaments/[slug]` — gradient-hero detail with prize-pool stat, register + view-bracket CTAs
+- `/[locale]/orgs/[slug]` — organization profile with tier pill + verified badge + website + contact
+- All 5 pages have 404 not-found pages with Wordmark
+- Translations: 50+ new EN + AR keys under `venue.*` / `tournament.*` / `organization.*`
+- HomeFeed Quick Actions, Hero, TournamentList rewired to point at new `/tournaments` route
+
 ### ORG-1 + venues + tournaments + composed home feed (commit `31a42ba`, deploy `dpl_<latest>`)
 - Schema migration `0003_sturdy_vertigo.sql`:
   - organizations + memberships per DOMAIN_MODEL.md §3 (federation/brand/venue/community/personal tiers)
