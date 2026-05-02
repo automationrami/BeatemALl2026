@@ -18,6 +18,7 @@ export * from './teams';
 export * from './team_games';
 export * from './team_members';
 export * from './tournaments';
+export * from './tournament_registrations';
 export * from './users';
 export * from './venues';
 export * from './venue_games';

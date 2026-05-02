@@ -3,9 +3,17 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Button, Pill, StatCard, Wordmark } from '@beat-em-all/ui';
 import { GAMES } from '@beat-em-all/mock-data';
-import { loadTournamentBySlug } from '@beat-em-all/db/queries';
+import {
+  listRegistrationsForTournament,
+  loadTournamentBySlug,
+} from '@beat-em-all/db/queries';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { PersonaSwitcher } from '@/components/PersonaSwitcher';
+import { RegisterTeamButton } from '@/components/tournament/RegisterTeamButton';
+import { getCurrentUser } from '@/lib/current-user';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 type PageProps = { params: Promise<{ locale: string; slug: string }> };
 
@@ -25,7 +33,18 @@ export default async function TournamentDetailPage({ params }: PageProps) {
   const tour = await loadTournamentBySlug(slug);
   if (!tour) notFound();
 
+  // Tournament detail is public — gracefully degrade when the persona cookie is stale
+  // or missing. We just lose the "Register" CTA + "your team" highlight, not the whole
+  // page. Otherwise a stale cookie would 500 anonymous viewers reading the bracket.
+  const [registrations, me] = await Promise.all([
+    listRegistrationsForTournament(slug),
+    getCurrentUser().catch(() => null),
+  ]);
+  const myTeamIds = new Set(me?.teamMemberships.map((m) => m.teamId) ?? []);
+  const myRegistration = me ? registrations.find((r) => myTeamIds.has(r.team.id)) : undefined;
+
   const t = await getTranslations('tournament');
+  const tReg = await getTranslations('registration');
 
   const statusLabel =
     tour.status === 'in_progress'
@@ -71,9 +90,12 @@ export default async function TournamentDetailPage({ params }: PageProps) {
           </span>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Button tone="primary" size="md">
-            {t('registerCta')} →
-          </Button>
+          <RegisterTeamButton
+            tournamentSlug={tour.slug}
+            tournamentName={tour.name}
+            isRegistrationOpen={tour.status === 'registration_open'}
+            alreadyRegistered={Boolean(myRegistration)}
+          />
           <Button tone="ghost" size="md">
             {t('viewBracketCta')}
           </Button>
@@ -86,7 +108,58 @@ export default async function TournamentDetailPage({ params }: PageProps) {
           value={tour.prizePoolKWD > 0 ? `${formatKwd(tour.prizePoolKWD)} KWD` : t('free')}
         />
         <StatCard label="STATUS" value={statusLabel} />
-        <StatCard label="REGISTRATION" value={tour.registrationLabel} />
+        <StatCard
+          label={tReg('registeredEyebrow')}
+          value={tReg('registeredCount', { count: registrations.length })}
+        />
+      </section>
+
+      <section className="rounded-[20px] border border-[var(--line)] bg-[var(--bg-2)] p-5">
+        <p className="bx-eyebrow mb-4">{tReg('rosterEyebrow')}</p>
+        {registrations.length === 0 ? (
+          <p className="text-[var(--t-3)] text-sm leading-relaxed">{tReg('rosterEmpty')}</p>
+        ) : (
+          <ol className="space-y-2" data-testid="registered-teams">
+            {registrations.map(({ registration, team }, i) => {
+              const isMine = myTeamIds.has(team.id);
+              return (
+                <li
+                  key={registration.id}
+                  className={[
+                    'flex items-center justify-between rounded-xl border px-3 py-2.5 transition-colors',
+                    isMine
+                      ? 'border-[var(--violet-2)] bg-[rgba(139,92,246,0.10)]'
+                      : 'border-[var(--line)] bg-[var(--bg-1)]',
+                  ].join(' ')}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="font-mono text-[10.5px] text-[var(--t-4)] tracking-[0.06em] tabular-nums">
+                      {(i + 1).toString().padStart(2, '0')}
+                    </span>
+                    <Link
+                      href={`/${locale}/teams/${team.slug}`}
+                      className="font-display font-medium text-[14px] truncate hover:text-[var(--violet-2)] transition-colors"
+                    >
+                      {team.name}
+                    </Link>
+                    <span className="font-mono text-[10.5px] text-[var(--t-4)] tracking-[0.06em] uppercase">
+                      {team.tag}
+                    </span>
+                  </div>
+                  {isMine ? (
+                    <Pill tone="violet">{tReg('yourTeamPill')}</Pill>
+                  ) : (
+                    <Pill>
+                      {registration.status === 'pending_payment'
+                        ? tReg('statusPendingPayment')
+                        : tReg('statusConfirmed')}
+                    </Pill>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        )}
       </section>
     </main>
   );
