@@ -12,6 +12,32 @@ deployment URL and are dated.
 
 Build queue priority pivot 2026-05-02: skip Phone OTP, populate DB with demo data so every model can be tested without auth.
 
+### E2-S2 — Create a team, end-to-end (commit `ba92f04`, deploy `dpl_CEF6d8vZcp4mE4hybWSR1FBKfU9b`)
+
+Third action-bearing vertical slice. Team-less personas (Ahmad / Omar / Fatima in seeds) can now found their own team, becoming captain in one transactional insert. Unlocks the previously-dead "no team" branches in `BookingModal` + `ChallengeModal`.
+
+- **No schema migration** — `teams`, `team_members`, `team_games` already exist from E2-S1.
+- **Domain (`packages/db/src/queries/team.ts`):**
+  - `createTeam` validates name (2–60), tag (2–6 uppercase alphanumeric), slug (3–40 lowercase + hyphens, no leading/trailing/consecutive hyphens), country (2–3 letter ISO), and at least one game. Dedupes `gameSlugs` to prevent duplicate `team_games` inserts. Inserts `teams` + `team_members(captain)` + `team_games(primary)` atomically in one transaction.
+  - **Race-safety net:** the `teams.slug` unique-index TOCTOU window is closed by translating Postgres `23505` violations into a clean `slug_taken` 409 instead of leaking a 500. (Same pattern as `pg_advisory_xact_lock` in booking, but cheaper here since we already have a unique index doing the work.)
+  - `listGamesForCreateTeam` returns the full active-game catalog with the persona's own games sorted first + marked `isPlayed` (UX hint, not enforced — a captain can found a team in a game they don't personally play, which is legitimate per spec).
+  - `TeamError` typed class so the route never leaks DB internals.
+- **API:** `POST /api/teams` with Zod-validated body. **Stale-persona auth resolution** (cookie pointing at a deleted player row) now returns `401 unauthorized` + "refresh the page" hint instead of leaking a generic 500 with the persona slug in the message. **Zod `invalid_body`** now carries a usable top-level `message` like `"gameSlugs: Array must contain at least 1 element(s)"` so the client doesn't render the literal string `"invalid_body"`.
+- **UI:**
+  - `/[locale]/teams/new` — Server Component shell that loads the persona's available games, plus a Client `CreateTeamForm` with full field set (name / tag / slug / country / city / bio / games / recruiting). Slug auto-suggests from name until manually edited; tag input force-uppercases; chips show `●` for games the persona already plays.
+  - **"Create a team" primary CTA** threaded into both `BookingModal` and `ChallengeModal` no-team branches. Closes the modal and `router.push`-es to `/teams/new`.
+- **Translations:** 22 new EN + AR `teamCreate.*` keys, plus `createTeamCta` on the `challenge.*` and `booking.*` namespaces.
+- **Silent-failure-hunter pass before deploy:** found 12 issues; all P0/P1 fixed (23505 unique-violation translator, consecutive-hyphen rejection, `gameSlugs` dedupe, Zod-error usable message, stale-persona 401). P2 issues filed (persona-switch mid-form coherent but not communicated; `router.push` cast unguarded; `console.error` not `logError` since helper doesn't exist yet — multi-route gap).
+- **Verified end-to-end on prod (`gitSha ba92f04`):**
+  - Fatima (no team in seeds) creates Desert Hawks → 201, team `74a1a8ef-...`.
+  - Duplicate slug `desert-hawks` from Ahmad → 409 `slug_taken` with friendly message (not raw Postgres error).
+  - `slug=a--b` → 400 `invalid_slug` with explicit "no consecutive hyphens" message.
+  - `slug=-bad` (leading hyphen) → 400 `invalid_slug`.
+  - Lowercase tag `low` → 201, normalised to `LOW` server-side.
+  - Empty `gameSlugs` → 400 `invalid_body` message `"gameSlugs: Array must contain at least 1 element(s)"`.
+  - Duplicate `gameSlugs: [valorant, valorant, tekken8]` → 201 (deduped to 2 entries).
+  - **Full pipeline:** Fatima → create team → `/api/me/team` shows Desert Hawks → Fatima books Pixel House for CODM → 201 booking `8eb64b32-...`. Three previously-disconnected slices now compose end-to-end.
+
 ### E4 — Book a venue, end-to-end (commit `a415c3a`, deploy `dpl_3AdBiUXcb2vUpGDbaEDGFCzEqMno`)
 
 Second action-bearing vertical slice. Khaled clicks "Book a slot" on a venue page → picks game / start time / 1-2-3 hr / seats → row in `venue_bookings` → confirmation page renders. Defers payment to E4-S2 (bookings start in `pending_payment` and stay there until Tap is wired up).

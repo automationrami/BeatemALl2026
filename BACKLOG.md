@@ -10,7 +10,7 @@
 
 **Live URL:** https://beat-em-all.vercel.app
 **Stack:** Vercel-native — Vercel Functions + Vercel Postgres (Neon, fra1) + Drizzle ORM + Auth.js v5 (deferred) + Vercel Blob (planned)
-**Build phase:** Full read-layer shipped (E1 + E2 + ORG-1 + venues + tournaments) **and two action-bearing vertical slices** (E6 Challenge a team, E4 Book a venue) live with real DB writes. Auth (E1-S2) still deferred — the persona cookie is the temporary auth proxy.
+**Build phase:** Full read-layer shipped (E1 + E2 + ORG-1 + venues + tournaments) **and three composing action-bearing slices live**: E6 Challenge a team, E4 Book a venue, E2-S2 Create a team. A team-less persona can now found a team and immediately challenge or book — three previously-disconnected slices compose end-to-end. Auth (E1-S2) still deferred — the persona cookie is the temporary auth proxy.
 **Deploy method:** `vercel deploy --prod` from local (no auto-deploy on git push — see `~/.claude/projects/D--BeatEmAll/memory/github-accounts.md` for the why)
 
 **What works end-to-end (2026-05-02):**
@@ -24,6 +24,7 @@
 - `GET/POST /api/challenges`, `GET/PATCH /api/challenges/[id]` — full challenge lifecycle with transactional accept and idempotent re-accept
 - `GET /api/me/team` — lightweight current-persona-team lookup powering the challenge + booking modals' intersection check
 - `GET/POST /api/venues/[slug]/bookings`, `GET /api/bookings`, `GET /api/bookings/[id]` — venue booking with race-safe advisory-locked overlap check, auth-gated detail endpoint
+- `POST /api/teams` — create team + persona-as-captain + team_games in one transaction; 23505-translated `slug_taken` 409 instead of raw Postgres errors; stale-persona resolution returns 401 not 500
 
 **Frontend pages live on prod:**
 - `/[locale]` — Home Feed
@@ -39,6 +40,8 @@
 - `/[locale]/venues/[slug]` — **with working "Book a slot" CTA** opening the booking modal
 - `/[locale]/bookings` — booking inbox for the active persona's teams
 - `/[locale]/bookings/[id]` — booking confirmation with venue / when / where / total breakdown, server-side auth-gated
+- `/[locale]/teams/new` — create-team form (name + tag + slug + country + games + recruiting flag)
+- ChallengeModal + BookingModal "no team" branches now have a working "Create a team →" CTA
 
 ---
 
@@ -73,11 +76,11 @@ Source: `Beatemall/docs/epics/E2-team-formation.md`. Depends on E1 (real users).
 | E2-S0 | Team profile public page (S-E2-01) — frontend mock | ✅ shipped pre-pivot |
 | **E2-S1** | DB tables: teams, team_members, team_games | ✅ Migration `0002_faulty_korath.sql` applied; 3 teams seeded |
 | **E2-S7** | Replace `/teams/[slug]` mock with DB read | ✅ `curl https://beat-em-all.vercel.app/api/teams/sandstorm` returns DB-backed Team |
-| E2-S2 | Create team API + onboarding (S-E2-02) | 🔴 (post-auth) |
-| E2-S3 | Invite player flow + invitation acceptance | 🔴 (post-auth) |
-| E2-S4 | Roles + role transitions (captain transfer) | 🔴 (post-auth) |
-| E2-S5 | Team management dashboard (S-E2-03) | 🔴 (post-auth) |
-| E2-S6 | Disband team flow | 🔴 (post-auth) |
+| **E2-S2** | Create team API + form (S-E2-02) | ✅ `POST /api/teams` + `/[locale]/teams/new`; full pipeline verified Fatima → Desert Hawks → book Pixel House |
+| E2-S3 | Invite player flow + invitation acceptance | 🔴 |
+| E2-S4 | Roles + role transitions (captain transfer) | 🔴 |
+| E2-S5 | Team management dashboard (S-E2-03) | 🔴 |
+| E2-S6 | Disband team flow | 🔴 |
 
 ---
 
@@ -233,14 +236,14 @@ Source: `Beatemall/docs/epics/TM-*.md`. KEC's primary need per `MVP_SCOPE.md` Pa
 
 ## Active backlog — what to ship next (prioritized)
 
-**Phase 1 read-path data + UI layer is COMPLETE.** Every model has real DB-backed APIs AND frontend pages. **Two action-bearing slices are also complete: E6 Challenge a team and E4 Book a venue.** Users can click and actually do something with real DB writes — challenge another team for a Valorant match, accept/reject/counter, book a Valorant slot at GG Arena.
+**Phase 1 read-path data + UI layer is COMPLETE.** Every model has real DB-backed APIs AND frontend pages. **Three composing action-bearing slices are now live: E6 Challenge a team, E4 Book a venue, E2-S2 Create a team.** A team-less persona can found a team and immediately book a venue or challenge another team — the three slices compose end-to-end.
 
 Next priorities — same vertical-slice pattern (schema → queries → API → UI → silent-failure scan → live verification), one usable feature at a time:
 
-1. **E2-S2 Create a team (vertical slice)** — teams are seed-only today. Persona without a team should be able to create one and become its captain. Unlocks the "no team" branches in both ChallengeModal and BookingModal in production. Small + low-risk, no payment dependency.
-2. **TM-2 Register a team for a tournament (vertical slice)** — Sara's Falcon Squad joins KEC Summer Series → row in `tournament_registrations`. KEC's flagship moment.
-3. **E6-S7 + E4-S7 Lifecycle crons** — Vercel Cron flips stale pending challenges → expired and stale `pending_payment` bookings → cancelled. Tiny but closes both lifecycle holes the silent-failure-hunter flagged.
-4. **E4-S2 Cost-split** between two teams (`booking_participants`) — natural follow-up once E2-S2 lets us have multiple captains.
+1. **TM-2 Register a team for a tournament (vertical slice)** — Sara's Falcon Squad joins KEC Summer Series → row in `tournament_registrations`. KEC's flagship moment. Composes with E2-S2 (Fatima's Desert Hawks could register too).
+2. **E6-S7 + E4-S7 Lifecycle crons** — Vercel Cron flips stale pending challenges → expired and stale `pending_payment` bookings → cancelled. Tiny but closes both lifecycle holes the silent-failure-hunter flagged.
+3. **E4-S2 Cost-split** between two teams (`booking_participants`) — once challenges-that-result-in-bookings ships, splitting the cost is the natural next move.
+4. **E2-S3 Invite player to team** — Khaled's Sandstorm adds Ahmad as starter. Closes the team-of-1 limitation captains create with today.
 5. **E1-S2** Phone OTP via Auth.js v5 + Unifonic — replaces the persona cookie shim. Becomes urgent once we have multiple write paths in production.
 6. **PostGIS + E5** — enable `postgis` on Neon, add `players.geo_location` + `teams.geo_location` + `venues.geo_location` columns, build `/api/discover/teams` and `/api/discover/tournaments`.
 7. Smaller UX polish: persona switcher → URL routing, /players + /teams + /orgs directory pages.
