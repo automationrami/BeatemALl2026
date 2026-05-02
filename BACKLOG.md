@@ -10,7 +10,7 @@
 
 **Live URL:** https://beat-em-all.vercel.app
 **Stack:** Vercel-native — Vercel Functions + Vercel Postgres (Neon, fra1) + Drizzle ORM + Auth.js v5 (deferred) + Vercel Blob (planned)
-**Build phase:** Full read-layer shipped (E1 + E2 + ORG-1 + venues + tournaments) **and three composing action-bearing slices live**: E6 Challenge a team, E4 Book a venue, E2-S2 Create a team. A team-less persona can now found a team and immediately challenge or book — three previously-disconnected slices compose end-to-end. Auth (E1-S2) still deferred — the persona cookie is the temporary auth proxy.
+**Build phase:** Full read-layer shipped (E1 + E2 + ORG-1 + venues + tournaments) **and four composing action-bearing slices live**: E6 Challenge a team, E4 Book a venue, E2-S2 Create a team, **TM-2 Register for a tournament**. A team-less persona can found a team, register for an open tournament, book a venue, and challenge another team — all four slices compose end-to-end. Auth (E1-S2) still deferred — the persona cookie is the temporary auth proxy.
 **Deploy method:** `vercel deploy --prod` from local (no auto-deploy on git push — see `~/.claude/projects/D--BeatEmAll/memory/github-accounts.md` for the why)
 
 **What works end-to-end (2026-05-02):**
@@ -25,6 +25,7 @@
 - `GET /api/me/team` — lightweight current-persona-team lookup powering the challenge + booking modals' intersection check
 - `GET/POST /api/venues/[slug]/bookings`, `GET /api/bookings`, `GET /api/bookings/[id]` — venue booking with race-safe advisory-locked overlap check, auth-gated detail endpoint
 - `POST /api/teams` — create team + persona-as-captain + team_games in one transaction; 23505-translated `slug_taken` 409 instead of raw Postgres errors; stale-persona resolution returns 401 not 500
+- `POST/GET /api/tournaments/[slug]/registrations`, `GET/PATCH /api/registrations[/id]` — register a team for an open tournament with race-safe per-tournament advisory-locked capacity check, reactivate-on-rejoin from withdrawn rows, disqualification-preserved guard, 404-on-unauthorised detail (no existence leak)
 
 **Frontend pages live on prod:**
 - `/[locale]` — Home Feed
@@ -42,6 +43,9 @@
 - `/[locale]/bookings/[id]` — booking confirmation with venue / when / where / total breakdown, server-side auth-gated
 - `/[locale]/teams/new` — create-team form (name + tag + slug + country + games + recruiting flag)
 - ChallengeModal + BookingModal "no team" branches now have a working "Create a team →" CTA
+- `/[locale]/tournaments/[slug]` — **with working "Register team" CTA** + registered-teams roster (viewer's own team highlighted)
+- `/[locale]/registrations` — your tournament entries inbox
+- `/[locale]/registrations/[id]` — entry detail with auth-gated view + working withdraw button
 
 ---
 
@@ -199,13 +203,14 @@ Source: `Beatemall/docs/epics/TM-*.md`. KEC's primary need per `MVP_SCOPE.md` Pa
 | **TM-S2** | Seed 6 tournaments (4 KEC sanctioned + Zain×DXE + Hawally Hornets) | ✅ |
 | **TM-S3** | `/api/tournaments/[slug]` public read | ✅ |
 | TM-1 | Tournament creation wizard (S-TM-06) | 🔴 (post-auth) |
-| TM-2 | Registration + check-in (S-TM-02 + S-TM-04) | 🔴 (post-auth) |
-| TM-3 | Bracketing engine (S-TM-09 + S-TM-03) | 🔴 |
+| **TM-2** | Registration vertical slice (S-TM-02): table + queries + APIs + UI + withdraw | ✅ Migration `0006_windy_sunfire.sql`; verified Omar→Tekken Trophy, Khaled→EAFC Cup; reactivate-on-rejoin works |
+| TM-2.5 | Roster lock for registrations (`roster_player_ids`) | 🔴 next |
+| TM-2.6 | Check-in flow (S-TM-04) — depends on staff/venue dashboard | 🔴 |
+| TM-3 | Bracketing engine (S-TM-09 + S-TM-03) | 🔴 next |
 | TM-4 | Match lifecycle, results, disputes | 🔴 |
 | TM-5 | Prizes + payouts | 🔴 (depends on P-2) |
 | TM-6 | Live ops + admin console | 🔴 |
 | TM-7 | Analytics + post-tournament reports | 🔴 |
-| Frontend | `/tournaments` + `/tournaments/[slug]` | 🔵 next |
 
 ---
 
@@ -236,14 +241,14 @@ Source: `Beatemall/docs/epics/TM-*.md`. KEC's primary need per `MVP_SCOPE.md` Pa
 
 ## Active backlog — what to ship next (prioritized)
 
-**Phase 1 read-path data + UI layer is COMPLETE.** Every model has real DB-backed APIs AND frontend pages. **Three composing action-bearing slices are now live: E6 Challenge a team, E4 Book a venue, E2-S2 Create a team.** A team-less persona can found a team and immediately book a venue or challenge another team — the three slices compose end-to-end.
+**Phase 1 read-path data + UI layer is COMPLETE.** Every model has real DB-backed APIs AND frontend pages. **Four composing action-bearing slices are now live: E6 Challenge, E4 Book a venue, E2-S2 Create a team, TM-2 Register for a tournament.** A team-less persona can found a team, register for an open tournament, book a venue, and challenge another team — all four slices compose end-to-end.
 
 Next priorities — same vertical-slice pattern (schema → queries → API → UI → silent-failure scan → live verification), one usable feature at a time:
 
-1. **TM-2 Register a team for a tournament (vertical slice)** — Sara's Falcon Squad joins KEC Summer Series → row in `tournament_registrations`. KEC's flagship moment. Composes with E2-S2 (Fatima's Desert Hawks could register too).
-2. **E6-S7 + E4-S7 Lifecycle crons** — Vercel Cron flips stale pending challenges → expired and stale `pending_payment` bookings → cancelled. Tiny but closes both lifecycle holes the silent-failure-hunter flagged.
-3. **E4-S2 Cost-split** between two teams (`booking_participants`) — once challenges-that-result-in-bookings ships, splitting the cost is the natural next move.
-4. **E2-S3 Invite player to team** — Khaled's Sandstorm adds Ahmad as starter. Closes the team-of-1 limitation captains create with today.
+1. **TM-3 Bracketing engine (S-TM-09)** — once a tournament fills, generate a bracket from registered teams. Single-elim first; double-elim follow-up. Closes the "registration → match" loop end-to-end inside KEC's flagship.
+2. **E2-S3 Invite player to team** — Khaled's Sandstorm adds Ahmad as starter. Closes the team-of-1 limitation captains create with today, and is a prerequisite for "real" tournament registrations (rosters of 5).
+3. **E6-S7 + E4-S7 Lifecycle crons** — Vercel Cron flips stale pending challenges → expired and stale `pending_payment` bookings → cancelled. Tiny but closes both lifecycle holes the silent-failure-hunter flagged.
+4. **Silent-failure follow-up: backport stale-persona-401 pattern** to booking + challenge route surfaces. Multi-route gap noted by silent-failure-hunter on the registration slice — currently only the new routes return clean 401s on stale cookies; older routes still leak generic 500s.
 5. **E1-S2** Phone OTP via Auth.js v5 + Unifonic — replaces the persona cookie shim. Becomes urgent once we have multiple write paths in production.
 6. **PostGIS + E5** — enable `postgis` on Neon, add `players.geo_location` + `teams.geo_location` + `venues.geo_location` columns, build `/api/discover/teams` and `/api/discover/tournaments`.
 7. Smaller UX polish: persona switcher → URL routing, /players + /teams + /orgs directory pages.

@@ -12,6 +12,46 @@ deployment URL and are dated.
 
 Build queue priority pivot 2026-05-02: skip Phone OTP, populate DB with demo data so every model can be tested without auth.
 
+### TM-2 — Register a team for a tournament, end-to-end (commit `861972c`, deploy `dpl_G3EX5uTu2XnKH9bLEQFY4rAvXtiT`)
+
+Fourth action-bearing vertical slice — and KEC's flagship moment. A persona on a team that plays the tournament's game can register for any `registration_open` tournament; their entry shows up on the tournament detail page; they can withdraw and re-register; the founder can finally answer "yes" to "could SEF run a tournament?".
+
+- **Schema:** new `tournament_registrations` table per DOMAIN_MODEL.md §9.2 + `tournament_registration_status` enum. Unique `(tournament_id, team_id)` index. Two supporting indexes (capacity-count + inbox query). Migration `0006_windy_sunfire.sql`.
+- **Domain (`packages/db/src/queries/registration.ts`):**
+  - `registerTeamForTournament` validates tournament status === `registration_open`, team plays the tournament's game (intersection check via `team_games`), persona is on the team. Then enters a transaction that takes a per-tournament `pg_advisory_xact_lock(hashtext(tournament_id))` and runs the capacity check + insert atomically — concurrent POSTs for the same tournament serialise; other tournaments stay parallel.
+  - **Reactivate-on-rejoin:** a `withdrawn` row is flipped back to `confirmed`/`pending_payment` rather than rejected with a unique-key collision (UX: re-register cleanly without an admin reset).
+  - **Disqualification preserved:** explicit guard prevents auto-reactivating disqualified rows; admin verdict stays in place.
+  - `withdrawRegistration` runs auth check **before** the idempotent early-return so withdrawn IDs don't leak existence; blocks withdraw on `checked_in` / `disqualified`.
+  - `loadRegistrationById` + `listRegistrationsFor{Tournament,Player}` with orphan-FK logging (the FKs are `restrict` so these branches shouldn't fire in production; if they do we want loud signal not silent 404s).
+  - Typed `TournamentRegistrationError` class.
+- **APIs:**
+  - `POST /api/tournaments/[slug]/registrations` — Zod-validated body with optional `teamId`. Distinguishes empty body from invalid JSON (no longer silently coerces malformed JSON to `{}` and registers the wrong team).
+  - `GET /api/tournaments/[slug]/registrations` — public list of registered teams.
+  - `GET /api/registrations` — current persona's registrations.
+  - `GET /api/registrations/[id]` — auth-gated detail. Returns **404 (not 403)** for non-authorised viewers, matching the page's `notFound()` stance to avoid leaking existence.
+  - `PATCH /api/registrations/[id]` — `{ action: 'withdraw' }`.
+- **UI:**
+  - `RegisterTeamButton` on `/[locale]/tournaments/[slug]` with three states: `registration_closed` / `already_registered` / available. POSTs empty `{}` so the server resolves the persona's primary team.
+  - **Tournament detail page** now lists registered teams ordered by registration time, with the viewer's own team highlighted in violet. **Logged-out / stale-cookie viewers degrade gracefully** (the page used to 500 because `getCurrentUser()` was unconditional; now wrapped in try/catch).
+  - `/[locale]/registrations` inbox + `/[locale]/registrations/[id]` detail with `WithdrawRegistrationButton`. Both `force-dynamic`.
+- **Translations:** 32 EN + AR `registration.*` keys.
+- **Silent-failure-hunter pass before deploy:** found 16 issues; all P0/P1 fixed:
+  - P0: tournament page no longer 500s for logged-out viewers (graceful degrade); disqualified rows can't auto-reactivate; orphan FK lookups now log loudly; invalid JSON in POST → 400 instead of silently registering primary team.
+  - P1: withdraw auth-check moved above idempotent return; API detail returns 404 not 403 to match page UX; `seedNumber` rendered only when `> 0` (not just non-null).
+  - P2 deferred (per agent classification): persona-switch mid-form silent; `confirm()` not RTL-aware; date rendering not locale-aware in detail page.
+- **Verified end-to-end on prod (`gitSha 861972c`):**
+  - Omar's "Dupe Test" team (tekken8) → registers for KEC Tekken Trophy → 201, `status: confirmed`.
+  - Re-register from same persona → 409 `already_registered`.
+  - Khaled (Sandstorm: valorant + eafc, no tekken8) → 400 `game_mismatch` with localised name.
+  - Sara → in-progress KEC Spring '26 → 409 `registration_closed`.
+  - Fatima (Desert Hawks: valorant + codm, no eafc) → Zain × DXE EAFC Cup → 400 `game_mismatch`.
+  - Khaled (Sandstorm plays eafc) → Zain × DXE EAFC Cup → 201 `confirmed`.
+  - Garbage POST body → 400 `invalid_json` (P0-5 verified, no silent fallback).
+  - Detail as Omar (registrant) → 200; as Sara (not on team) → **404** (existence-leak fix verified).
+  - Withdraw + idempotent re-withdraw → 200 both times.
+  - Sara withdraws Omar's withdrawn entry → 403 (auth check now runs first, P1-2 verified).
+  - Re-register after withdraw → 201 (same registration ID, status flips back to `confirmed` — reactivate-on-rejoin verified).
+
 ### E2-S2 — Create a team, end-to-end (commit `ba92f04`, deploy `dpl_CEF6d8vZcp4mE4hybWSR1FBKfU9b`)
 
 Third action-bearing vertical slice. Team-less personas (Ahmad / Omar / Fatima in seeds) can now found their own team, becoming captain in one transactional insert. Unlocks the previously-dead "no team" branches in `BookingModal` + `ChallengeModal`.
