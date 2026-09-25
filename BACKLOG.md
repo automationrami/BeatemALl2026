@@ -8,7 +8,7 @@
 
 ## Where we are right now (2026-05-02)
 
-**Live URL:** https://beat-em-all.vercel.app
+**Live URL:** https://beat-em-all-v2.vercel.app (new instance, 2026-09-25, fra1 functions + fresh Neon DB) · legacy: https://beat-em-all.vercel.app
 **Stack:** Vercel-native — Vercel Functions + Vercel Postgres (Neon, fra1) + Drizzle ORM + Auth.js v5 (deferred) + Vercel Blob (planned)
 **Build phase:** Full read-layer shipped (E1 + E2 + ORG-1 + venues + tournaments) **and four composing action-bearing slices live**: E6 Challenge a team, E4 Book a venue, E2-S2 Create a team, **TM-2 Register for a tournament**. A team-less persona can found a team, register for an open tournament, book a venue, and challenge another team — all four slices compose end-to-end. Auth (E1-S2) still deferred — the persona cookie is the temporary auth proxy.
 **Deploy method:** `vercel deploy --prod` from local (no auto-deploy on git push — see `~/.claude/projects/D--BeatEmAll/memory/github-accounts.md` for the why)

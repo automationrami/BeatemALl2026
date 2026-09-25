@@ -12,6 +12,18 @@ deployment URL and are dated.
 
 Build queue priority pivot 2026-05-02: skip Phone OTP, populate DB with demo data so every model can be tested without auth.
 
+### Infra — new Vercel instance `beat-em-all-v2` (2026-09-25)
+
+Fresh, fully isolated production instance alongside the original `beat-em-all` project (which is untouched and still live).
+
+- **Project:** `beat-em-all-v2` (id `prj_Eu2v2QbbUTZK54tslwRpqD7Lf44T`), root `apps/web`, Next.js, Node 24.x.
+- **Functions region:** `fra1` (the original project runs functions in `iad1` against a Frankfurt DB). DB round-trip in `/api/health` dropped from ~94–1460 ms to ~3–4 ms.
+- **Database:** new Neon free-tier DB `beat-em-all-v2-db` in `fra1` / `eu-central-1`. All 7 migrations (`0000`–`0006`) applied; demo seed loaded (6 games, 5 personas, 5 orgs, 3 teams, 5 venues, 6 tournaments).
+- **Live URL:** https://beat-em-all-v2.vercel.app
+- **Verified:** `/api/health` → `database.connected:true, region:fra1`; player, team, tournament APIs 200; `/en`, `/ar`, `/en/tournaments`, all 5 venue pages 200; `POST /api/challenges` as Khaled → 201.
+- **Git auto-deploy still not wired:** `vercel git connect` fails with "need admin or write access" because the Vercel GitHub App is not installed on the `automationrami` account. Deploy with `vercel deploy --prod` from local.
+- Local `.vercel/` and `packages/db/.env` now point at v2. Old link + old DB env backed up to `D:\BeatEmAll\.vercel-backup-beat-em-all-20260925\`.
+
 ### TM-2 — Register a team for a tournament, end-to-end (commit `861972c`, deploy `dpl_G3EX5uTu2XnKH9bLEQFY4rAvXtiT`)
 
 Fourth action-bearing vertical slice — and KEC's flagship moment. A persona on a team that plays the tournament's game can register for any `registration_open` tournament; their entry shows up on the tournament detail page; they can withdraw and re-register; the founder can finally answer "yes" to "could SEF run a tournament?".
