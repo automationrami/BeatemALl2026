@@ -611,7 +611,8 @@
     "cancelledNotice": "أُلغيت هذه البطولة. سُحبت المشاركات وأُعيدت مدفوعات القسائم.",
     "manageCta": "إدارة",
     "aboutTitle": "عن البطولة",
-    "rulesLink": "اقرأ القوانين"
+    "rulesLink": "اقرأ القوانين",
+    "noPrize": "بدون جوائز مالية"
   },
   "organization": {
     "tierFederation": "اتحاد",

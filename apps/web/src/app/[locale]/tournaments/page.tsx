@@ -124,7 +124,7 @@ export default async function TournamentsIndexPage({ params }: PageProps) {
                       </b>
                     ) : (
                       <b className="font-display text-[18px] font-bold leading-[28px] text-ink">
-                        {t('free')}
+                        {t('noPrize')}
                       </b>
                     )}
                   </div>

@@ -12,6 +12,18 @@ deployment URL and are dated.
 
 Build queue priority pivot 2026-05-02: skip Phone OTP, populate DB with demo data so every model can be tested without auth.
 
+### Pilot platform — every role end to end (2026-09-26)
+
+Founder request: "create user stories … test each story end to end … a ready to go platform". Stories: `docs/USER_STORIES.md` (P-01…09, T-01…09, V-01…07, M-01…09, A-01…02).
+
+- **Accounts (E1)**: phone OTP sign-up/sign-in (`/api/auth/otp`, `/api/auth/verify`, `/api/auth/signout`), HMAC-signed session cookie (`AUTH_SECRET`), mandatory profile completion (`/api/onboarding`, proxy redirect), `/api/me`. Pilot mode shows the code on screen until `UNIFONIC_APP_SID` is set. Demo personas remain for signed-out browsing. Home feed built from the account's own data.
+- **Venue owners (E3/E4)**: `/venues/register` application → Beat'Em All review → live; `/manage/venues/[slug]` edit (details, games and seats, price, opening hours, cancellation window, accepting bookings) and bookings dashboard (check in, complete, no-show, cancel with reason + voucher refund). Bookings must fall inside opening hours; teams cancel within the venue's window.
+- **Tournament managers (TM-1…4, FED-1)**: `/organizers/apply` → review; `/manage/tournaments/new` and console: open/close registration, entries (disqualify, reinstate, check-in), start → single-elimination bracket with byes, results, auto-advance, standings, complete (federation ranking points), cancel with refunds. Public bracket and standings.
+- **Teams and players (E2)**: invitations by username, accept/decline, promote/demote, remove, transfer captaincy, leave, edit, disband; profile edit; real rosters.
+- **Beat'Em All ops (A)**: `/admin` review queue and platform totals. Seeded ops account (+965 5000 0000).
+- **Notifications (P-1, in-app)**: bell with unread count, `/notifications`, 26 event types across all roles.
+- **Data**: migration `0009` — `brackets`, `tournament_rounds`, `match_results`, `notifications`, `auth_otps`; venue hours and review notes; tournament match columns on `matches`.
+
 ### Vouchers — prepaid payment option (2026-09-26)
 
 Founder request: a voucher is a payment option; with a voucher a team can book as much as it wants until card payments (Tap, P-2) go live.

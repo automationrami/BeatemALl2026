@@ -125,7 +125,7 @@ export default async function TournamentDetailPage({ params }: PageProps) {
           prize={
             tour.prizePoolKWD > 0
               ? t('moneyKwd', { amount: formatAmount(tour.prizePoolKWD) })
-              : t('free')
+              : t('noPrize')
           }
           facts={facts}
           image={tour.coverImageUrl}

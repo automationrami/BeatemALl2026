@@ -611,7 +611,8 @@
     "cancelledNotice": "This tournament was cancelled. Entries were withdrawn and voucher payments refunded.",
     "manageCta": "Manage",
     "aboutTitle": "About",
-    "rulesLink": "Read the rules"
+    "rulesLink": "Read the rules",
+    "noPrize": "No prize pool"
   },
   "organization": {
     "tierFederation": "Federation",
