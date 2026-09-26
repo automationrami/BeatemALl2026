@@ -74,6 +74,22 @@ Full report (92 scenarios by role, render sweep, evidence): https://claude.ai/ar
 
 ---
 
+## Pilot stories — all roles end to end (2026-09-26)
+
+Catalogue: `docs/USER_STORIES.md`. Report (36 stories, 163 scenarios, 292 page loads): https://claude.ai/artifact/WA3konxGqosiGVQ3JS3ssL
+
+| Role | Stories | Status |
+|---|---|---|
+| Player | P-01 sign-up … P-09 Arabic | ✅ 9/9 (SMS delivery of codes pending Unifonic) |
+| Team captain | T-01 create … T-09 tournament entry | ✅ 9/9 |
+| Venue owner | V-01 register … V-07 vouchers | ✅ 7/7 |
+| Tournament manager | M-01 apply … M-09 cancel | ✅ 9/9 (single elimination only) |
+| Beat'Em All ops | A-01 review, A-02 overview | ✅ 2/2 |
+
+Still open: Unifonic SMS for codes 🔴 · Tap card payments + split 🔴 · push/SMS/WhatsApp/email notifications 🔴 · FED-2 reporting 🔴 · BR-1 sponsorship 🔴 · challenge expiry (US-E6.6) 🔴 · team-reported results + disputes 🔴 · booking reschedule, resubmit rejected venue 🔴 · double elimination / round robin 🔴.
+
+---
+
 ## Vouchers (founder request 2026-09-26, not in EPICS yet)
 
 | Story | Status |
