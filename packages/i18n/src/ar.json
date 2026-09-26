@@ -395,7 +395,7 @@
     "seatsAvailable": "{count} مقاعد",
     "priceEyebrow": "السعر التقديري",
     "priceLine": "{rate} د.ك × {seats} مقعد × {hours} ساعة = {total} د.ك",
-    "priceFootnote": "يُحتسب عند التأكيد. الدفع متاح فور تفعيل Tap Payments.",
+    "priceFootnote": "ادفع الآن بقسيمة، أو احجز المقاعد وادفع عند تفعيل الدفع بالبطاقة.",
     "submitCta": "احجز الموعد",
     "cancelCta": "إلغاء",
     "errorInvalidDate": "اختر تاريخًا ووقتًا صحيحين.",

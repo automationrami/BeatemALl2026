@@ -395,7 +395,7 @@
     "seatsAvailable": "{count} seats",
     "priceEyebrow": "ESTIMATED PRICE",
     "priceLine": "{rate} KWD × {seats} seat(s) × {hours} hr = {total} KWD",
-    "priceFootnote": "Charged on confirmation. Payment opens once Tap Payments is wired up.",
+    "priceFootnote": "Pay now with a voucher, or hold the seats and pay once card payments go live.",
     "submitCta": "Book slot",
     "cancelCta": "Cancel",
     "errorInvalidDate": "Pick a valid date and time.",
