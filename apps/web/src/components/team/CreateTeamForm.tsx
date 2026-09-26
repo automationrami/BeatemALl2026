@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Button, GameCard } from '@beat-em-all/ui';
+import { apiErrorMessage, readApiError } from '@/lib/api-error';
 
 type Game = {
   slug: string;
@@ -103,8 +104,7 @@ export function CreateTeamForm({ locale, defaultCountry, games, viewerHasTeam }:
         }),
       });
       if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
-        throw new Error(body.message ?? body.error ?? `HTTP ${res.status}`);
+        throw new Error(apiErrorMessage(t, await readApiError(res), `HTTP ${res.status}`));
       }
       const json = (await res.json()) as { team: { slug: string } };
       router.push(`/${locale}/teams/${json.team.slug}`);

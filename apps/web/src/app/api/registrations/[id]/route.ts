@@ -8,6 +8,7 @@ import { z } from 'zod';
 import {
   TournamentRegistrationError,
   loadRegistrationById,
+  loadRegistrationVoucherPayment,
   withdrawRegistration,
 } from '@beat-em-all/db/queries';
 import { getCurrentUser } from '@/lib/current-user';
@@ -47,7 +48,8 @@ export async function GET(_request: Request, { params }: Params) {
       return NextResponse.json({ error: 'not_found' }, { status: 404 });
     }
 
-    return NextResponse.json(data, { headers: { 'cache-control': 'no-store' } });
+    const payment = await loadRegistrationVoucherPayment(id);
+    return NextResponse.json({ ...data, payment }, { headers: { 'cache-control': 'no-store' } });
   } catch (err) {
     console.error('[GET /api/registrations/[id]] failed', err);
     return NextResponse.json(
@@ -100,6 +102,8 @@ export async function PATCH(request: Request, { params }: Params) {
         team_not_found: 404,
         not_found: 404,
         forbidden: 403,
+        captain_only: 403,
+        roster_too_small: 400,
         registration_closed: 409,
         game_mismatch: 400,
         tournament_full: 409,

@@ -37,7 +37,7 @@ export default async function OrgDetailPage({ params }: PageProps) {
 
   // Open and upcoming events hosted by this organization (the public tournaments feed,
   // narrowed to this organizer).
-  const tournaments = (await listSurfaceableTournaments()).filter((x) => x.organizer === org.name);
+  const tournaments = await listSurfaceableTournaments({ organizationSlug: org.slug });
 
   const tierLabel =
     org.tier === 'federation'

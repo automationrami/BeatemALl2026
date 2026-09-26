@@ -44,10 +44,7 @@ export async function POST(request: Request) {
     const message = firstField
       ? `${firstField[0]}: ${(firstField[1] as string[])[0]}`
       : 'Some fields are invalid.';
-    return NextResponse.json(
-      { error: 'invalid_body', message, issues: flat },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: 'invalid_body', message, issues: flat }, { status: 400 });
   }
 
   let me;
@@ -88,6 +85,7 @@ export async function POST(request: Request) {
         no_games: 400,
         unknown_game: 400,
         slug_taken: 409,
+        name_taken: 409,
         forbidden: 403,
         insert_failed: 500,
       } as const;

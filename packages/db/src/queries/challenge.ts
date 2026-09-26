@@ -7,7 +7,7 @@
  * write actions in Phase 1. Real Auth.js takes over in Phase 9 / E1-S2.
  */
 
-import { and, desc, eq, inArray, or } from 'drizzle-orm';
+import { and, count, desc, eq, gte, inArray, or } from 'drizzle-orm';
 import { getDb } from '../client';
 import { challenges, challengeNegotiations } from '../schema/challenges';
 import type { ChallengeRow } from '../schema/challenges';
@@ -18,6 +18,16 @@ import type { GameRow } from '../schema/games';
 import { matches } from '../schema/matches';
 import { teamMembers } from '../schema/team_members';
 import type { GameId } from '@beat-em-all/types';
+import { isTeamLeaderRole, loadTeamRole } from './roles';
+import { isUuid } from './ids';
+
+/** US-E6.1 anti-spam: open challenges a team may have at once, and sends per rolling day. */
+export const MAX_PENDING_CHALLENGES = 3;
+export const MAX_CHALLENGES_PER_DAY = 10;
+/** US-E6.3: counter-proposals allowed after the original proposal. */
+export const MAX_COUNTER_PROPOSALS = 5;
+
+const OPEN_STATUSES = ['pending', 'negotiating'] as const;
 
 export type ChallengeWithRelations = {
   challenge: ChallengeRow;
@@ -40,6 +50,7 @@ export type ChallengeDirection = 'incoming' | 'outgoing' | 'all';
  * (currently: persona is captain or co_captain of challenger).
  */
 export async function createChallenge(input: {
+  byPlayerId: string;
   challengerTeamId: string;
   challengedTeamId: string;
   gameId: string;
@@ -59,7 +70,45 @@ export async function createChallenge(input: {
     );
   }
 
+  const role = await loadTeamRole(input.byPlayerId, input.challengerTeamId);
+  if (!role)
+    throw new ChallengeError('forbidden', 'Only members of the team can send its challenges.');
+  if (!isTeamLeaderRole(role)) {
+    throw new ChallengeError('captain_only', 'Only the captain or co-captain can send challenges.');
+  }
+
   const db = getDb();
+  const [open] = await db
+    .select({ n: count() })
+    .from(challenges)
+    .where(
+      and(
+        eq(challenges.challengerTeamId, input.challengerTeamId),
+        inArray(challenges.status, [...OPEN_STATUSES]),
+      ),
+    );
+  if ((open?.n ?? 0) >= MAX_PENDING_CHALLENGES) {
+    throw new ChallengeError(
+      'too_many_pending',
+      `Your team already has ${MAX_PENDING_CHALLENGES} open challenges. Wait for a reply before sending more.`,
+    );
+  }
+  const [today] = await db
+    .select({ n: count() })
+    .from(challenges)
+    .where(
+      and(
+        eq(challenges.challengerTeamId, input.challengerTeamId),
+        gte(challenges.createdAt, new Date(Date.now() - 86_400_000)),
+      ),
+    );
+  if ((today?.n ?? 0) >= MAX_CHALLENGES_PER_DAY) {
+    throw new ChallengeError(
+      'daily_limit',
+      `Teams can send ${MAX_CHALLENGES_PER_DAY} challenges a day. Try again tomorrow.`,
+    );
+  }
+
   const rows = await db
     .insert(challenges)
     .values({
@@ -93,6 +142,7 @@ export async function createChallenge(input: {
 }
 
 export async function loadChallengeById(id: string): Promise<ChallengeWithRelations | null> {
+  if (!isUuid(id)) return null;
   const db = getDb();
   const challengerAlias = teams;
   const challengedAlias = teams; // we'll use raw SQL for two joins below
@@ -215,14 +265,82 @@ export async function loadChallengeNegotiations(challengeId: string) {
 }
 
 /**
- * Accept a pending or negotiating challenge. Verifies the persona belongs to the
- * challenged team. Creates a `matches` row and links it back to the challenge.
+ * Whose move is it? The side that did NOT make the latest proposal responds to it
+ * (US-E6.3 "goes to challenger for acceptance", US-E6.4 "captain (either side)").
+ */
+export async function loadRespondingTeamId(challenge: ChallengeRow): Promise<string> {
+  const db = getDb();
+  const [latest] = await db
+    .select({ by: challengeNegotiations.proposedByTeamId })
+    .from(challengeNegotiations)
+    .where(eq(challengeNegotiations.challengeId, challenge.id))
+    .orderBy(desc(challengeNegotiations.createdAt))
+    .limit(1);
+  const proposer = latest?.by ?? challenge.challengerTeamId;
+  return proposer === challenge.challengedTeamId
+    ? challenge.challengerTeamId
+    : challenge.challengedTeamId;
+}
+
+/** Only members of either team can see a challenge (its message and terms are private). */
+export async function canViewChallenge(
+  challenge: ChallengeRow,
+  playerId: string,
+): Promise<boolean> {
+  const db = getDb();
+  const rows = await db
+    .select({ teamId: teamMembers.teamId })
+    .from(teamMembers)
+    .where(
+      and(
+        eq(teamMembers.playerId, playerId),
+        inArray(teamMembers.teamId, [challenge.challengerTeamId, challenge.challengedTeamId]),
+      ),
+    )
+    .limit(1);
+  return rows.length > 0;
+}
+
+/** The responding team's captain or co-captain may act; everyone else gets a precise error. */
+async function requireResponder(
+  challenge: ChallengeRow,
+  playerId: string,
+  verb: 'accept' | 'reject' | 'counter',
+): Promise<string> {
+  const responding = await loadRespondingTeamId(challenge);
+  const role = await loadTeamRole(playerId, responding);
+  if (!role) {
+    const other =
+      responding === challenge.challengerTeamId
+        ? challenge.challengedTeamId
+        : challenge.challengerTeamId;
+    if (await loadTeamRole(playerId, other)) {
+      throw new ChallengeError(
+        'not_your_turn',
+        'Waiting for the other team to respond to your proposal.',
+      );
+    }
+    throw new ChallengeError('forbidden', `Only the two teams in this challenge can ${verb} it.`);
+  }
+  if (!isTeamLeaderRole(role)) {
+    throw new ChallengeError(
+      'captain_only',
+      `Only the captain or co-captain can ${verb} a challenge.`,
+    );
+  }
+  return responding;
+}
+
+/**
+ * Accept the latest proposal. The captain of the side it was sent to accepts: the
+ * challenged team for the original, the challenger for a counter. Creates the match.
  */
 export async function acceptChallenge(input: {
   challengeId: string;
   byPlayerId: string;
 }): Promise<{ challenge: ChallengeRow; matchId: string }> {
   const db = getDb();
+  if (!isUuid(input.challengeId)) throw new ChallengeError('not_found', 'Challenge not found.');
   const cRows = await db
     .select()
     .from(challenges)
@@ -244,23 +362,7 @@ export async function acceptChallenge(input: {
     );
   }
 
-  // Authorisation: actor must be a member of the challenged team.
-  const memberRows = await db
-    .select({ teamId: teamMembers.teamId })
-    .from(teamMembers)
-    .where(
-      and(
-        eq(teamMembers.playerId, input.byPlayerId),
-        eq(teamMembers.teamId, challenge.challengedTeamId),
-      ),
-    )
-    .limit(1);
-  if (memberRows.length === 0) {
-    throw new ChallengeError(
-      'forbidden',
-      'Only members of the challenged team can accept this challenge.',
-    );
-  }
+  await requireResponder(challenge, input.byPlayerId, 'accept');
 
   // Wrap match insert + challenge update in a transaction so a partial failure can't
   // leave an orphan match row + a still-pending challenge.
@@ -302,6 +404,7 @@ export async function rejectChallenge(input: {
   byPlayerId: string;
 }): Promise<ChallengeRow> {
   const db = getDb();
+  if (!isUuid(input.challengeId)) throw new ChallengeError('not_found', 'Challenge not found.');
   const cRows = await db
     .select()
     .from(challenges)
@@ -316,22 +419,7 @@ export async function rejectChallenge(input: {
     );
   }
 
-  const memberRows = await db
-    .select({ teamId: teamMembers.teamId })
-    .from(teamMembers)
-    .where(
-      and(
-        eq(teamMembers.playerId, input.byPlayerId),
-        eq(teamMembers.teamId, challenge.challengedTeamId),
-      ),
-    )
-    .limit(1);
-  if (memberRows.length === 0) {
-    throw new ChallengeError(
-      'forbidden',
-      'Only members of the challenged team can reject this challenge.',
-    );
-  }
+  await requireResponder(challenge, input.byPlayerId, 'reject');
 
   const updateRows = await db
     .update(challenges)
@@ -346,8 +434,8 @@ export async function rejectChallenge(input: {
 
 /**
  * Counter-propose: append a new negotiation row with new terms; flip status to negotiating.
- * Either side can counter (challenger after their own proposal, challenged on the original).
- * Authorisation: actor must be a member of the team they're proposing on behalf of.
+ * Turn-based: only the side answering the latest proposal can counter it, at most
+ * MAX_COUNTER_PROPOSALS times, after which the challenge expires (US-E6.3).
  */
 export async function counterChallenge(input: {
   challengeId: string;
@@ -359,6 +447,7 @@ export async function counterChallenge(input: {
   message?: string | null;
 }): Promise<ChallengeRow> {
   const db = getDb();
+  if (!isUuid(input.challengeId)) throw new ChallengeError('not_found', 'Challenge not found.');
   const cRows = await db
     .select()
     .from(challenges)
@@ -373,21 +462,29 @@ export async function counterChallenge(input: {
     );
   }
 
-  const memberRows = await db
-    .select({ teamId: teamMembers.teamId })
-    .from(teamMembers)
-    .where(
-      and(
-        eq(teamMembers.playerId, input.byPlayerId),
-        inArray(teamMembers.teamId, [challenge.challengerTeamId, challenge.challengedTeamId]),
-      ),
-    )
-    .limit(1);
-  if (memberRows.length === 0) {
-    throw new ChallengeError('forbidden', 'Only members of either side can counter-propose.');
+  if (input.proposedDateRangeEnd <= input.proposedDateRangeStart) {
+    throw new ChallengeError('invalid_date_range', 'The proposed end must be after the start.');
   }
-  const proposedByTeamId = memberRows[0]?.teamId;
-  if (!proposedByTeamId) throw new ChallengeError('forbidden', 'Could not resolve proposing team.');
+  if (input.proposedDateRangeStart.getTime() < Date.now() - 60_000) {
+    throw new ChallengeError('invalid_date_range', "The proposed start can't be in the past.");
+  }
+  const proposedByTeamId = await requireResponder(challenge, input.byPlayerId, 'counter');
+
+  const [made] = await db
+    .select({ n: count() })
+    .from(challengeNegotiations)
+    .where(eq(challengeNegotiations.challengeId, challenge.id));
+  // The first negotiation row is the original proposal, not a counter.
+  if ((made?.n ?? 1) - 1 >= MAX_COUNTER_PROPOSALS) {
+    await db
+      .update(challenges)
+      .set({ status: 'expired', updatedAt: new Date() })
+      .where(eq(challenges.id, challenge.id));
+    throw new ChallengeError(
+      'counter_limit_reached',
+      `This challenge reached ${MAX_COUNTER_PROPOSALS} counter-proposals and has expired. Send a fresh challenge.`,
+    );
+  }
 
   await db.insert(challengeNegotiations).values({
     challengeId: challenge.id,
@@ -452,6 +549,11 @@ export class ChallengeError extends Error {
       | 'invalid_state'
       | 'invalid_date_range'
       | 'cannot_challenge_self'
+      | 'captain_only'
+      | 'not_your_turn'
+      | 'too_many_pending'
+      | 'daily_limit'
+      | 'counter_limit_reached'
       | 'insert_failed'
       | 'update_failed',
     message: string,

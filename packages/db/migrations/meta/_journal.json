@@ -57,6 +57,13 @@
       "when": 1790431802212,
       "tag": "0007_steady_the_professor",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790441200519,
+      "tag": "0008_misty_echo",
+      "breakpoints": true
     }
   ]
 }

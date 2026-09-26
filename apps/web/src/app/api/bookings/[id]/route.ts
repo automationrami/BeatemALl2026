@@ -1,13 +1,17 @@
 /**
  * GET /api/bookings/[id] — booking detail.
  *
- * Auth: only the booker (by user id) or any member of the booking team can read.
+ * Auth: the booker, any member of the booking team, or a manager of the venue's organisation.
  * UUIDs are not unguessable enough to count as authorization on their own; this
  * endpoint mirrors the inbox's predicate so a booking can never leak across teams.
  */
 
 import { NextResponse } from 'next/server';
-import { loadBookingById } from '@beat-em-all/db/queries';
+import {
+  listManagedVenueIds,
+  loadBookingById,
+  loadBookingVoucherPayment,
+} from '@beat-em-all/db/queries';
 import { getCurrentUser } from '@/lib/current-user';
 
 export const runtime = 'nodejs';
@@ -26,11 +30,14 @@ export async function GET(_request: Request, { params }: Params) {
     const me = await getCurrentUser();
     const isBooker = data.booking.bookedByUserId === me.userId;
     const isTeammate = me.teamMemberships.some((m) => m.teamId === data.booking.bookedByTeamId);
-    if (!isBooker && !isTeammate) {
+    const isVenueManager =
+      !isBooker && !isTeammate && (await listManagedVenueIds(me.userId)).includes(data.venue.id);
+    if (!isBooker && !isTeammate && !isVenueManager) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
 
-    return NextResponse.json(data, { headers: { 'cache-control': 'no-store' } });
+    const payment = await loadBookingVoucherPayment(id);
+    return NextResponse.json({ ...data, payment }, { headers: { 'cache-control': 'no-store' } });
   } catch (err) {
     console.error('[GET /api/bookings/[id]] failed', err);
     return NextResponse.json(

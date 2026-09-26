@@ -9,6 +9,8 @@ import { PERSONAS, useActAsPersona } from '@beat-em-all/api-client';
 import { GAMES } from '@beat-em-all/mock-data';
 import type { GameId } from '@beat-em-all/types';
 import { formatAmount } from './format';
+import { apiErrorMessage, readApiError } from '@/lib/api-error';
+import { VoucherPreviewLine, type VoucherPreview } from '@/components/voucher/VoucherPreviewLine';
 
 type SelfTeam = {
   teamId: string;
@@ -48,6 +50,7 @@ export function BookingModal({
   onClose,
 }: Props) {
   const t = useTranslations('booking');
+  const tv = useTranslations('vouchers');
   const locale = useLocale();
   const router = useRouter();
   const personaId = useActAsPersona((s) => s.activePersonaId);
@@ -80,6 +83,11 @@ export function BookingModal({
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Payment: hold the slot and pay later, or pay in full now with a voucher.
+  const [payWith, setPayWith] = useState<'later' | 'voucher'>('later');
+  const [voucherCode, setVoucherCode] = useState('');
+  const [voucherPreview, setVoucherPreview] = useState<VoucherPreview | null>(null);
+  const [checkingVoucher, setCheckingVoucher] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -133,6 +141,33 @@ export function BookingModal({
     return Math.round(durationHours * seatsCount * venueHourlyRateKwd * 100) / 100;
   }, [durationHours, seatsCount, venueHourlyRateKwd]);
 
+  // The price changes with seats and duration, so a previous check no longer applies.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setVoucherPreview(null);
+  }, [totalKwd]);
+
+  const checkVoucher = async () => {
+    const code = voucherCode.trim();
+    if (code.length < 4) return;
+    setCheckingVoucher(true);
+    setVoucherPreview(null);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/vouchers/${encodeURIComponent(code)}?venue=${encodeURIComponent(venueSlug)}&amount=${totalKwd}`,
+        { cache: 'no-store' },
+      );
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(apiErrorMessage(tv, body, `HTTP ${res.status}`));
+      setVoucherPreview((body as { preview: VoucherPreview }).preview);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setCheckingVoucher(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // Guard against double-submit via fast double-click or Enter-key when the disabled
@@ -165,11 +200,13 @@ export function BookingModal({
           endAt: endDate.toISOString(),
           seatsCount,
           notes: notes.trim() || null,
+          voucherCode: payWith === 'voucher' ? voucherCode.trim() : null,
         }),
       });
       if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
-        throw new Error(body.message ?? body.error ?? `HTTP ${res.status}`);
+        const body = await readApiError(res);
+        const key = `errors.${body.error ?? ''}`;
+        throw new Error(tv.has(key) ? tv(key) : apiErrorMessage(t, body, `HTTP ${res.status}`));
       }
       const json = (await res.json()) as { booking: { booking: { id: string } } };
       onClose();
@@ -182,7 +219,9 @@ export function BookingModal({
     }
   };
 
-  const personaSlug = PERSONAS[personaId]?.slug ?? 'khaled-al-mutairi';
+  const persona = PERSONAS[personaId];
+  const personaName =
+    (locale === 'ar' ? persona?.arabicName : persona?.displayName) ?? persona?.slug ?? '';
 
   return (
     <div
@@ -398,6 +437,63 @@ export function BookingModal({
                   </p>
                 </div>
 
+                <div className="grid gap-3">
+                  <p className="bx-eyebrow" id="booking-payment-label">
+                    {tv('paymentLabel')}
+                  </p>
+                  <div className="bx-seg" role="group" aria-labelledby="booking-payment-label">
+                    <button
+                      type="button"
+                      aria-pressed={payWith === 'later'}
+                      onClick={() => setPayWith('later')}
+                      data-testid="booking-pay-later"
+                    >
+                      {tv('payLater')}
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={payWith === 'voucher'}
+                      onClick={() => setPayWith('voucher')}
+                      data-testid="booking-pay-voucher"
+                    >
+                      {tv('payVoucher')}
+                    </button>
+                  </div>
+                  {payWith === 'voucher' ? (
+                    <div className="grid gap-2">
+                      <label className="bx-eyebrow" htmlFor="booking-voucher">
+                        {tv('codeLabel')}
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        <input
+                          id="booking-voucher"
+                          value={voucherCode}
+                          onChange={(e) => {
+                            setVoucherCode(e.target.value.toUpperCase());
+                            setVoucherPreview(null);
+                          }}
+                          placeholder={tv('codePlaceholder')}
+                          autoComplete="off"
+                          spellCheck={false}
+                          dir="ltr"
+                          className="bx-field min-w-0 flex-1 font-mono uppercase tracking-[0.08em]"
+                          required
+                        />
+                        <Button
+                          variant="outline"
+                          type="button"
+                          onClick={checkVoucher}
+                          disabled={checkingVoucher || voucherCode.trim().length < 4}
+                          data-testid="booking-voucher-check"
+                        >
+                          {checkingVoucher ? tv('checking') : tv('checkCta')}
+                        </Button>
+                      </div>
+                      {voucherPreview ? <VoucherPreviewLine preview={voucherPreview} /> : null}
+                    </div>
+                  ) : null}
+                </div>
+
                 {error ? (
                   <p
                     className="rounded-md bg-negative-soft px-4 py-3 font-display text-[13px] font-medium leading-relaxed text-negative"
@@ -412,7 +508,7 @@ export function BookingModal({
                     className="font-display text-[12px] font-medium text-ink-muted"
                     data-testid="acting-as"
                   >
-                    {t('actingAs', { persona: personaSlug })}
+                    {t('actingAs', { persona: personaName })}
                   </p>
                   <div className="flex gap-2">
                     <Button variant="ghost" type="button" onClick={onClose} disabled={submitting}>
@@ -421,10 +517,19 @@ export function BookingModal({
                     <Button
                       variant="gold"
                       type="submit"
-                      disabled={submitting || !gameSlug}
+                      disabled={
+                        submitting ||
+                        !gameSlug ||
+                        (payWith === 'voucher' &&
+                          (voucherCode.trim().length < 4 || voucherPreview?.ok === false))
+                      }
                       data-testid="booking-submit"
                     >
-                      {submitting ? t('submitting') : t('submitCta')}
+                      {submitting
+                        ? t('submitting')
+                        : payWith === 'voucher'
+                          ? tv('bookAndPay')
+                          : t('submitCta')}
                     </Button>
                   </div>
                 </div>

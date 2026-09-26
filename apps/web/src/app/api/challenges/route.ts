@@ -109,6 +109,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'game_not_found' }, { status: 404 });
     }
 
+    if (challengedTeam.id === myTeam.teamId) {
+      return NextResponse.json(
+        { error: 'cannot_challenge_self', message: 'A team cannot challenge itself.' },
+        { status: 400 },
+      );
+    }
+
     // Validate that both teams play this game (intersection check).
     const sharedGames = await intersectionGamesBetweenTeams(myTeam.teamId, challengedTeam.id);
     if (!sharedGames.includes(parsed.data.gameSlug as (typeof sharedGames)[number])) {
@@ -122,6 +129,7 @@ export async function POST(request: Request) {
     }
 
     const challenge = await createChallenge({
+      byPlayerId: me.playerId,
       challengerTeamId: myTeam.teamId,
       challengedTeamId: challengedTeam.id,
       gameId: game.id,
@@ -134,10 +142,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ challenge }, { status: 201 });
   } catch (err) {
     if (err instanceof ChallengeError) {
-      return NextResponse.json(
-        { error: err.code, message: err.message },
-        { status: err.code === 'forbidden' ? 403 : 400 },
-      );
+      const status =
+        err.code === 'forbidden' || err.code === 'captain_only'
+          ? 403
+          : err.code === 'too_many_pending'
+            ? 409
+            : err.code === 'daily_limit'
+              ? 429
+              : 400;
+      return NextResponse.json({ error: err.code, message: err.message }, { status });
     }
 
     console.error('[POST /api/challenges] failed', err);

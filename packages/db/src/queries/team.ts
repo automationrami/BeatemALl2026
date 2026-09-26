@@ -10,7 +10,7 @@
  * for those fields gets replaced one at a time.
  */
 
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import type { GameId, Team, TeamMember, TeamRole } from '@beat-em-all/types';
 import { getTeamBySlug as getMockTeamBySlug, GAMES } from '@beat-em-all/mock-data';
 import { getDb } from '../client';
@@ -217,6 +217,16 @@ export async function createTeam(input: {
     throw new TeamError('slug_taken', `The slug "${slug}" is already in use. Pick another.`);
   }
 
+  // Names are unique too (US-2.1), compared case-insensitively.
+  const [sameName] = await db
+    .select({ id: teams.id })
+    .from(teams)
+    .where(sql`lower(${teams.name}) = lower(${name})`)
+    .limit(1);
+  if (sameName) {
+    throw new TeamError('name_taken', `A team called "${name}" already exists. Pick another name.`);
+  }
+
   // Resolve game ids from slugs.
   const gameRows = await db
     .select({ id: games.id, slug: games.slug })
@@ -272,6 +282,12 @@ export async function createTeam(input: {
   } catch (err) {
     if (err instanceof TeamError) throw err;
     if (typeof err === 'object' && err && (err as { code?: string }).code === '23505') {
+      if ((err as { constraint_name?: string }).constraint_name === 'teams_name_lower_idx') {
+        throw new TeamError(
+          'name_taken',
+          `A team called "${name}" already exists. Pick another name.`,
+        );
+      }
       throw new TeamError('slug_taken', `The slug "${slug}" is already in use. Pick another.`);
     }
     throw err;
@@ -319,6 +335,7 @@ export class TeamError extends Error {
       | 'no_games'
       | 'unknown_game'
       | 'slug_taken'
+      | 'name_taken'
       | 'forbidden'
       | 'insert_failed',
     message: string,

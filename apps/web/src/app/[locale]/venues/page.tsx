@@ -5,6 +5,10 @@ import { EmptyState, PageHead, buttonClass } from '@beat-em-all/ui';
 import { listVenues } from '@beat-em-all/db/queries';
 import { VenueCard } from '@/components/venue/VenueCard';
 
+// Live data: new tournaments and venues appear without a redeploy.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 type PageProps = { params: Promise<{ locale: string }> };
 
 export default async function VenuesIndexPage({ params }: PageProps) {

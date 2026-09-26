@@ -28,10 +28,7 @@ export async function GET(_request: Request, { params }: Params) {
   if (!slug) return NextResponse.json({ error: 'invalid_slug' }, { status: 400 });
   try {
     const registrations = await listRegistrationsForTournament(slug);
-    return NextResponse.json(
-      { registrations },
-      { headers: { 'cache-control': 'no-store' } },
-    );
+    return NextResponse.json({ registrations }, { headers: { 'cache-control': 'no-store' } });
   } catch (err) {
     console.error('[GET /api/tournaments/[slug]/registrations] failed', err);
     return NextResponse.json(
@@ -117,6 +114,8 @@ export async function POST(request: Request, { params }: Params) {
         team_not_found: 404,
         not_found: 404,
         forbidden: 403,
+        captain_only: 403,
+        roster_too_small: 400,
         registration_closed: 409,
         game_mismatch: 400,
         tournament_full: 409,

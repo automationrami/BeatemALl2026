@@ -23,6 +23,9 @@ import { teams } from '../schema/teams';
 import type { TeamRow } from '../schema/teams';
 import { teamMembers } from '../schema/team_members';
 import { users } from '../schema/users';
+import { isTeamLeaderRole, loadTeamRole } from './roles';
+import { redeemVoucherInTx } from './voucher';
+import { isUuid } from './ids';
 
 export type BookingWithRelations = {
   booking: VenueBookingRow;
@@ -52,6 +55,8 @@ export async function createBooking(input: {
   endAt: Date;
   seatsCount: number;
   notes?: string | null;
+  /** Pay in full with this voucher in the same transaction; the booking starts `confirmed`. */
+  voucherCode?: string | null;
 }): Promise<BookingWithRelations> {
   if (input.seatsCount < 1) {
     throw new BookingError('invalid_seats', 'seats_count must be at least 1.');
@@ -98,17 +103,16 @@ export async function createBooking(input: {
     );
   }
 
-  // Authorisation: persona must belong to the team they're booking on behalf of.
-  const memberRows = await db
-    .select({ teamId: teamMembers.teamId })
-    .from(teamMembers)
-    .where(and(eq(teamMembers.playerId, input.byPlayerId), eq(teamMembers.teamId, input.byTeamId)))
-    .limit(1);
-  if (memberRows.length === 0) {
+  // Authorisation: the captain or co-captain books for the team (E4 "As a captain…").
+  const role = await loadTeamRole(input.byPlayerId, input.byTeamId);
+  if (!role) {
     throw new BookingError(
       'forbidden',
       "You must be a member of the team you're booking on behalf of.",
     );
+  }
+  if (!isTeamLeaderRole(role)) {
+    throw new BookingError('captain_only', 'Only the captain or co-captain can book for the team.');
   }
 
   // Compute total. Hours rounded to nearest 0.25h to keep prices clean.
@@ -119,9 +123,7 @@ export async function createBooking(input: {
   // (venue, game) so concurrent POSTs for the same slot serialise. Other (venue, game)
   // pairs continue in parallel. The lock is released automatically on COMMIT/ROLLBACK.
   const row = await db.transaction(async (tx) => {
-    await tx.execute(
-      sql`SELECT pg_advisory_xact_lock(hashtext(${venue.id} || '|' || ${game.id}))`,
-    );
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${venue.id} || '|' || ${game.id}))`);
 
     const overlapping = await tx
       .select({ seatsCount: venueBookings.seatsCount })
@@ -161,6 +163,25 @@ export async function createBooking(input: {
       .returning();
     const r = inserted[0];
     if (!r) throw new BookingError('insert_failed', 'Booking insert returned no row.');
+
+    if (input.voucherCode) {
+      // Throws VoucherError on any rule failure, which rolls the booking back too.
+      await redeemVoucherInTx(tx, {
+        code: input.voucherCode,
+        teamId: input.byTeamId,
+        userId: input.byUserId,
+        purpose: 'booking',
+        amountKwd: total,
+        venueId: venue.id,
+        bookingId: r.id,
+      });
+      const [paid] = await tx
+        .update(venueBookings)
+        .set({ status: 'confirmed', updatedAt: new Date() })
+        .where(eq(venueBookings.id, r.id))
+        .returning();
+      return paid ?? r;
+    }
     return r;
   });
 
@@ -170,6 +191,7 @@ export async function createBooking(input: {
 }
 
 export async function loadBookingById(id: string): Promise<BookingWithRelations | null> {
+  if (!isUuid(id)) return null;
   const db = getDb();
   const [b] = await db.select().from(venueBookings).where(eq(venueBookings.id, id)).limit(1);
   if (!b) return null;
@@ -205,6 +227,19 @@ export async function loadBookingById(id: string): Promise<BookingWithRelations 
  * "My bookings" — bookings made by this user OR made by anyone for a team they're on.
  * This way Sara sees a booking Khaled made for Sandstorm too, since she's a member.
  */
+/** Bookings made at the given venues — the venue owner's view (US-E3.6, read slice). */
+export async function listBookingsAtVenues(venueIds: string[]): Promise<BookingWithRelations[]> {
+  if (venueIds.length === 0) return [];
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(venueBookings)
+    .where(inArray(venueBookings.venueId, venueIds))
+    .orderBy(desc(venueBookings.startAt))
+    .limit(50);
+  return hydrateBookings(rows);
+}
+
 export async function listBookingsForPlayer(
   playerId: string,
   userId: string,
@@ -232,15 +267,30 @@ export async function listBookingsForPlayer(
     .limit(50);
   if (rows.length === 0) return [];
 
+  return hydrateBookings(rows);
+}
+
+async function hydrateBookings(rows: VenueBookingRow[]): Promise<BookingWithRelations[]> {
+  if (rows.length === 0) return [];
+  const db = getDb();
   const venueIds = new Set(rows.map((r) => r.venueId));
   const gameIds = new Set(rows.map((r) => r.gameId));
   const teamIds = new Set(rows.map((r) => r.bookedByTeamId));
   const userIds = new Set(rows.map((r) => r.bookedByUserId));
 
   const [vs, gs, ts, us] = await Promise.all([
-    db.select().from(venues).where(inArray(venues.id, [...venueIds])),
-    db.select().from(games).where(inArray(games.id, [...gameIds])),
-    db.select().from(teams).where(inArray(teams.id, [...teamIds])),
+    db
+      .select()
+      .from(venues)
+      .where(inArray(venues.id, [...venueIds])),
+    db
+      .select()
+      .from(games)
+      .where(inArray(games.id, [...gameIds])),
+    db
+      .select()
+      .from(teams)
+      .where(inArray(teams.id, [...teamIds])),
     db
       .select({ id: users.id, displayName: users.displayName })
       .from(users)
@@ -304,6 +354,7 @@ export class BookingError extends Error {
       | 'game_not_found'
       | 'game_not_supported'
       | 'forbidden'
+      | 'captain_only'
       | 'invalid_seats'
       | 'invalid_date_range'
       | 'over_capacity'

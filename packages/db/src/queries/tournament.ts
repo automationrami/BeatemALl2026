@@ -5,7 +5,7 @@
  * and to `organizations` for the organizer name + accent.
  */
 
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import type { GameId, TournamentStatus, TournamentSummary } from '@beat-em-all/types';
 import type { CountryCode } from '@beat-em-all/types';
 import { getDb } from '../client';
@@ -15,7 +15,10 @@ import { organizations } from '../schema/organizations';
 
 const SURFACEABLE_STATUSES: TournamentStatus[] = ['published', 'registration_open', 'in_progress'];
 
-export async function listSurfaceableTournaments(): Promise<TournamentSummary[]> {
+/** `organizationSlug` narrows to one organizer (matched by id, not by display name). */
+export async function listSurfaceableTournaments(
+  filter: { organizationSlug?: string } = {},
+): Promise<TournamentSummary[]> {
   const db = getDb();
 
   const rows = await db
@@ -37,7 +40,12 @@ export async function listSurfaceableTournaments(): Promise<TournamentSummary[]>
     .from(tournaments)
     .innerJoin(games, eq(games.id, tournaments.gameId))
     .innerJoin(organizations, eq(organizations.id, tournaments.organizationId))
-    .where(inArray(tournaments.status, SURFACEABLE_STATUSES));
+    .where(
+      and(
+        inArray(tournaments.status, SURFACEABLE_STATUSES),
+        filter.organizationSlug ? eq(organizations.slug, filter.organizationSlug) : undefined,
+      ),
+    );
 
   return rows.map<TournamentSummary>((r) => ({
     id: r.id,

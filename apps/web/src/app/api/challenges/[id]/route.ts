@@ -9,7 +9,9 @@ import { z } from 'zod';
 import {
   ChallengeError,
   acceptChallenge,
+  canViewChallenge,
   counterChallenge,
+  loadRespondingTeamId,
   loadChallengeById,
   loadChallengeNegotiations,
   rejectChallenge,
@@ -43,12 +45,20 @@ export async function GET(_request: Request, { params }: Params) {
   try {
     const data = await loadChallengeById(id);
     if (!data) return NextResponse.json({ error: 'not_found' }, { status: 404 });
-    const negotiations = await loadChallengeNegotiations(id);
     const me = await getCurrentUser();
+    // Private to the two teams: outsiders get the same 404 as a missing id (no existence leak).
+    if (!(await canViewChallenge(data.challenge, me.playerId))) {
+      return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    }
+    const [negotiations, respondingTeamId] = await Promise.all([
+      loadChallengeNegotiations(id),
+      loadRespondingTeamId(data.challenge),
+    ]);
     return NextResponse.json(
       {
         ...data,
         negotiations,
+        respondingTeamId,
         viewer: {
           playerId: me.playerId,
           slug: me.playerSlug,
@@ -58,8 +68,9 @@ export async function GET(_request: Request, { params }: Params) {
       { headers: { 'cache-control': 'no-store' } },
     );
   } catch (err) {
+    console.error('[GET /api/challenges/[id]] failed', err);
     return NextResponse.json(
-      { error: 'internal', message: err instanceof Error ? err.message : String(err) },
+      { error: 'internal', message: 'Something went wrong fetching the challenge.' },
       { status: 500 },
     );
   }
@@ -108,14 +119,16 @@ export async function PATCH(request: Request, { params }: Params) {
     return NextResponse.json({ challenge });
   } catch (err) {
     if (err instanceof ChallengeError) {
-      const status =
-        err.code === 'not_found'
-          ? 404
-          : err.code === 'forbidden'
-            ? 403
-            : err.code === 'invalid_state' || err.code === 'invalid_date_range'
-              ? 409
-              : 400;
+      const STATUS_BY_CODE: Partial<Record<typeof err.code, number>> = {
+        not_found: 404,
+        forbidden: 403,
+        captain_only: 403,
+        not_your_turn: 403,
+        invalid_state: 409,
+        counter_limit_reached: 409,
+        invalid_date_range: 400,
+      };
+      const status = STATUS_BY_CODE[err.code] ?? 400;
       return NextResponse.json({ error: err.code, message: err.message }, { status });
     }
 

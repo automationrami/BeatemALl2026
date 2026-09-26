@@ -76,6 +76,7 @@ export async function loadHomeFeed(
       city: ctx.city,
       mode: ctx.mode,
       greetingBucket,
+      primaryTeamSlug: ctx.primaryTeamSlug ?? null,
     },
     hero,
     recommendedTeams,

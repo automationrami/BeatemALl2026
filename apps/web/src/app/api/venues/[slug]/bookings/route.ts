@@ -7,7 +7,13 @@
 
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { BookingError, createBooking, listVenueSupportedGames } from '@beat-em-all/db/queries';
+import {
+  BookingError,
+  VoucherError,
+  createBooking,
+  listVenueSupportedGames,
+} from '@beat-em-all/db/queries';
+import { voucherErrorResponse } from '@/lib/voucher-http';
 import { getCurrentUser } from '@/lib/current-user';
 
 export const runtime = 'nodejs';
@@ -22,6 +28,8 @@ const createSchema = z.object({
   endAt: z.string().datetime(),
   seatsCount: z.number().int().min(1).max(50),
   notes: z.string().max(500).optional().nullable(),
+  /** Pay in full with a voucher; the booking is confirmed straight away. */
+  voucherCode: z.string().min(4).max(40).optional().nullable(),
 });
 
 export async function GET(_request: Request, { params }: Params) {
@@ -29,10 +37,7 @@ export async function GET(_request: Request, { params }: Params) {
   if (!slug) return NextResponse.json({ error: 'invalid_slug' }, { status: 400 });
   try {
     const supportedGames = await listVenueSupportedGames(slug);
-    return NextResponse.json(
-      { supportedGames },
-      { headers: { 'cache-control': 'no-store' } },
-    );
+    return NextResponse.json({ supportedGames }, { headers: { 'cache-control': 'no-store' } });
   } catch (err) {
     console.error('[GET /api/venues/[slug]/bookings] failed', err);
     return NextResponse.json(
@@ -80,9 +85,11 @@ export async function POST(request: Request, { params }: Params) {
       endAt: new Date(parsed.data.endAt),
       seatsCount: parsed.data.seatsCount,
       notes: parsed.data.notes ?? null,
+      voucherCode: parsed.data.voucherCode || null,
     });
     return NextResponse.json({ booking: result }, { status: 201 });
   } catch (err) {
+    if (err instanceof VoucherError) return voucherErrorResponse(err);
     if (err instanceof BookingError) {
       const STATUS_BY_CODE = {
         venue_not_found: 404,
@@ -90,6 +97,7 @@ export async function POST(request: Request, { params }: Params) {
         game_not_found: 404,
         game_not_supported: 400,
         forbidden: 403,
+        captain_only: 403,
         invalid_seats: 400,
         invalid_date_range: 400,
         over_capacity: 409,
@@ -100,7 +108,9 @@ export async function POST(request: Request, { params }: Params) {
       // Don't leak DB-layer details from server-side faults — log them and send a
       // generic message. Client-fault codes return their own message which is curated.
       const message =
-        err.code === 'insert_failed' ? 'Could not create the booking. Please try again.' : err.message;
+        err.code === 'insert_failed'
+          ? 'Could not create the booking. Please try again.'
+          : err.message;
       if (err.code === 'insert_failed') {
         console.error('[POST /api/venues/[slug]/bookings] insert_failed', err);
       }

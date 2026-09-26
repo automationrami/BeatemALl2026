@@ -6,6 +6,10 @@ import { ButtonLink } from '@/components/tournament/ButtonLink';
 import { listSurfaceableTournaments } from '@beat-em-all/db/queries';
 import { formatAmount, gameTitle, tournamentStatusTone } from '@/components/tournament/display';
 
+// Live data: new tournaments and venues appear without a redeploy.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 type PageProps = { params: Promise<{ locale: string }> };
 
 export default async function TournamentsIndexPage({ params }: PageProps) {

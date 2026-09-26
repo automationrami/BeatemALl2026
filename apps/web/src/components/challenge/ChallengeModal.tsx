@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { X } from 'lucide-react';
 import { Button, SegmentedTabs } from '@beat-em-all/ui';
 import { PERSONAS, useActAsPersona } from '@beat-em-all/api-client';
+import { apiErrorMessage, readApiError } from '@/lib/api-error';
 
 type Props = {
   targetTeamSlug: string;
@@ -156,8 +157,7 @@ export function ChallengeModal({
         }),
       });
       if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
-        throw new Error(body.message ?? body.error ?? `HTTP ${res.status}`);
+        throw new Error(apiErrorMessage(t, await readApiError(res), `HTTP ${res.status}`));
       }
       const json = (await res.json()) as { challenge: { id: string } };
       onClose();
@@ -170,7 +170,9 @@ export function ChallengeModal({
     }
   };
 
-  const personaSlug = PERSONAS[personaId]?.slug ?? 'khaled-al-mutairi';
+  const persona = PERSONAS[personaId];
+  const personaName =
+    (locale === 'ar' ? persona?.arabicName : persona?.displayName) ?? persona?.slug ?? '';
 
   return (
     <div
@@ -369,7 +371,7 @@ export function ChallengeModal({
                 </Button>
               </div>
               <p className="bx-eyebrow text-end" data-testid="acting-as">
-                {t('actingAs', { persona: personaSlug })}
+                {t('actingAs', { persona: personaName })}
               </p>
             </div>
           </form>

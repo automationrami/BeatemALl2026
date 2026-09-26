@@ -11,6 +11,7 @@ import {
   ListOrdered,
   Swords,
   Ticket,
+  TicketPercent,
   Trophy,
   type LucideIcon,
 } from 'lucide-react';
@@ -26,6 +27,7 @@ type NavKey =
   | 'venues'
   | 'bookings'
   | 'entries'
+  | 'vouchers'
   | 'profile';
 type NavItem = { key: NavKey; href: string; icon: LucideIcon; match: RegExp };
 
@@ -37,6 +39,7 @@ const ITEMS: NavItem[] = [
   { key: 'venues', href: '/venues', icon: Building2, match: /^\/venues/ },
   { key: 'bookings', href: '/bookings', icon: CalendarCheck, match: /^\/bookings/ },
   { key: 'entries', href: '/registrations', icon: Ticket, match: /^\/registrations/ },
+  { key: 'vouchers', href: '/vouchers', icon: TicketPercent, match: /^\/vouchers/ },
 ];
 const PROFILE: NavItem = {
   key: 'profile',

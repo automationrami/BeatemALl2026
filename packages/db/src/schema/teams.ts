@@ -39,6 +39,8 @@ export const teams = pgTable(
   },
   (table) => ({
     slugIdx: uniqueIndex('teams_slug_idx').on(table.slug),
+    /** US-2.1: team names are unique, case-insensitively. */
+    nameIdx: uniqueIndex('teams_name_lower_idx').on(sql`lower(${table.name})`),
   }),
 );
 

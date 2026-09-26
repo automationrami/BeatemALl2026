@@ -1,6 +1,12 @@
 import { TeamCrest } from '@beat-em-all/ui';
 
-type HeroTeam = { name: string; tag: string; sub?: string | null; role: string };
+type HeroTeam = {
+  name: string;
+  tag: string;
+  sub?: string | null;
+  role: string;
+  color?: string;
+};
 
 type ChallengeHeroProps = {
   /** Accessible page heading, e.g. "Sandstorm vs Falcon Squad". */
@@ -16,7 +22,7 @@ function Side({ team }: { team: HeroTeam }) {
   return (
     <div className="grid min-w-0 justify-items-center gap-3 text-center">
       <span className="bx-eyebrow text-on-band-muted">{team.role}</span>
-      <TeamCrest tag={team.tag} size={88} />
+      <TeamCrest tag={team.tag} color={team.color} size={88} />
       <div className="min-w-0 max-w-full">
         <p className="font-display text-[16px] leading-[20px] font-bold uppercase tracking-[0.04em] text-balance break-words text-on-band min-[900px]:text-[28px] min-[900px]:leading-[32px] rtl:normal-case rtl:tracking-normal">
           {team.name}

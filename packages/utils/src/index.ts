@@ -2,5 +2,6 @@
 
 export * from './auth-schemas';
 export * from './geo';
+export * from './vouchers';
 
 export const UTILS_VERSION = '0.0.3';

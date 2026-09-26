@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Check } from 'lucide-react';
 import { Button } from '@beat-em-all/ui';
+import { apiErrorMessage, readApiError } from '@/lib/api-error';
 
 type Props = {
   tournamentSlug: string;
@@ -39,8 +40,7 @@ export function RegisterTeamButton({
         body: JSON.stringify({}),
       });
       if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
-        throw new Error(body.message ?? body.error ?? `HTTP ${res.status}`);
+        throw new Error(apiErrorMessage(t, await readApiError(res), `HTTP ${res.status}`));
       }
       const json = (await res.json()) as { registration: { registration: { id: string } } };
       router.push(`/${locale}/registrations/${json.registration.registration.id}`);

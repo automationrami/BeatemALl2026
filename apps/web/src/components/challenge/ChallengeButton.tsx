@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Swords } from 'lucide-react';
 import { Button } from '@beat-em-all/ui';
@@ -33,6 +33,14 @@ export function ChallengeButton({
 }: Props) {
   const [open, setOpen] = useState(false);
   const t = useTranslations('team');
+
+  // `?challenge=1` (from Home's recommended teams) opens the composer straight away.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('challenge') === '1') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setOpen(true);
+    }
+  }, []);
 
   return (
     <>

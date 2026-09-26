@@ -24,3 +24,4 @@ export * from './users';
 export * from './venues';
 export * from './venue_games';
 export * from './venue_bookings';
+export * from './vouchers';

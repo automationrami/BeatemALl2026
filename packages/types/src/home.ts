@@ -69,6 +69,8 @@ export type HomeFeedData = {
     city: string;
     mode: HomeViewerMode;
     greetingBucket: GreetingBucket;
+    /** The viewer's own team, when they have one. */
+    primaryTeamSlug?: string | null;
   };
   hero: HomeHeroVariant;
   recommendedTeams: RecommendedTeam[];

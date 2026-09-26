@@ -33,6 +33,9 @@ import { ORGANIZATION_SEEDS } from './organizations';
 import { VENUE_SEEDS } from './venues';
 import { TOURNAMENT_SEEDS } from './tournaments';
 import { RANKING_POINT_SEEDS } from './ranking_points';
+import { memberships } from '../schema/memberships';
+import { vouchers } from '../schema/vouchers';
+import { MEMBERSHIP_SEEDS, VOUCHER_SEEDS } from './vouchers';
 
 async function main() {
   const url = process.env.POSTGRES_URL_NON_POOLING ?? process.env.POSTGRES_URL;
@@ -341,6 +344,7 @@ async function main() {
             isOfficialSanctioned: fields.isOfficialSanctioned ?? false,
             awardsRankingPoints: fields.awardsRankingPoints ?? false,
             prizePoolKwd: fields.prizePoolKwd ?? 0,
+            entryFeeKwd: fields.entryFeeKwd ?? 0,
             startsInLabel: fields.startsInLabel ?? null,
             registrationLabel: fields.registrationLabel ?? null,
             status: fields.status ?? 'draft',
@@ -419,6 +423,55 @@ async function main() {
           ],
           set: { points: rp.points, placement: rp.placement, season: rp.season },
         });
+    }
+
+    // ---- 7. Organization memberships ----
+    const personaUserRows = await db
+      .select({ slug: players.slug, userId: players.userId })
+      .from(players);
+    const userIdByPersona = new Map(personaUserRows.map((p) => [p.slug, p.userId]));
+    // eslint-disable-next-line no-console
+    console.log(`[seed] Upserting ${MEMBERSHIP_SEEDS.length} memberships`);
+    for (const m of MEMBERSHIP_SEEDS) {
+      const userId = userIdByPersona.get(m.personaSlug);
+      const organizationId = orgIdBySlug.get(m.organizationSlug);
+      if (!userId || !organizationId) continue;
+      await db
+        .insert(memberships)
+        .values({ userId, organizationId, role: m.role, acceptedAt: new Date() })
+        .onConflictDoUpdate({
+          target: [memberships.userId, memberships.organizationId],
+          set: { role: m.role, revokedAt: null, updatedAt: drizzleSql`now()` },
+        });
+    }
+
+    // ---- 8. Demo vouchers (insert once; balances are live data after that) ----
+    const teamIdRows = await db.select({ id: teams.id, slug: teams.slug }).from(teams);
+    const teamIdBySlug = new Map(teamIdRows.map((t) => [t.slug, t.id]));
+    const venueIdRows = await db.select({ id: venues.id, slug: venues.slug }).from(venues);
+    const venueIdBySlug = new Map(venueIdRows.map((v) => [v.slug, v.id]));
+    // eslint-disable-next-line no-console
+    console.log(
+      `[seed] Inserting ${VOUCHER_SEEDS.length} vouchers (existing codes left as they are)`,
+    );
+    for (const v of VOUCHER_SEEDS) {
+      const issuerOrganizationId = orgIdBySlug.get(v.issuerSlug);
+      if (!issuerOrganizationId) continue;
+      await db
+        .insert(vouchers)
+        .values({
+          code: v.code,
+          issuerOrganizationId,
+          kind: v.kind,
+          valueKwd: v.valueKwd,
+          balanceKwd: v.valueKwd,
+          teamId: v.teamSlug ? (teamIdBySlug.get(v.teamSlug) ?? null) : null,
+          venueId: v.venueSlug ? (venueIdBySlug.get(v.venueSlug) ?? null) : null,
+          maxRedemptions: v.maxRedemptions,
+          expiresAt: v.expiresAt ? new Date(v.expiresAt) : null,
+          note: v.note,
+        })
+        .onConflictDoNothing({ target: vouchers.code });
     }
 
     // eslint-disable-next-line no-console

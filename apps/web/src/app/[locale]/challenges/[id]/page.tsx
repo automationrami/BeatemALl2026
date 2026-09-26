@@ -3,7 +3,15 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CalendarRange, Check, ChevronLeft, MapPin } from 'lucide-react';
 import { Notice, Tag, buttonClass } from '@beat-em-all/ui';
-import { loadChallengeById, loadChallengeNegotiations } from '@beat-em-all/db/queries';
+import {
+  MAX_COUNTER_PROPOSALS,
+  canViewChallenge,
+  isTeamLeaderRole,
+  loadChallengeById,
+  loadChallengeNegotiations,
+  loadRespondingTeamId,
+} from '@beat-em-all/db/queries';
+import { teamCrestColor } from '@/components/tournament/display';
 import { ChallengeActions } from '@/components/challenge/ChallengeActions';
 import { ChallengeHero } from '@/components/challenge/ChallengeHero';
 import {
@@ -25,16 +33,35 @@ export default async function ChallengeDetailPage({ params }: PageProps) {
   const data = await loadChallengeById(id);
   if (!data) notFound();
 
-  const negotiations = await loadChallengeNegotiations(id);
   const me = await getCurrentUser();
+  // Private to the two teams: everyone else gets the same page as a missing id.
+  if (!(await canViewChallenge(data.challenge, me.playerId))) notFound();
+
+  const [negotiations, respondingTeamId] = await Promise.all([
+    loadChallengeNegotiations(id),
+    loadRespondingTeamId(data.challenge),
+  ]);
   const t = await getTranslations('challenge');
 
-  const myTeamIds = new Set(me.teamMemberships.map((m) => m.teamId));
-  const isChallenged = myTeamIds.has(data.challenge.challengedTeamId);
   const isPending = ['pending', 'negotiating'].includes(data.challenge.status);
-  const canAct = isChallenged && isPending;
+  const respondingTeam =
+    respondingTeamId === data.challengerTeam.id ? data.challengerTeam : data.challengedTeam;
+  const myRoleOnResponding = me.teamMemberships.find((m) => m.teamId === respondingTeamId)?.role;
+  // The captain or co-captain of the side the latest proposal went to makes the next move.
+  const canAct = isPending && isTeamLeaderRole(myRoleOnResponding);
 
   const statusLabel = t(challengeStatusKey(data.challenge.status));
+  // Someone on the side that just proposed is waiting, even if they also play for the other side.
+  const proposingTeamId =
+    respondingTeamId === data.challengerTeam.id ? data.challengedTeam.id : data.challengerTeam.id;
+  const onProposingSide = me.teamMemberships.some((m) => m.teamId === proposingTeamId);
+  const turnNote = !isPending
+    ? statusLabel
+    : canAct
+      ? t('yourTurn')
+      : myRoleOnResponding && !onProposingSide
+        ? t('captainOnly', { team: respondingTeam.name })
+        : t('waitingFor', { team: respondingTeam.name });
 
   // Format dates server-side in Kuwait time so the displayed time matches what the
   // founder typed in `datetime-local` (toISOString() output was always UTC).
@@ -84,12 +111,14 @@ export default async function ChallengeDetailPage({ params }: PageProps) {
             tag: data.challengerTeam.tag,
             sub: data.challengerTeam.city,
             role: t('detailChallenger'),
+            color: teamCrestColor(data.challengerTeam.slug),
           }}
           challenged={{
             name: data.challengedTeam.name,
             tag: data.challengedTeam.tag,
             sub: data.challengedTeam.city,
             role: t('detailChallenged'),
+            color: teamCrestColor(data.challengedTeam.slug),
           }}
           tags={
             <>
@@ -140,10 +169,13 @@ export default async function ChallengeDetailPage({ params }: PageProps) {
             <ChallengeActions
               challengeId={data.challenge.id}
               canAct={canAct}
-              // Always surface a reason when canAct is false so the action area isn't silently
-              // empty. Three cases: terminal status (accepted/rejected/etc.) → show the status
-              // label; pending but not on the challenged team → tell user to switch persona.
-              cannotActReason={!isPending ? statusLabel : !isChallenged ? t('youCannotAct') : null}
+              note={turnNote}
+              counters={{ used: Math.max(0, negotiations.length - 1), max: MAX_COUNTER_PROPOSALS }}
+              current={{
+                format: data.challenge.proposedFormat,
+                start: data.challenge.proposedDateRangeStart.toISOString(),
+                end: data.challenge.proposedDateRangeEnd.toISOString(),
+              }}
             />
           </div>
         </section>

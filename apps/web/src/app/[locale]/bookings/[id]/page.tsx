@@ -1,12 +1,27 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, CalendarDays, CircleCheck, Clock, MapPin, StickyNote } from 'lucide-react';
+import {
+  ArrowLeft,
+  CalendarDays,
+  CircleCheck,
+  Clock,
+  MapPin,
+  StickyNote,
+  TicketPercent,
+} from 'lucide-react';
 import { Avatar, Notice, StatStrip, TeamCrest, buttonClass } from '@beat-em-all/ui';
-import { loadBookingById } from '@beat-em-all/db/queries';
+import {
+  isTeamLeaderRole,
+  listManagedVenueIds,
+  loadBookingById,
+  loadBookingVoucherPayment,
+} from '@beat-em-all/db/queries';
 import { getCurrentUser } from '@/lib/current-user';
 import { BookingStatusTag, bookingStatusKey } from '@/components/booking/BookingStatusTag';
 import { dateLocale, formatAmount } from '@/components/booking/format';
+import { teamCrestColor } from '@/components/tournament/display';
+import { PayWithVoucher } from '@/components/voucher/PayWithVoucher';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -22,14 +37,19 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const data = await loadBookingById(id);
   if (!data) notFound();
 
-  // Authorization: only the booker or members of the booking team may view. Render
-  // notFound() (not a 403) so we don't leak that the booking exists to other users.
+  // Authorization: the booker, members of the booking team, or managers of the venue's
+  // organisation. notFound() (not a 403) so we don't leak that the booking exists.
   const me = await getCurrentUser();
   const isBooker = data.booking.bookedByUserId === me.userId;
-  const isTeammate = me.teamMemberships.some((m) => m.teamId === data.booking.bookedByTeamId);
-  if (!isBooker && !isTeammate) notFound();
+  const membership = me.teamMemberships.find((m) => m.teamId === data.booking.bookedByTeamId);
+  const isVenueManager =
+    !isBooker && !membership && (await listManagedVenueIds(me.userId)).includes(data.venue.id);
+  if (!isBooker && !membership && !isVenueManager) notFound();
+  const canPay = isTeamLeaderRole(membership?.role);
 
   const t = await getTranslations('booking');
+  const tv = await getTranslations('vouchers');
+  const payment = await loadBookingVoucherPayment(id);
 
   const tz = 'Asia/Kuwait';
   const loc = dateLocale(locale);
@@ -116,6 +136,33 @@ export default async function BookingDetailPage({ params }: PageProps) {
             </Notice>
           </div>
         ) : null}
+        {payment ? (
+          <div data-testid="voucher-paid">
+            <Notice
+              tone="neutral"
+              icon={<TicketPercent className="bx-icon text-gold-text" aria-hidden />}
+            >
+              <b className="text-ink">{tv('paidTitle')}</b>
+              {' · '}
+              <span dir="ltr" className="font-mono">
+                {tv('paidLine', {
+                  code: payment.code,
+                  amount: t('money', { amount: formatAmount(payment.amountKwd) }),
+                  issuer: payment.issuer,
+                })}
+              </span>
+            </Notice>
+          </div>
+        ) : null}
+        {booking.status === 'pending_payment' && canPay ? (
+          <PayWithVoucher
+            target={{ kind: 'booking', id: booking.id }}
+            amountLabel={t('money', { amount: formatAmount(booking.totalAmountKwd) })}
+          />
+        ) : null}
+        {booking.status === 'pending_payment' && !canPay && membership ? (
+          <p className="text-[13px] text-ink-muted">{tv('captainOnlyPay')}</p>
+        ) : null}
         {booking.status === 'confirmed' ? (
           <div data-testid="confirmed-notice">
             <Notice
@@ -159,7 +206,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
                 </span>
               </span>
               <span className="flex items-center gap-3">
-                <TeamCrest tag={team.tag} size={40} />
+                <TeamCrest tag={team.tag} color={teamCrestColor(team.slug)} size={40} />
                 <span className="font-display text-[15px] font-bold text-ink">{team.name}</span>
               </span>
             </div>

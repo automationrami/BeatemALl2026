@@ -39,7 +39,12 @@ export const TEAM_SEEDS: TeamSeed[] = [
       foundedAt: '2024-03-01',
     },
     gameSlugs: ['valorant', 'eafc'],
-    members: [{ personaSlug: 'khaled-al-mutairi', role: 'captain', inGameRole: 'IGL' }],
+    // Sara also plays for Sandstorm as a starter (not a captain), so the captain-only
+    // rules on booking, challenges and registration have a persona to test against.
+    members: [
+      { personaSlug: 'khaled-al-mutairi', role: 'captain', inGameRole: 'IGL' },
+      { personaSlug: 'sara-al-awadhi', role: 'starter', inGameRole: 'Sentinel' },
+    ],
   },
   {
     team: {

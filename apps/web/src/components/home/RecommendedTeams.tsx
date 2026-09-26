@@ -3,7 +3,7 @@
 import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
 import { MapPin, Swords } from 'lucide-react';
-import { Button, EmptyState, SectionTitle, Tag, TeamCrest, buttonClass } from '@beat-em-all/ui';
+import { EmptyState, SectionTitle, Tag, TeamCrest, buttonClass } from '@beat-em-all/ui';
 import { GAMES } from '@beat-em-all/mock-data';
 import { formatDistanceKm } from '@beat-em-all/utils';
 import type { GameId, RecommendedTeam } from '@beat-em-all/types';
@@ -71,10 +71,13 @@ export function RecommendedTeams({ teams, primaryGame }: Props) {
                 >
                   {t('viewTeam')}
                 </Link>
-                <Button variant="outline" size="sm" full>
+                <Link
+                  href={`/${locale}/teams/${team.slug}?challenge=1`}
+                  className={buttonClass('outline', 'sm', true)}
+                >
                   <Swords className="bx-icon size-3.5" aria-hidden />
                   {t('challenge')}
-                </Button>
+                </Link>
               </div>
             </article>
           ))}

@@ -51,24 +51,41 @@
 
 ## UAT defects — production run 2026-09-26
 
+**All 14 fixed and re-tested on production the same day** (see CHANGELOG "Fixes — UAT-1…14"). Mock sign-in still doesn't pick a persona (by design until E1-S2 real OTP).
+
 Full report (92 scenarios by role, render sweep, evidence): https://claude.ai/artifact/WA3konxGqosiGVQ3JS3ssL · Result: 67 pass / 6 fail / 19 blocked (18 not built, 1 not testable); 156/156 screen loads clean in EN/AR × desktop/phone.
 
 | # | Severity | Defect | Story | Status |
 |---|---|---|---|---|
-| UAT-1 | High | Any persona can read any challenge (page + `GET /api/challenges/[id]` have no participant check) | US-E6.2 | 🔴 |
-| UAT-2 | High | Challenger can't accept the opponent's counter-offer (403; page shows Accept to challenged team only) | US-E6.3 / 6.4 | 🔴 |
-| UAT-3 | Medium | No cap of 3 pending challenges per team | US-E6.1 | 🔴 |
-| UAT-4 | Medium | Counter-offer accepts end before start | US-E6.3 | 🔴 |
-| UAT-5 | Medium | Duplicate team names accepted (only slug is unique) | US-2.1 | 🔴 |
-| UAT-6 | Medium | Registration never checks roster size against team size | US-TM2.2 | 🔴 |
-| UAT-7 | Medium | Team actions check membership only, never captain role | US-2.x | 🔴 (with US-2.2–2.7) |
-| UAT-8 | Medium | `/tournaments` and `/venues` lists are prerendered with no revalidation | E5 | 🔴 |
-| UAT-9 | Medium | Org page matches tournaments by organiser name, not organisation id | ORG-1 | 🔴 |
-| UAT-10 | Medium | Counter-offer has API but no UI | US-E6.3 | 🔴 |
-| UAT-11 | Low | Self-challenge returns `game_not_shared` instead of `cannot_challenge_self` | US-E6.1 | 🔴 |
-| UAT-12 | Low | "Acting as khaled-al-mutairi" shows slug, not name, in booking/challenge dialogs | US-E4.1 / E6.1 | 🔴 |
-| UAT-13 | Low | Withdraw uses native `confirm()`; replace with in-page confirm | US-TM2.7 | 🔴 |
-| UAT-14 | Low | Mock sign-in doesn't set the persona cookie; Home "View team" opens first recommended team; challenge crests lack team colour; 11 unused i18n keys | misc | 🔴 |
+| UAT-1 | High | Any persona can read any challenge (page + `GET /api/challenges/[id]` have no participant check) | US-E6.2 | ✅ fixed 2026-09-26 |
+| UAT-2 | High | Challenger can't accept the opponent's counter-offer (403; page shows Accept to challenged team only) | US-E6.3 / 6.4 | ✅ fixed 2026-09-26 |
+| UAT-3 | Medium | No cap of 3 pending challenges per team | US-E6.1 | ✅ fixed 2026-09-26 |
+| UAT-4 | Medium | Counter-offer accepts end before start | US-E6.3 | ✅ fixed 2026-09-26 |
+| UAT-5 | Medium | Duplicate team names accepted (only slug is unique) | US-2.1 | ✅ fixed 2026-09-26 |
+| UAT-6 | Medium | Registration never checks roster size against team size | US-TM2.2 | ✅ fixed 2026-09-26 |
+| UAT-7 | Medium | Team actions check membership only, never captain role | US-2.x | ✅ fixed 2026-09-26 |
+| UAT-8 | Medium | `/tournaments` and `/venues` lists are prerendered with no revalidation | E5 | ✅ fixed 2026-09-26 |
+| UAT-9 | Medium | Org page matches tournaments by organiser name, not organisation id | ORG-1 | ✅ fixed 2026-09-26 |
+| UAT-10 | Medium | Counter-offer has API but no UI | US-E6.3 | ✅ fixed 2026-09-26 |
+| UAT-11 | Low | Self-challenge returns `game_not_shared` instead of `cannot_challenge_self` | US-E6.1 | ✅ fixed 2026-09-26 |
+| UAT-12 | Low | "Acting as khaled-al-mutairi" shows slug, not name, in booking/challenge dialogs | US-E4.1 / E6.1 | ✅ fixed 2026-09-26 |
+| UAT-13 | Low | Withdraw uses native `confirm()`; replace with in-page confirm | US-TM2.7 | ✅ fixed 2026-09-26 |
+| UAT-14 | Low | Mock sign-in doesn't set the persona cookie; Home "View team" opens first recommended team; challenge crests lack team colour; 11 unused i18n keys | misc | ✅ fixed 2026-09-26 |
+
+---
+
+## Vouchers (founder request 2026-09-26, not in EPICS yet)
+
+| Story | Status |
+|---|---|
+| Organisation owner/admin issues unlimited or stored-value vouchers (team / venue scope, use cap, expiry) | ✅ |
+| Team wallet + payment history (`/vouchers`) | ✅ |
+| Pay a booking with a voucher (at booking time or later) | ✅ |
+| Pay a tournament entry fee with a voucher; refund on withdraw | ✅ |
+| Revoke a voucher | ✅ |
+| Add `Voucher` / `VoucherRedemption` to DOMAIN_MODEL.md + an epic | 🔵 needs founder sign-off |
+| Refund on booking cancellation (with E4 cancel) | 🔴 |
+| Combine voucher + card for the remainder (with P-2 Tap) | 🔴 |
 
 ---
 

@@ -1,9 +1,14 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, CircleAlert, CircleCheck, Clock } from 'lucide-react';
+import { ArrowLeft, CircleAlert, CircleCheck, Clock, TicketPercent } from 'lucide-react';
 import { Notice, Tag, TeamCrest } from '@beat-em-all/ui';
-import { loadRegistrationById } from '@beat-em-all/db/queries';
+import {
+  isTeamLeaderRole,
+  loadRegistrationById,
+  loadRegistrationVoucherPayment,
+} from '@beat-em-all/db/queries';
+import { PayWithVoucher } from '@/components/voucher/PayWithVoucher';
 import { WithdrawRegistrationButton } from '@/components/tournament/WithdrawRegistrationButton';
 import {
   formatAmount,
@@ -28,11 +33,15 @@ export default async function RegistrationDetailPage({ params }: PageProps) {
   // Auth: registrant or teammate. Use notFound (not 403) so existence isn't leaked.
   const me = await getCurrentUser();
   const isRegistrant = data.registration.registeredByUserId === me.userId;
-  const isTeammate = me.teamMemberships.some((m) => m.teamId === data.registration.teamId);
-  if (!isRegistrant && !isTeammate) notFound();
+  const membership = me.teamMemberships.find((m) => m.teamId === data.registration.teamId);
+  if (!isRegistrant && !membership) notFound();
+  const isLeader = isTeamLeaderRole(membership?.role);
 
   const t = await getTranslations('registration');
   const tTour = await getTranslations('tournament');
+  const tv = await getTranslations('vouchers');
+  const payment = await loadRegistrationVoucherPayment(id);
+  const feeLabel = tTour('moneyKwd', { amount: formatAmount(data.tournament.entryFeeKwd) });
 
   const status = data.registration.status;
   const canWithdraw = status === 'pending_payment' || status === 'confirmed';
@@ -137,6 +146,30 @@ export default async function RegistrationDetailPage({ params }: PageProps) {
                   </Notice>
                 </div>
               ) : null}
+              {payment && status !== 'withdrawn' ? (
+                <div data-testid="voucher-paid">
+                  <Notice
+                    tone="neutral"
+                    icon={<TicketPercent className="bx-icon text-gold-text" aria-hidden />}
+                  >
+                    <b className="text-ink">{tv('paidTitle')}</b>
+                    {' · '}
+                    <span dir="ltr" className="font-mono">
+                      {tv('paidLine', {
+                        code: payment.code,
+                        amount: feeLabel,
+                        issuer: payment.issuer,
+                      })}
+                    </span>
+                  </Notice>
+                </div>
+              ) : null}
+              {status === 'pending_payment' && isLeader ? (
+                <PayWithVoucher
+                  target={{ kind: 'registration', id: data.registration.id }}
+                  amountLabel={feeLabel}
+                />
+              ) : null}
               {status === 'confirmed' ? (
                 <div data-testid="confirmed-notice">
                   <Notice icon={<CircleCheck className="bx-icon" aria-hidden />}>
@@ -152,7 +185,11 @@ export default async function RegistrationDetailPage({ params }: PageProps) {
                 </div>
               ) : null}
               {canWithdraw ? (
-                <WithdrawRegistrationButton registrationId={data.registration.id} locale={locale} />
+                <WithdrawRegistrationButton
+                  registrationId={data.registration.id}
+                  locale={locale}
+                  paidWithVoucher={!!payment}
+                />
               ) : null}
             </div>
           ) : null}

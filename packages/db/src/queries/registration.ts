@@ -11,7 +11,7 @@
  *     prevents two concurrent POSTs both pushing past `maxTeams`.
  */
 
-import { and, asc, desc, eq, inArray, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import { getDb } from '../client';
 import { tournamentRegistrations } from '../schema/tournament_registrations';
 import type { TournamentRegistrationRow } from '../schema/tournament_registrations';
@@ -24,6 +24,9 @@ import { teamMembers } from '../schema/team_members';
 import { games } from '../schema/games';
 import type { GameRow } from '../schema/games';
 import { users } from '../schema/users';
+import { isTeamLeaderRole, loadTeamRole } from './roles';
+import { refundRegistrationRedemptionsInTx } from './voucher';
+import { isUuid } from './ids';
 
 /** Statuses that count toward the tournament's capacity (the slot is taken). */
 const ACTIVE_STATUSES = ['pending_payment', 'confirmed', 'checked_in'] as const;
@@ -46,8 +49,9 @@ export type RegistrationWithRelations = {
  *
  * Validations:
  *   - Tournament must exist + status === `registration_open`
- *   - Team must exist + the calling persona must be a member of it
+ *   - Team must exist + the calling persona must be its captain or co-captain
  *   - Team must play the tournament's game (intersection check)
+ *   - Active roster must be at least the tournament's team size (US-TM2.2)
  *   - Active registrations count + 1 must not exceed `maxTeams`
  *   - Same `(tournament_id, team_id)` not already actively registered
  */
@@ -79,16 +83,18 @@ export async function registerTeamForTournament(input: {
     throw new TournamentRegistrationError('team_not_found', 'Team not found.');
   }
 
-  // Authorisation: persona must be a member of this team.
-  const memberRows = await db
-    .select({ teamId: teamMembers.teamId })
-    .from(teamMembers)
-    .where(and(eq(teamMembers.playerId, input.byPlayerId), eq(teamMembers.teamId, team.id)))
-    .limit(1);
-  if (memberRows.length === 0) {
+  // Authorisation: the captain or co-captain enters the team (US-TM2.1 "As a captain…").
+  const role = await loadTeamRole(input.byPlayerId, team.id);
+  if (!role) {
     throw new TournamentRegistrationError(
       'forbidden',
       "You must be a member of the team you're registering.",
+    );
+  }
+  if (!isTeamLeaderRole(role)) {
+    throw new TournamentRegistrationError(
+      'captain_only',
+      'Only the captain or co-captain can register the team.',
     );
   }
 
@@ -102,6 +108,25 @@ export async function registerTeamForTournament(input: {
     throw new TournamentRegistrationError(
       'game_mismatch',
       `${team.name} doesn't play this game. Add the game on your team profile first.`,
+    );
+  }
+
+  // Eligibility: the active roster must fill the tournament's team size.
+  const [roster] = await db
+    .select({ n: count() })
+    .from(teamMembers)
+    .where(
+      and(
+        eq(teamMembers.teamId, team.id),
+        isNull(teamMembers.leftAt),
+        eq(teamMembers.invitationStatus, 'accepted'),
+      ),
+    );
+  const rosterSize = roster?.n ?? 0;
+  if (rosterSize < tournament.teamSize) {
+    throw new TournamentRegistrationError(
+      'roster_too_small',
+      `${tournament.name} needs ${tournament.teamSize} players per team; ${team.name} has ${rosterSize} on its roster.`,
     );
   }
 
@@ -168,7 +193,11 @@ export async function registerTeamForTournament(input: {
         .where(eq(tournamentRegistrations.id, existing.id))
         .returning();
       const r = updated[0];
-      if (!r) throw new TournamentRegistrationError('insert_failed', 'Re-register update returned no row.');
+      if (!r)
+        throw new TournamentRegistrationError(
+          'insert_failed',
+          'Re-register update returned no row.',
+        );
       return r;
     }
 
@@ -188,7 +217,10 @@ export async function registerTeamForTournament(input: {
 
   const detail = await loadRegistrationById(created.id);
   if (!detail) {
-    throw new TournamentRegistrationError('insert_failed', 'Registration created but could not be loaded.');
+    throw new TournamentRegistrationError(
+      'insert_failed',
+      'Registration created but could not be loaded.',
+    );
   }
   return detail;
 }
@@ -202,6 +234,9 @@ export async function withdrawRegistration(input: {
   byUserId: string;
   byPlayerId: string;
 }): Promise<TournamentRegistrationRow> {
+  if (!isUuid(input.registrationId)) {
+    throw new TournamentRegistrationError('not_found', 'Registration not found.');
+  }
   const db = getDb();
   const [reg] = await db
     .select()
@@ -214,16 +249,17 @@ export async function withdrawRegistration(input: {
   // withdrawn registration IDs and learn they exist (no 403 thrown), while active IDs
   // correctly return 403. That asymmetry is a low-severity info leak.
   const isRegistrant = reg.registeredByUserId === input.byUserId;
-  const memberRows = await db
-    .select({ teamId: teamMembers.teamId })
-    .from(teamMembers)
-    .where(and(eq(teamMembers.playerId, input.byPlayerId), eq(teamMembers.teamId, reg.teamId)))
-    .limit(1);
-  const isTeammate = memberRows.length > 0;
-  if (!isRegistrant && !isTeammate) {
+  const role = await loadTeamRole(input.byPlayerId, reg.teamId);
+  if (!isRegistrant && !role) {
     throw new TournamentRegistrationError(
       'forbidden',
       'Only the registrant or a teammate can withdraw this entry.',
+    );
+  }
+  if (!isRegistrant && !isTeamLeaderRole(role)) {
+    throw new TournamentRegistrationError(
+      'captain_only',
+      'Only the captain or co-captain can withdraw the team.',
     );
   }
 
@@ -236,19 +272,23 @@ export async function withdrawRegistration(input: {
     );
   }
 
-  const updated = await db
-    .update(tournamentRegistrations)
-    .set({ status: 'withdrawn', updatedAt: new Date() })
-    .where(eq(tournamentRegistrations.id, reg.id))
-    .returning();
+  // Withdrawing before the event gives any voucher payment back to the voucher.
+  const updated = await db.transaction(async (tx) => {
+    await refundRegistrationRedemptionsInTx(tx, reg.id);
+    return tx
+      .update(tournamentRegistrations)
+      .set({ status: 'withdrawn', updatedAt: new Date() })
+      .where(eq(tournamentRegistrations.id, reg.id))
+      .returning();
+  });
   const out = updated[0];
-  if (!out) throw new TournamentRegistrationError('update_failed', 'Withdraw update returned no row.');
+  if (!out)
+    throw new TournamentRegistrationError('update_failed', 'Withdraw update returned no row.');
   return out;
 }
 
-export async function loadRegistrationById(
-  id: string,
-): Promise<RegistrationWithRelations | null> {
+export async function loadRegistrationById(id: string): Promise<RegistrationWithRelations | null> {
+  if (!isUuid(id)) return null;
   const db = getDb();
   const [reg] = await db
     .select()
@@ -257,11 +297,18 @@ export async function loadRegistrationById(
     .limit(1);
   if (!reg) return null;
 
-  const [tour] = await db.select().from(tournaments).where(eq(tournaments.id, reg.tournamentId)).limit(1);
+  const [tour] = await db
+    .select()
+    .from(tournaments)
+    .where(eq(tournaments.id, reg.tournamentId))
+    .limit(1);
   if (!tour) {
     // FK is `restrict` so this branch can't legitimately fire — log loudly so an
     // ops-side data integrity bug doesn't silently surface as a generic 404.
-    console.error('[loadRegistrationById] orphan tournament FK', { regId: id, tournamentId: reg.tournamentId });
+    console.error('[loadRegistrationById] orphan tournament FK', {
+      regId: id,
+      tournamentId: reg.tournamentId,
+    });
     return null;
   }
   const [tm] = await db.select().from(teams).where(eq(teams.id, reg.teamId)).limit(1);
@@ -332,7 +379,10 @@ export async function listRegistrationsForTournament(
   const teamIds = new Set(regs.map((r) => r.teamId));
   const userIds = new Set(regs.map((r) => r.registeredByUserId));
   const [teamRows, gameRows, userRows] = await Promise.all([
-    db.select().from(teams).where(inArray(teams.id, [...teamIds])),
+    db
+      .select()
+      .from(teams)
+      .where(inArray(teams.id, [...teamIds])),
     db.select().from(games).where(eq(games.id, tour.gameId)),
     db
       .select({ id: users.id, displayName: users.displayName })
@@ -401,15 +451,24 @@ export async function listRegistrationsForPlayer(
   const userIds = new Set(regs.map((r) => r.registeredByUserId));
 
   const [tourRows, teamRows, userRows] = await Promise.all([
-    db.select().from(tournaments).where(inArray(tournaments.id, [...tournamentIds])),
-    db.select().from(teams).where(inArray(teams.id, [...teamIds])),
+    db
+      .select()
+      .from(tournaments)
+      .where(inArray(tournaments.id, [...tournamentIds])),
+    db
+      .select()
+      .from(teams)
+      .where(inArray(teams.id, [...teamIds])),
     db
       .select({ id: users.id, displayName: users.displayName })
       .from(users)
       .where(inArray(users.id, [...userIds])),
   ]);
   const gameIds = new Set(tourRows.map((t) => t.gameId));
-  const gameRows = await db.select().from(games).where(inArray(games.id, [...gameIds]));
+  const gameRows = await db
+    .select()
+    .from(games)
+    .where(inArray(games.id, [...gameIds]));
 
   const tourById = new Map(tourRows.map((t) => [t.id, t]));
   const teamById = new Map(teamRows.map((t) => [t.id, t]));
@@ -450,6 +509,8 @@ export class TournamentRegistrationError extends Error {
       | 'team_not_found'
       | 'not_found'
       | 'forbidden'
+      | 'captain_only'
+      | 'roster_too_small'
       | 'registration_closed'
       | 'game_mismatch'
       | 'tournament_full'
@@ -463,4 +524,3 @@ export class TournamentRegistrationError extends Error {
     this.name = 'TournamentRegistrationError';
   }
 }
-

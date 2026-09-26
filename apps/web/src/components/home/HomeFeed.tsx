@@ -94,7 +94,7 @@ export function HomeFeed() {
         <RecentActivity
           matches={data.recentActivity}
           mode={data.viewer.mode}
-          primaryTeamSlug={data.recommendedTeams[0]?.slug ?? null}
+          primaryTeamSlug={data.viewer.primaryTeamSlug ?? null}
         />
       </div>
 

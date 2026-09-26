@@ -12,6 +12,26 @@ deployment URL and are dated.
 
 Build queue priority pivot 2026-05-02: skip Phone OTP, populate DB with demo data so every model can be tested without auth.
 
+### Vouchers — prepaid payment option (2026-09-26)
+
+Founder request: a voucher is a payment option; with a voucher a team can book as much as it wants until card payments (Tap, P-2) go live.
+
+- **Data** (migration `0008_misty_echo.sql`): `vouchers` (issuer organisation, kind `unlimited` | `stored_value`, KWD balance, optional team / venue scope, use cap, expiry, status) and `voucher_redemptions` (one per paid booking or entry). Not yet in `DOMAIN_MODEL.md` — pending founder sign-off.
+- **Rules** in `@beat-em-all/utils` (`evaluateVoucher`, `normalizeVoucherCode`, `generateVoucherCode`) with 13 Vitest cases; every redemption re-checks them inside a transaction with the voucher row locked, so one balance can't be spent twice.
+- **API**: `GET/POST /api/vouchers` (wallet; issue), `GET/PATCH /api/vouchers/[code]` (check a code; revoke), `POST /api/bookings/[id]/pay`, `POST /api/registrations/[id]/pay`, and `voucherCode` on `POST /api/venues/[slug]/bookings` (book and pay in one step, rolled back if the voucher fails).
+- **Screens**: new `/vouchers` page (team wallet, payment history; issue and revoke for organisation owners/admins), rail item; payment choice in the booking dialog; "Pay with a voucher" on pending bookings and paid tournament entries; withdrawing a paid entry refunds the voucher.
+- **Seeds**: memberships (Ahmad → KEC admin, Omar → DXE Fuel owner, Fatima → Zain admin); vouchers `PILOT-UNLIMITED`, `KEC-SANDSTORM`, `ZAIN-FALCON-50`, `DXE-FUEL-25`; tournaments `kec-valorant-cup-26` (5v5, open) and `kec-eafc-weekly-26` (KWD 5 entry); Sara also on Sandstorm as a starter.
+
+### Fixes — UAT-1…14 (2026-09-26)
+
+- Challenges are private to the two teams (page + API 404 for everyone else); turn-based accept / counter / reject (the side the latest proposal went to answers it); counter-offer form in the app; max 3 open challenges and 10 a day per team; counter dates validated; 5-counter cap expires the challenge; self-challenge returns `cannot_challenge_self`.
+- Captain or co-captain required to challenge, answer, book, register, withdraw and pay (`queries/roles.ts`).
+- Team names unique case-insensitively (index `teams_name_lower_idx`, `409 name_taken`).
+- Registration checks roster size against the tournament's team size (`roster_too_small`).
+- Venue owners/admins see bookings at their venues on `/bookings` and can open them.
+- `/tournaments` and `/venues` render live; organisation pages match tournaments by organisation id.
+- Withdraw uses an in-page confirm; dialogs show the persona's name; challenge crests use team colours; Home's "Challenge" opens the composer and "View team" goes to the viewer's team; API errors shown in the viewer's language; malformed ids return 404 instead of 500; 19 unused translation keys removed.
+
 ### QA — Production UAT across all roles (2026-09-26)
 
 - 80 API scenarios + 11 browser journeys + a 156-load render sweep (every screen, EN/AR, desktop/phone) against https://beat-em-all-v2.vercel.app, as Khaled, Sara, Ahmad, Omar and Fatima.
