@@ -1,21 +1,23 @@
-import { useTranslations } from 'next-intl';
-import Link from 'next/link';
-import { Button, Wordmark } from '@beat-em-all/ui';
+import { useLocale, useTranslations } from 'next-intl';
+import { ArrowLeft } from 'lucide-react';
+import { EmptyState } from '@beat-em-all/ui';
+import { ButtonLink } from '@/components/tournament/ButtonLink';
 
 export default function TournamentNotFound() {
   const t = useTranslations('tournament');
+  const locale = useLocale();
   return (
-    <main className="min-h-screen px-6 py-8 md:px-16 md:py-12 grid place-items-center">
-      <div className="max-w-md text-center">
-        <Wordmark />
-        <h1 className="font-display font-medium text-[40px] mt-8 mb-3">{t('notFoundTitle')}</h1>
-        <p className="text-[var(--t-3)] text-base leading-relaxed mb-6">{t('notFoundBody')}</p>
-        <Link href="/">
-          <Button tone="primary" size="md">
-            ← Home
-          </Button>
-        </Link>
-      </div>
+    <main className="bx-page">
+      <EmptyState
+        title={t('notFoundTitle')}
+        body={t('notFoundBody')}
+        action={
+          <ButtonLink href={`/${locale}/tournaments`} variant="gold">
+            <ArrowLeft className="bx-icon bx-flip" aria-hidden />
+            {t('backToList')}
+          </ButtonLink>
+        }
+      />
     </main>
   );
 }

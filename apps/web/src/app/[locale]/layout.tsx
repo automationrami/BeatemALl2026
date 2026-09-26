@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
+import { AppShell } from '@/components/shell/AppShell';
 import '../globals.css';
 
 type Locale = (typeof routing.locales)[number];
@@ -32,16 +33,10 @@ export default async function LocaleLayout({ children, params }: LayoutProps) {
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
 
   return (
-    <html lang={locale} dir={dir} className="h-full">
+    <html lang={locale} dir={dir} data-theme="night" className="h-full">
       <body className="min-h-full">
         <NextIntlClientProvider locale={locale} messages={messages}>
-          {/*
-            Reading-comfort cap: 1440px max width centered. Previously every page stretched
-            edge-to-edge on wide monitors which made line-lengths uncomfortable. Per-page
-            <main> still controls horizontal padding (px-6 / md:px-16) so narrow viewports
-            don't lose breathing room.
-          */}
-          <div className="mx-auto max-w-[1440px]">{children}</div>
+          <AppShell>{children}</AppShell>
         </NextIntlClientProvider>
       </body>
     </html>

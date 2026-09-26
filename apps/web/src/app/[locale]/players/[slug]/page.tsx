@@ -1,10 +1,6 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Wordmark } from '@beat-em-all/ui';
 import { loadPlayerProfileBySlug } from '@beat-em-all/db/queries';
-import { LanguageToggle } from '@/components/LanguageToggle';
-import { PersonaSwitcher } from '@/components/PersonaSwitcher';
 import { PlayerProfileBySlug } from '@/components/PlayerProfileBySlug';
 
 type PageProps = {
@@ -23,16 +19,7 @@ export default async function PlayerSlugPage({ params }: PageProps) {
   await getTranslations('profile'); // primes the locale for the client subtree
 
   return (
-    <main className="min-h-screen px-6 py-8 md:px-16 md:py-12">
-      <header className="flex items-center justify-between mb-10">
-        <Link href={`/${locale}`}>
-          <Wordmark />
-        </Link>
-        <div className="flex items-center gap-3">
-          <LanguageToggle />
-          <PersonaSwitcher />
-        </div>
-      </header>
+    <main className="bx-page">
       <PlayerProfileBySlug profile={profile} />
     </main>
   );

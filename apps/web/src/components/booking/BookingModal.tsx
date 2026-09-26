@@ -3,8 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { Button } from '@beat-em-all/ui';
+import { X } from 'lucide-react';
+import { Button, GameCard } from '@beat-em-all/ui';
 import { PERSONAS, useActAsPersona } from '@beat-em-all/api-client';
+import { GAMES } from '@beat-em-all/mock-data';
+import type { GameId } from '@beat-em-all/types';
+import { formatAmount } from './format';
 
 type SelfTeam = {
   teamId: string;
@@ -182,209 +186,252 @@ export function BookingModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center p-4 bg-black/70 backdrop-blur-sm"
-      onClick={onClose}
+      className="fixed inset-0 z-50 overflow-y-auto bg-surface-000/80 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
+      aria-labelledby="booking-modal-title"
     >
-      <div
-        className="w-full max-w-md rounded-[20px] border border-[var(--line-2)] bg-[var(--bg-2)] p-6"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="mb-5">
-          <p className="bx-eyebrow mb-2">{t('detailEyebrow')}</p>
-          <h2 className="font-display font-medium text-[24px] tracking-[-0.025em] mb-1">
-            {t('modalTitle', { venueName })}
-          </h2>
-          <p className="text-[var(--t-3)] text-[13px] leading-relaxed">
-            {selfTeamStatus.kind === 'loading'
-              ? '…'
-              : selfTeamStatus.kind === 'error'
-                ? t('errorGeneric', { message: selfTeamStatus.message })
-                : selfTeamStatus.team
-                  ? t('modalSubtitle', { selfTeamName: selfTeamStatus.team.teamName })
-                  : t('errorNoTeam')}
-          </p>
-        </header>
-
-        {selfTeamStatus.kind === 'error' ? (
-          <div className="mt-4 space-y-3" data-testid="booking-load-error">
-            <p className="text-[var(--coral-2)] text-[12px] leading-relaxed">
-              {t('errorGeneric', { message: selfTeamStatus.message })}
-            </p>
-            <Button tone="ghost" size="sm" onClick={onClose}>
-              {t('cancelCta')}
-            </Button>
-          </div>
-        ) : null}
-
-        {selfTeamStatus.kind === 'loaded' && !selfTeam ? (
-          <div className="mt-4 space-y-3">
+      <div className="flex min-h-full items-center justify-center p-4" onClick={onClose}>
+        <div
+          className="w-full max-w-lg overflow-hidden rounded-xl bg-surface-100 text-ink shadow-bx-float"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <header className="flex items-start justify-between gap-4 border-b border-line px-6 pb-5 pt-6">
+            <div className="grid min-w-0 gap-2">
+              <p className="bx-eyebrow">{t('detailEyebrow')}</p>
+              <h2
+                id="booking-modal-title"
+                className="font-display text-[28px] font-bold leading-[30px] text-ink"
+              >
+                {t('modalTitle', { venueName })}
+              </h2>
+              <p className="font-display text-[14px] font-medium leading-[20px] text-ink-muted">
+                {selfTeamStatus.kind === 'loading'
+                  ? t('loadingTeam')
+                  : selfTeamStatus.kind === 'error'
+                    ? t('errorGeneric', { message: selfTeamStatus.message })
+                    : selfTeamStatus.team
+                      ? t('modalSubtitle', { selfTeamName: selfTeamStatus.team.teamName })
+                      : t('errorNoTeam')}
+              </p>
+            </div>
             <Button
-              tone="primary"
+              variant="ghost"
               size="sm"
-              onClick={() => {
-                onClose();
-                router.push(`/${locale}/teams/new`);
-              }}
-              data-testid="booking-create-team-cta"
+              className="bx-btn--icon shrink-0"
+              onClick={onClose}
+              aria-label={t('closeDialog')}
             >
-              {t('createTeamCta')} →
+              <X className="bx-icon size-4" aria-hidden />
             </Button>
-            <Button tone="ghost" size="sm" onClick={onClose}>
-              {t('cancelCta')}
-            </Button>
-          </div>
-        ) : null}
+          </header>
 
-        {selfTeamStatus.kind === 'loaded' && selfTeam && eligibleGames.length === 0 ? (
-          <div className="rounded-xl border border-[var(--coral)] bg-[rgba(251,113,133,0.08)] p-4 mb-4">
-            <p className="text-[var(--coral-2)] text-[13px] leading-relaxed">
-              {t('errorNoEligibleGames', {
-                selfTeam: selfTeam.teamName,
-                venueName,
-                venueGames: supportedGames.map((g) => g.name).join(', ') || '—',
-              })}
-            </p>
-            <div className="mt-3">
-              <Button tone="ghost" size="sm" onClick={onClose}>
-                {t('cancelCta')}
-              </Button>
-            </div>
-          </div>
-        ) : null}
-
-        {selfTeamStatus.kind === 'loaded' && selfTeam && eligibleGames.length > 0 ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="bx-eyebrow block mb-2" htmlFor="booking-game">
-                {t('fieldGame')}
-              </label>
-              <select
-                id="booking-game"
-                value={gameSlug}
-                onChange={(e) => setGameSlug(e.target.value)}
-                className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--bg-1)] px-3 py-2 text-sm font-display"
-              >
-                {eligibleGames.map((g) => (
-                  <option key={g.slug} value={g.slug} className="bg-[var(--bg-2)]">
-                    {g.name} · {t('seatsAvailable', { count: g.seatsCount })}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="bx-eyebrow block mb-2" htmlFor="booking-start">
-                {t('fieldStart')}
-              </label>
-              <input
-                id="booking-start"
-                type="datetime-local"
-                value={start}
-                onChange={(e) => setStart(e.target.value)}
-                className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--bg-1)] px-3 py-2 text-sm font-display"
-                required
-              />
-            </div>
-
-            <div>
-              <p className="bx-eyebrow mb-2">{t('fieldDuration')}</p>
-              <div className="flex gap-2">
-                {DURATIONS.map((h) => (
-                  <button
-                    key={h}
-                    type="button"
-                    onClick={() => setDurationHours(h)}
-                    className={[
-                      'px-4 py-2 rounded-xl border text-sm font-display font-medium transition-colors',
-                      durationHours === h
-                        ? 'border-[var(--violet-2)] bg-[rgba(139,92,246,0.12)] text-white'
-                        : 'border-[var(--line-2)] bg-[var(--bg-1)] text-[var(--t-3)] hover:text-white',
-                    ].join(' ')}
-                  >
-                    {t('hoursLabel', { hours: h })}
-                  </button>
-                ))}
+          <div className="px-6 pb-6 pt-5">
+            {selfTeamStatus.kind === 'loading' ? (
+              <div className="grid gap-3" aria-hidden>
+                <div className="h-20 animate-pulse rounded-tile bg-surface-200" />
+                <div className="h-11 animate-pulse rounded-md bg-surface-200" />
+                <div className="h-11 animate-pulse rounded-md bg-surface-200" />
               </div>
-            </div>
-
-            <div>
-              <label className="bx-eyebrow block mb-2" htmlFor="booking-seats">
-                {t('fieldSeats', { max: selectedGame?.seatsCount ?? 1 })}
-              </label>
-              <input
-                id="booking-seats"
-                type="number"
-                min={1}
-                max={selectedGame?.seatsCount ?? 1}
-                value={seatsCount}
-                onChange={(e) => {
-                  const max = selectedGame?.seatsCount ?? 1;
-                  const parsed = Number.parseInt(e.target.value, 10);
-                  if (Number.isNaN(parsed)) return;
-                  setSeatsCount(Math.min(max, Math.max(1, parsed)));
-                }}
-                className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--bg-1)] px-3 py-2 text-sm font-display"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="bx-eyebrow block mb-2" htmlFor="booking-notes">
-                {t('fieldNotes')}
-              </label>
-              <textarea
-                id="booking-notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder={t('fieldNotesPlaceholder')}
-                rows={2}
-                className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--bg-1)] px-3 py-2 text-sm font-display placeholder:text-[var(--t-4)]"
-              />
-            </div>
-
-            <div className="rounded-xl border border-[var(--line)] bg-[var(--bg-1)] p-4">
-              <p className="bx-eyebrow mb-1">{t('priceEyebrow')}</p>
-              <p className="font-display font-medium text-[20px]">
-                {t('priceLine', {
-                  rate: venueHourlyRateKwd,
-                  seats: seatsCount,
-                  hours: durationHours,
-                  total: totalKwd.toFixed(2),
-                })}
-              </p>
-              <p className="text-[var(--t-4)] text-[11px] mt-1">{t('priceFootnote')}</p>
-            </div>
-
-            {error ? (
-              <p
-                className="text-[var(--coral-2)] text-[12px] leading-relaxed"
-                data-testid="booking-error"
-              >
-                {t('errorGeneric', { message: error })}
-              </p>
             ) : null}
 
-            <div className="flex justify-end gap-2 pt-2">
-              <Button tone="ghost" size="sm" type="button" onClick={onClose} disabled={submitting}>
-                {t('cancelCta')}
-              </Button>
-              <Button
-                tone="primary"
-                size="sm"
-                type="submit"
-                disabled={submitting || !gameSlug}
-                data-testid="booking-submit"
-              >
-                {submitting ? '…' : t('submitCta')}
-              </Button>
-            </div>
-            <p className="bx-eyebrow text-[var(--t-4)]" data-testid="acting-as">
-              acting as: {personaSlug}
-            </p>
-          </form>
-        ) : null}
+            {selfTeamStatus.kind === 'error' ? (
+              <div className="grid justify-items-start gap-4" data-testid="booking-load-error">
+                <p className="w-full rounded-md bg-negative-soft px-4 py-3 font-display text-[13px] font-medium leading-relaxed text-negative">
+                  {t('errorGeneric', { message: selfTeamStatus.message })}
+                </p>
+                <Button variant="ghost" size="sm" onClick={onClose}>
+                  {t('cancelCta')}
+                </Button>
+              </div>
+            ) : null}
+
+            {selfTeamStatus.kind === 'loaded' && !selfTeam ? (
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="gold"
+                  onClick={() => {
+                    onClose();
+                    router.push(`/${locale}/teams/new`);
+                  }}
+                  data-testid="booking-create-team-cta"
+                >
+                  {t('createTeamCta')}
+                </Button>
+                <Button variant="ghost" onClick={onClose}>
+                  {t('cancelCta')}
+                </Button>
+              </div>
+            ) : null}
+
+            {selfTeamStatus.kind === 'loaded' && selfTeam && eligibleGames.length === 0 ? (
+              <div className="grid justify-items-start gap-4">
+                <p className="w-full rounded-md bg-negative-soft px-4 py-3 font-display text-[13px] font-medium leading-relaxed text-negative">
+                  {t('errorNoEligibleGames', {
+                    selfTeam: selfTeam.teamName,
+                    venueName,
+                    venueGames: supportedGames.map((g) => g.name).join(', ') || '—',
+                  })}
+                </p>
+                <Button variant="ghost" size="sm" onClick={onClose}>
+                  {t('cancelCta')}
+                </Button>
+              </div>
+            ) : null}
+
+            {selfTeamStatus.kind === 'loaded' && selfTeam && eligibleGames.length > 0 ? (
+              <form onSubmit={handleSubmit} className="grid gap-5">
+                <div>
+                  <p className="bx-eyebrow mb-2" id="booking-game-label">
+                    {t('fieldGame')}
+                  </p>
+                  <div
+                    id="booking-game"
+                    role="group"
+                    aria-labelledby="booking-game-label"
+                    className="grid grid-cols-2 gap-2 sm:grid-cols-3"
+                  >
+                    {eligibleGames.map((g) => {
+                      const meta = GAMES[g.slug as GameId];
+                      return (
+                        <GameCard
+                          key={g.slug}
+                          shortName={meta?.shortName ?? g.name}
+                          // Isolate the (Latin) game name so the line reads correctly in RTL.
+                          title={`⁨${g.name}⁩ · ${t('seatsAvailable', { count: g.seatsCount })}`}
+                          brandColor={meta?.brandColor ?? ''}
+                          selected={gameSlug === g.slug}
+                          onToggle={() => setGameSlug(g.slug)}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="bx-eyebrow mb-2 block" htmlFor="booking-start">
+                    {t('fieldStart')}
+                  </label>
+                  <input
+                    id="booking-start"
+                    type="datetime-local"
+                    value={start}
+                    onChange={(e) => setStart(e.target.value)}
+                    className="bx-field [color-scheme:dark]"
+                    required
+                  />
+                </div>
+
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div>
+                    <p className="bx-eyebrow mb-2" id="booking-duration-label">
+                      {t('fieldDuration')}
+                    </p>
+                    <div className="bx-seg" role="group" aria-labelledby="booking-duration-label">
+                      {DURATIONS.map((h) => (
+                        <button
+                          key={h}
+                          type="button"
+                          aria-pressed={durationHours === h}
+                          onClick={() => setDurationHours(h)}
+                        >
+                          {t('hoursLabel', { hours: h })}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="bx-eyebrow mb-2 block" htmlFor="booking-seats">
+                      {t('fieldSeats', { max: selectedGame?.seatsCount ?? 1 })}
+                    </label>
+                    <input
+                      id="booking-seats"
+                      type="number"
+                      min={1}
+                      max={selectedGame?.seatsCount ?? 1}
+                      value={seatsCount}
+                      onChange={(e) => {
+                        const max = selectedGame?.seatsCount ?? 1;
+                        const parsed = Number.parseInt(e.target.value, 10);
+                        if (Number.isNaN(parsed)) return;
+                        setSeatsCount(Math.min(max, Math.max(1, parsed)));
+                      }}
+                      className="bx-field bx-num"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="bx-eyebrow mb-2 block" htmlFor="booking-notes">
+                    {t('fieldNotes')}
+                  </label>
+                  <textarea
+                    id="booking-notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder={t('fieldNotesPlaceholder')}
+                    rows={2}
+                    className="bx-field resize-y py-2.5"
+                  />
+                </div>
+
+                <div className="bx-inset grid gap-3 p-4">
+                  <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+                    <div className="grid gap-1">
+                      <p className="bx-eyebrow">{t('priceEyebrow')}</p>
+                      <p className="font-display text-[13px] font-medium tabular-nums text-ink-muted">
+                        {t('priceFormula', {
+                          rate: formatAmount(venueHourlyRateKwd),
+                          seats: seatsCount,
+                          hours: durationHours,
+                        })}
+                      </p>
+                    </div>
+                    <p className="bx-num bx-gold-num text-[34px]" data-testid="booking-total">
+                      {t('money', { amount: formatAmount(totalKwd) })}
+                    </p>
+                  </div>
+                  <p className="font-display text-[12px] font-medium leading-[16px] text-ink-muted">
+                    {t('priceFootnote')}
+                  </p>
+                </div>
+
+                {error ? (
+                  <p
+                    className="rounded-md bg-negative-soft px-4 py-3 font-display text-[13px] font-medium leading-relaxed text-negative"
+                    data-testid="booking-error"
+                  >
+                    {t('errorGeneric', { message: error })}
+                  </p>
+                ) : null}
+
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p
+                    className="font-display text-[12px] font-medium text-ink-muted"
+                    data-testid="acting-as"
+                  >
+                    {t('actingAs', { persona: personaSlug })}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" type="button" onClick={onClose} disabled={submitting}>
+                      {t('cancelCta')}
+                    </Button>
+                    <Button
+                      variant="gold"
+                      type="submit"
+                      disabled={submitting || !gameSlug}
+                      data-testid="booking-submit"
+                    >
+                      {submitting ? t('submitting') : t('submitCta')}
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            ) : null}
+          </div>
+        </div>
       </div>
     </div>
   );

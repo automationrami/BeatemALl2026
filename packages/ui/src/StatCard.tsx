@@ -14,10 +14,9 @@ type StatCardProps = {
 };
 
 const variantClasses: Record<NonNullable<StatCardProps['variant']>, string> = {
-  glass: 'bx-card',
-  flat: 'rounded-[20px] border border-[var(--line)] bg-[var(--bg-2)]',
-  gradient:
-    'rounded-[20px] border border-[rgba(167,139,250,0.18)] bg-[linear-gradient(135deg,rgba(139,92,246,0.18),rgba(6,182,212,0.06)_45%,rgba(251,113,133,0.10)_100%),linear-gradient(180deg,#16131F,#0F1015)] shadow-[0_0_0_1px_rgba(139,92,246,0.08),0_30px_80px_-30px_rgba(139,92,246,0.45)]',
+  glass: 'bx-card bx-card--flat',
+  flat: 'bx-card bx-card--flat',
+  gradient: 'bx-podium min-h-0',
 };
 
 /** Atomic stat card — eyebrow + big number + optional sub. Variants from the prototype. */
@@ -31,12 +30,23 @@ export function StatCard({
 }: StatCardProps) {
   return (
     <div className={`p-5 ${variantClasses[variant]}`}>
-      <p className="bx-eyebrow mb-3">{label}</p>
-      <p className="bx-num text-[40px] mb-1" style={valueColor ? { color: valueColor } : undefined}>
+      <p
+        className={['bx-eyebrow mb-3', variant === 'gradient' ? 'text-on-band-muted' : ''].join(
+          ' ',
+        )}
+      >
+        {label}
+      </p>
+      <p className={['bx-num text-[34px] mb-1.5', valueColor ? 'bx-gold-num' : ''].join(' ')}>
         {value}
       </p>
       {sub && (
-        <p className="text-xs font-display" style={{ color: subColor ?? 'var(--t-4)' }}>
+        <p
+          className={[
+            'text-[13px] font-medium',
+            subColor ? 'text-positive' : 'text-ink-muted',
+          ].join(' ')}
+        >
           {sub}
         </p>
       )}

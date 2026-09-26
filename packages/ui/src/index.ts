@@ -3,6 +3,7 @@
 
 export * from './Avatar';
 export * from './Button';
+export * from './buttonClass';
 export * from './GameCard';
 export * from './MatchRow';
 export * from './OtpInput';
@@ -11,6 +12,12 @@ export * from './StatCard';
 export * from './StatPentagon';
 export * from './StepIndicator';
 export * from './TeamCrest';
+export * from './Layout';
+export * from './Matches';
+export * from './Profile';
+export * from './Rankings';
+export * from './Tabs';
+export * from './Tag';
 export * from './TextInput';
 export * from './VsBlock';
 export * from './Wordmark';

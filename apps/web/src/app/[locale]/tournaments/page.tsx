@@ -1,21 +1,12 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
-import { Pill, Wordmark } from '@beat-em-all/ui';
-import { GAMES } from '@beat-em-all/mock-data';
+import { ChevronRight, ShieldCheck } from 'lucide-react';
+import { EmptyState, PageHead, StatStrip, Tag } from '@beat-em-all/ui';
+import { ButtonLink } from '@/components/tournament/ButtonLink';
 import { listSurfaceableTournaments } from '@beat-em-all/db/queries';
-import { LanguageToggle } from '@/components/LanguageToggle';
-import { PersonaSwitcher } from '@/components/PersonaSwitcher';
+import { formatAmount, gameTitle, tournamentStatusTone } from '@/components/tournament/display';
 
 type PageProps = { params: Promise<{ locale: string }> };
-
-function formatKwd(amount: number): string {
-  if (amount >= 1000) {
-    const thousands = amount / 1000;
-    const formatted = Number.isInteger(thousands) ? thousands.toFixed(0) : thousands.toFixed(1);
-    return `${formatted}K`;
-  }
-  return amount.toLocaleString();
-}
 
 export default async function TournamentsIndexPage({ params }: PageProps) {
   const { locale } = await params;
@@ -24,83 +15,118 @@ export default async function TournamentsIndexPage({ params }: PageProps) {
   const tournaments = await listSurfaceableTournaments();
   const t = await getTranslations('tournament');
 
-  return (
-    <main className="min-h-screen px-6 py-8 md:px-16 md:py-12">
-      <header className="flex items-center justify-between mb-10">
-        <Link href={`/${locale}`}>
-          <Wordmark />
-        </Link>
-        <div className="flex items-center gap-3">
-          <LanguageToggle />
-          <PersonaSwitcher />
-        </div>
-      </header>
+  const prizeTotal = tournaments.reduce((sum, tour) => sum + tour.prizePoolKWD, 0);
+  const openCount = tournaments.filter((tour) => tour.status === 'registration_open').length;
+  const liveCount = tournaments.filter((tour) => tour.status === 'in_progress').length;
+  const sanctionedCount = tournaments.filter((tour) => tour.isSanctioned).length;
 
-      <section className="mb-10">
-        <p className="bx-eyebrow mb-3">{t('indexEyebrow')}</p>
-        <h1 className="font-display font-medium text-[40px] md:text-[56px] leading-[0.95] tracking-[-0.035em] mb-4">
-          {t('indexTitle')}
-        </h1>
-        <p className="text-[var(--t-3)] max-w-xl text-base leading-relaxed">{t('indexSubtitle')}</p>
-      </section>
+  const statusLabel = (status: string) =>
+    status === 'in_progress'
+      ? t('inProgress')
+      : status === 'registration_open'
+        ? t('registrationOpen')
+        : t('upcoming');
+
+  return (
+    <main className="bx-page">
+      <PageHead
+        eyebrow={[t('indexEyebrow'), t('eventCount', { count: tournaments.length })]}
+        title={t('indexTitle')}
+        description={t('indexSubtitle')}
+      >
+        {/* Four numbers crowd a phone: the prize total gets its own row below md. */}
+        <div className="max-md:[&_.bx-stat:first-child]:col-span-full max-md:[&_.bx-stat:nth-child(2)]:border-s-0 max-md:[&_.bx-stat:nth-child(n+2)]:border-t max-md:[&_.bx-stat:nth-child(n+2)]:border-line max-md:[&_.bx-stat]:px-5 max-md:[&_.bx-stats]:grid-cols-3">
+          <StatStrip
+            bordered
+            items={[
+              {
+                label: t('statPrizeTotal'),
+                value: t('moneyKwd', { amount: formatAmount(prizeTotal) }),
+                tone: 'gold',
+              },
+              { label: t('statOpen'), value: openCount },
+              { label: t('statLive'), value: liveCount },
+              { label: t('statSanctioned'), value: sanctionedCount, of: tournaments.length },
+            ]}
+          />
+        </div>
+      </PageHead>
 
       {tournaments.length === 0 ? (
-        <p className="text-[var(--t-3)] text-sm leading-relaxed py-12 text-center">
-          {t('emptyList')}
-        </p>
+        <EmptyState title={t('emptyList')} />
       ) : (
-        <section className="space-y-3">
-          {tournaments.map((tour) => (
-            <Link
-              key={tour.id}
-              href={`/${locale}/tournaments/${tour.slug}`}
-              className={[
-                'flex items-center gap-4 rounded-[20px] border bg-[var(--bg-2)] p-5 hover:bg-[var(--bg-3)] transition-colors',
-                tour.isSanctioned
-                  ? 'border-[var(--line)] border-s-2 border-s-[var(--cyan-2)]'
-                  : 'border-[var(--line)]',
-              ].join(' ')}
-            >
-              <span
-                className="w-16 h-16 rounded-xl shrink-0 grid place-items-center font-display font-bold text-white text-[18px]"
-                style={{
-                  background: `linear-gradient(135deg, ${tour.organizerAccent}, ${tour.organizerAccent}55)`,
-                  border: '1px solid rgba(255,255,255,0.08)',
-                }}
-                aria-hidden
+        <section className="grid gap-4" aria-label={t('indexTitle')}>
+          {tournaments.map((tour) => {
+            const href = `/${locale}/tournaments/${tour.slug}`;
+            const isOpen = tour.status === 'registration_open';
+            return (
+              <article
+                key={tour.id}
+                className="bx-card bx-card--flat grid gap-4 p-4 transition-colors hover:bg-surface-200 md:grid-cols-[148px_minmax(0,1fr)_auto] md:items-center md:p-5"
               >
-                {tour.name.slice(0, 2).toUpperCase()}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-display font-medium text-[18px] truncate">{tour.name}</p>
-                <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                  <Pill>{GAMES[tour.game]?.shortName ?? tour.game}</Pill>
-                  <span className="font-mono text-[10.5px] text-[var(--t-4)] tracking-[0.08em] uppercase">
-                    {tour.organizer}
-                  </span>
-                  {tour.isSanctioned ? (
-                    <Pill tone="cyan" dot>
-                      {t('sanctioned')}
-                    </Pill>
+                <div className="bx-inset grid min-h-[48px] place-items-center px-3 py-2 text-center font-display text-[15px] font-extrabold uppercase italic leading-[17px] text-ink md:min-h-[88px]">
+                  {gameTitle(tour.game)}
+                </div>
+
+                <div className="grid min-w-0 gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {tour.isSanctioned ? (
+                      <Tag
+                        tone="org"
+                        icon={
+                          <ShieldCheck
+                            className="bx-icon"
+                            role="img"
+                            aria-label={t('sanctioned')}
+                          />
+                        }
+                      >
+                        {tour.organizer}
+                      </Tag>
+                    ) : (
+                      <Tag>{tour.organizer}</Tag>
+                    )}
+                    <Tag tone={tournamentStatusTone(tour.status)}>{statusLabel(tour.status)}</Tag>
+                  </div>
+                  <h2 className="m-0 font-display text-[22px] font-bold leading-[26px] text-ink">
+                    <Link
+                      href={href}
+                      className="text-ink no-underline after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
+                    >
+                      {tour.name}
+                    </Link>
+                  </h2>
+                  {tour.startsInLabel ? (
+                    <p className="m-0 text-[13px] font-medium leading-[18px] text-ink-muted">
+                      {tour.startsInLabel}
+                    </p>
                   ) : null}
                 </div>
-              </div>
-              <div className="text-end shrink-0">
-                {tour.prizePoolKWD > 0 ? (
-                  <p className="bx-num text-[24px]">
-                    {t('prizePoolLabel', { amount: formatKwd(tour.prizePoolKWD) })}
-                  </p>
-                ) : (
-                  <p className="font-mono text-[11px] text-[var(--t-4)] uppercase tracking-[0.08em]">
-                    {t('free')}
-                  </p>
-                )}
-                <p className="font-mono text-[10.5px] text-[var(--t-3)] tracking-[0.06em] mt-1">
-                  {tour.startsInLabel}
-                </p>
-              </div>
-            </Link>
-          ))}
+
+                <div className="flex items-center justify-between gap-4 border-t border-line pt-4 md:justify-end md:border-t-0 md:pt-0">
+                  <div className="grid gap-1 md:text-end">
+                    <span className="bx-eyebrow">{t('prizePool')}</span>
+                    {tour.prizePoolKWD > 0 ? (
+                      <b className="bx-num bx-gold-num text-[26px] leading-[28px]">
+                        {t('moneyKwd', { amount: formatAmount(tour.prizePoolKWD) })}
+                      </b>
+                    ) : (
+                      <b className="font-display text-[18px] font-bold leading-[28px] text-ink">
+                        {t('free')}
+                      </b>
+                    )}
+                  </div>
+                  {isOpen ? (
+                    <ButtonLink href={href} variant="gold" size="sm" className="relative z-10">
+                      {t('registerCta')}
+                    </ButtonLink>
+                  ) : (
+                    <ChevronRight className="bx-icon bx-flip text-ink-muted" aria-hidden />
+                  )}
+                </div>
+              </article>
+            );
+          })}
         </section>
       )}
     </main>

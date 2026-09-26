@@ -1,105 +1,78 @@
-// @beat-em-all/design-tokens — Brand tokens extracted from the Claude Design bundle.
-// Exposed as TS constants for app code AND as Tailwind preset + raw CSS for global imports.
+// @beat-em-all/design-tokens — Championship Gold (2026-09-26).
+// TS mirror of tokens.css (night theme values). Prefer the CSS variables in components;
+// use these constants only where a raw value is unavoidable (canvas, OG images, emails).
 
 export const surfaces = {
-  bg0: '#0A0B0F', // canvas
-  bg1: '#0F1015',
-  bg2: '#14161D', // card flat
-  bg3: '#1A1D26',
-  bgElev: '#1E212C',
+  s000: '#0D0C0A', // page ground
+  s100: '#161512', // cards, rows, rail
+  s200: '#1F1D19', // inset trays
+  s300: '#2A2722', // hover, pressed, ink buttons
+  band: '#050504', // heavy black band
 } as const;
 
 export const lines = {
-  base: 'rgba(255,255,255,0.06)',
-  strong: 'rgba(255,255,255,0.10)',
-  emphasis: 'rgba(255,255,255,0.18)',
+  base: 'rgba(255,255,255,0.08)',
+  strong: 'rgba(255,255,255,0.18)',
 } as const;
 
-export const text = {
-  t1: '#FFFFFF',
-  t2: 'rgba(255,255,255,0.78)',
-  t3: 'rgba(255,255,255,0.55)',
-  t4: 'rgba(255,255,255,0.35)',
-  t5: 'rgba(255,255,255,0.18)',
+export const ink = {
+  primary: '#F4F1EA',
+  muted: '#ABA59A',
+  faint: '#7A756C',
+  onBand: '#FFFFFF',
+  onGold: '#17120A',
 } as const;
 
-export const brand = {
-  violet: '#8B5CF6',
-  violet2: '#A78BFA',
-  violetDeep: '#5B21B6',
-  violetGlow: 'rgba(139,92,246,0.35)',
-  cyan: '#06B6D4',
-  cyan2: '#22D3EE',
-  coral: '#FB7185',
-  coral2: '#FDA4AF',
-  lime: '#BEF264',
-  amber: '#FBBF24',
+export const gold = {
+  g100: '#F2C575',
+  g300: '#BE9E59',
+  g500: '#987C4B',
+  g700: '#4E442D',
+  text: '#C9A862',
+  textHi: '#F5D08A',
 } as const;
 
-export const country = {
-  kw: '#FB7185', // Kuwait
-  ksa: '#A78BFA', // Saudi
-  ae: '#22D3EE', // U.A.E.
-  bh: '#BEF264', // Bahrain
-  qa: '#FBBF24', // Qatar
-  om: '#FDA4AF', // Oman
+export const medals = {
+  gold: '#C9A862',
+  silver: '#B3B3B3',
+  bronze: '#B8733A',
 } as const;
 
 export const semantic = {
-  positive: '#BEF264',
-  negative: '#FB7185',
-  warn: '#FBBF24',
-  info: '#22D3EE',
-  live: '#FB7185',
+  positive: '#3DD68C',
+  negative: '#FF6B5E',
+  live: '#D42A00',
+  info: '#6E9BFF',
+  flare: '#F4890F',
+  ember: '#FF3600',
+} as const;
+
+export const gradients = {
+  gold: 'radial-gradient(122.78% 179% at 50.21% 0%, #F2C575 0%, #987C4B 40.5%, #4E442D 92.88%)',
+  silver: 'radial-gradient(50% 100% at 50% 0%, #A6A6A6 0%, #727272 100%)',
+  bronze: 'radial-gradient(50% 100% at 50% 0%, #93551B 0%, #683C13 100%)',
+  fire: 'linear-gradient(90deg, #FF3600 -11.3%, #D1B26E 50.85%)',
 } as const;
 
 export const fonts = {
-  display: "'Space Grotesk', 'Söhne', 'Neue Haas Grotesk Display', system-ui, sans-serif",
-  mono: "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace",
-  arabic: "'IBM Plex Sans Arabic', system-ui, sans-serif",
-  bodyEn: "'Inter', system-ui, sans-serif",
+  display: "'Saira', 'Tajawal', 'Arial Narrow', system-ui, sans-serif",
+  arabic: "'Tajawal', 'Saira', 'Segoe UI', Tahoma, sans-serif",
 } as const;
 
 export const radii = {
-  sm: '8px',
-  md: '14px',
-  lg: '20px',
-  xl: '28px',
+  medal: '3px',
+  chip: '4px',
+  sm: '6px',
+  md: '8px',
+  tile: '14px',
+  lg: '16px',
+  xl: '24px',
+  xxl: '32px',
+  pill: '999px',
 } as const;
 
-export const fontSize = {
-  hero: '96px',
-  display: '72px',
-  h1: '52px',
-  h2: '40px',
-  h3: '28px',
-  h4: '20px',
-  body: '14px',
-  sm: '12.5px',
-  xs: '11px',
-  mono: '11px',
-  numXl: '96px',
-  numL: '56px',
-  numM: '38px',
-  numS: '22px',
-} as const;
+/** Default accent for a team or player with no colour of their own. */
+export const DEFAULT_ACCENT = gold.g500;
 
-export const shadows = {
-  card: '0 1px 0 rgba(255,255,255,.04) inset, 0 0 0 1px rgba(255,255,255,.05), 0 30px 60px -30px rgba(0,0,0,.6)',
-  glow: '0 0 0 1px rgba(139,92,246,.35), 0 0 60px -10px rgba(139,92,246,.45)',
-  prize: '0 0 0 1px rgba(139,92,246,.08), 0 30px 80px -30px rgba(139,92,246,.45)',
-} as const;
-
-export const tokens = {
-  surfaces,
-  lines,
-  text,
-  brand,
-  country,
-  semantic,
-  fonts,
-  radii,
-  fontSize,
-  shadows,
-};
+export const tokens = { surfaces, lines, ink, gold, medals, semantic, gradients, fonts, radii };
 export default tokens;

@@ -1,24 +1,22 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Pill, Wordmark } from '@beat-em-all/ui';
+import { CalendarRange, Check, ChevronLeft, MapPin } from 'lucide-react';
+import { Notice, Tag, buttonClass } from '@beat-em-all/ui';
 import { loadChallengeById, loadChallengeNegotiations } from '@beat-em-all/db/queries';
-import { LanguageToggle } from '@/components/LanguageToggle';
-import { PersonaSwitcher } from '@/components/PersonaSwitcher';
 import { ChallengeActions } from '@/components/challenge/ChallengeActions';
+import { ChallengeHero } from '@/components/challenge/ChallengeHero';
+import {
+  challengeStatusKey,
+  challengeStatusTone,
+  formatDateTime,
+  formatDayRange,
+} from '@/components/challenge/challengeStatus';
 import { getCurrentUser } from '@/lib/current-user';
 
 type PageProps = {
   params: Promise<{ locale: string; id: string }>;
 };
-
-function statusTone(status: string): 'amber' | 'lime' | 'coral' | 'cyan' | 'default' {
-  if (status === 'pending') return 'amber';
-  if (status === 'negotiating') return 'cyan';
-  if (status === 'accepted' || status === 'booked') return 'lime';
-  if (status === 'rejected' || status === 'expired' || status === 'cancelled') return 'coral';
-  return 'default';
-}
 
 export default async function ChallengeDetailPage({ params }: PageProps) {
   const { locale, id } = await params;
@@ -36,133 +34,171 @@ export default async function ChallengeDetailPage({ params }: PageProps) {
   const isPending = ['pending', 'negotiating'].includes(data.challenge.status);
   const canAct = isChallenged && isPending;
 
-  const statusLabel = t(
-    `status${data.challenge.status.charAt(0).toUpperCase() + data.challenge.status.slice(1)}` as
-      | 'statusPending'
-      | 'statusNegotiating'
-      | 'statusAccepted'
-      | 'statusRejected'
-      | 'statusExpired'
-      | 'statusCancelled'
-      | 'statusBooked',
-  );
+  const statusLabel = t(challengeStatusKey(data.challenge.status));
 
-  // Format dates server-side using the runtime timezone so the displayed time matches what
-  // the founder typed in `datetime-local` (the previous toISOString() output was always UTC).
-  const dateFormat = new Intl.DateTimeFormat(locale === 'ar' ? 'ar-KW' : 'en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: 'Asia/Kuwait',
-  });
-  const dateRange = `${dateFormat.format(data.challenge.proposedDateRangeStart)} → ${dateFormat.format(data.challenge.proposedDateRangeEnd)}`;
+  // Format dates server-side in Kuwait time so the displayed time matches what the
+  // founder typed in `datetime-local` (toISOString() output was always UTC).
+  const dateRange = `${formatDateTime(locale, data.challenge.proposedDateRangeStart)} – ${formatDateTime(locale, data.challenge.proposedDateRangeEnd)}`;
+
+  const facts: { label: string; value: React.ReactNode }[] = [
+    { label: t('detailFormat'), value: data.challenge.proposedFormat.toUpperCase() },
+    { label: t('detailGame'), value: data.game.name },
+    { label: t('detailWindow'), value: dateRange },
+    {
+      label: t('detailVenue'),
+      value: data.challenge.proposedVenueSlug ? (
+        <Link
+          href={`/${locale}/venues/${data.challenge.proposedVenueSlug}`}
+          className="inline-flex items-center gap-1.5 text-gold-text hover:underline"
+        >
+          <MapPin className="bx-icon" aria-hidden />
+          {data.challenge.proposedVenueSlug}
+        </Link>
+      ) : (
+        t('inboxVenueTbd')
+      ),
+    },
+    ...(data.challenge.expiresAt && isPending
+      ? [{ label: t('detailRespondBy'), value: formatDateTime(locale, data.challenge.expiresAt) }]
+      : []),
+  ];
 
   return (
-    <main className="min-h-screen px-6 py-8 md:px-16 md:py-12">
-      <header className="flex items-center justify-between mb-10">
-        <Link href={`/${locale}`}>
-          <Wordmark />
+    <main className="bx-page">
+      <div className="grid gap-4">
+        <Link
+          href={`/${locale}/challenges`}
+          className={buttonClass('ghost', 'sm', false, 'justify-self-start')}
+        >
+          <ChevronLeft className="bx-icon bx-flip" aria-hidden />
+          {t('inboxTitle')}
         </Link>
-        <div className="flex items-center gap-3">
-          <LanguageToggle />
-          <PersonaSwitcher />
-        </div>
-      </header>
 
-      <Link
-        href={`/${locale}/challenges`}
-        className="inline-block bx-eyebrow mb-6 hover:text-white transition-colors"
-      >
-        ← {t('inboxTitle')}
-      </Link>
-
-      <section className="bx-card p-7 mb-4">
-        <p className="bx-eyebrow mb-3">
-          {t('detailEyebrow')} · {data.game.name.toUpperCase()}
-        </p>
-        <h1 className="font-display font-medium text-[36px] md:text-[48px] leading-[0.95] tracking-[-0.035em] mb-3">
-          {t('detailVs', {
+        <ChallengeHero
+          title={t('detailVs', {
             challenger: data.challengerTeam.name,
             challenged: data.challengedTeam.name,
           })}
-        </h1>
-        <div className="flex flex-wrap gap-2 mb-5">
-          <Pill tone={statusTone(data.challenge.status)}>{statusLabel}</Pill>
-          <Pill>{data.challenge.proposedFormat.toUpperCase()}</Pill>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-end">
-          <div>
-            <p className="bx-eyebrow mb-3">{t('currentProposal')}</p>
-            <p className="font-display font-medium text-[16px] mb-1">
-              {data.challenge.proposedFormat.toUpperCase()} · {data.game.name}
-            </p>
-            <p className="font-mono text-[12px] text-[var(--t-3)] tracking-[0.06em]">{dateRange}</p>
-            {data.challenge.proposedVenueSlug ? (
-              <p className="font-mono text-[12px] text-[var(--t-3)] tracking-[0.06em]">
-                📍 {data.challenge.proposedVenueSlug}
-              </p>
-            ) : null}
-            {data.challenge.message ? (
-              <p className="text-[var(--t-3)] text-[14px] leading-relaxed mt-3 max-w-md">
-                {data.challenge.message}
-              </p>
-            ) : null}
-          </div>
-          <ChallengeActions
-            challengeId={data.challenge.id}
-            canAct={canAct}
-            // Always surface a reason when canAct is false so the action area isn't silently
-            // empty. Three cases: terminal status (accepted/rejected/etc.) → show the status
-            // label; pending but not on the challenged team → tell user to switch persona.
-            cannotActReason={!isPending ? statusLabel : !isChallenged ? t('youCannotAct') : null}
-          />
-        </div>
+          challenger={{
+            name: data.challengerTeam.name,
+            tag: data.challengerTeam.tag,
+            sub: data.challengerTeam.city,
+            role: t('detailChallenger'),
+          }}
+          challenged={{
+            name: data.challengedTeam.name,
+            tag: data.challengedTeam.tag,
+            sub: data.challengedTeam.city,
+            role: t('detailChallenged'),
+          }}
+          tags={
+            <>
+              <Tag tone={challengeStatusTone(data.challenge.status)}>{statusLabel}</Tag>
+              <Tag tone="paper">{data.challenge.proposedFormat.toUpperCase()}</Tag>
+              <span className="bx-eyebrow ms-1 text-on-band-muted">
+                {t('detailEyebrow')} · {data.game.name}
+              </span>
+            </>
+          }
+        />
 
         {data.challenge.matchId ? (
-          <p
-            className="mt-5 px-4 py-3 rounded-xl border border-[var(--lime)] bg-[rgba(190,242,100,0.08)] text-[var(--lime)] font-display text-[13px] leading-relaxed"
-            data-testid="accepted-notice"
-          >
-            {t('acceptedNotice')}
-          </p>
+          <div data-testid="accepted-notice">
+            <Notice mark={<Check className="bx-icon" aria-hidden />}>{t('acceptedNotice')}</Notice>
+          </div>
         ) : null}
-      </section>
+      </div>
 
-      {negotiations.length > 0 ? (
-        <section className="rounded-[20px] border border-[var(--line)] bg-[var(--bg-2)] p-5">
-          <p className="bx-eyebrow mb-4">{t('negotiationHistory')}</p>
-          <ol className="space-y-3">
-            {negotiations.map((n) => {
-              const proposedByName =
-                n.proposedByTeamId === data.challengerTeam.id
-                  ? data.challengerTeam.name
-                  : data.challengedTeam.name;
-              return (
-                <li
-                  key={n.id}
-                  className="rounded-xl border border-[var(--line)] bg-[var(--bg-1)] p-3"
-                >
-                  <p className="font-mono text-[10.5px] text-[var(--t-4)] tracking-[0.08em] uppercase">
-                    {t('proposedBy', { team: proposedByName })} ·{' '}
-                    {n.createdAt.toISOString().slice(0, 16).replace('T', ' ')}
-                  </p>
-                  <p className="font-display text-[13px] mt-1">
-                    {n.proposedFormat.toUpperCase()} ·{' '}
-                    {n.proposedDateRangeStart.toISOString().slice(0, 10)} →{' '}
-                    {n.proposedDateRangeEnd.toISOString().slice(0, 10)}
-                    {n.proposedVenueSlug ? ` · ${n.proposedVenueSlug}` : ''}
-                  </p>
-                  {n.message ? (
-                    <p className="text-[var(--t-3)] text-[12px] mt-1 leading-relaxed">
-                      {n.message}
-                    </p>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ol>
+      <div className="bx-two">
+        <section
+          className="bx-card grid gap-6 p-5 min-[900px]:p-8"
+          aria-labelledby="current-proposal"
+        >
+          <h2 id="current-proposal" className="bx-label text-ink">
+            {t('currentProposal')}
+          </h2>
+
+          <dl className="bx-inset grid divide-y divide-line">
+            {facts.map((f) => (
+              <div
+                key={f.label}
+                className="grid grid-cols-1 gap-1 px-4 py-3 min-[600px]:grid-cols-[160px_minmax(0,1fr)] min-[600px]:gap-4"
+              >
+                <dt className="bx-eyebrow self-center">{f.label}</dt>
+                <dd className="font-display text-[15px] font-bold text-ink">{f.value}</dd>
+              </div>
+            ))}
+          </dl>
+
+          {data.challenge.message ? (
+            <blockquote className="border-s-2 border-gold-500 ps-4 text-[15px] leading-relaxed text-ink-muted">
+              {data.challenge.message}
+            </blockquote>
+          ) : null}
+
+          <div className="border-t border-line pt-6">
+            <ChallengeActions
+              challengeId={data.challenge.id}
+              canAct={canAct}
+              // Always surface a reason when canAct is false so the action area isn't silently
+              // empty. Three cases: terminal status (accepted/rejected/etc.) → show the status
+              // label; pending but not on the challenged team → tell user to switch persona.
+              cannotActReason={!isPending ? statusLabel : !isChallenged ? t('youCannotAct') : null}
+            />
+          </div>
         </section>
-      ) : null}
+
+        {negotiations.length > 0 ? (
+          <section
+            className="bx-card grid gap-5 p-5 min-[900px]:p-8"
+            aria-labelledby="negotiation-history"
+          >
+            <h2 id="negotiation-history" className="bx-label text-ink">
+              {t('negotiationHistory')}
+            </h2>
+            <ol className="grid gap-5 border-s border-line-strong ps-5">
+              {negotiations.map((n, i) => {
+                const proposedByName =
+                  n.proposedByTeamId === data.challengerTeam.id
+                    ? data.challengerTeam.name
+                    : data.challengedTeam.name;
+                const latest = i === negotiations.length - 1;
+                return (
+                  <li key={n.id} className="relative grid gap-1.5">
+                    <span
+                      aria-hidden
+                      className={[
+                        'absolute -start-[26px] top-1 size-2.5 rounded-full',
+                        latest ? 'bg-[image:var(--gradient-gold)]' : 'bg-surface-300',
+                      ].join(' ')}
+                    />
+                    <p className="bx-eyebrow">{formatDateTime(locale, n.createdAt)}</p>
+                    <p className="font-display text-[15px] font-bold text-ink">
+                      {t('proposedBy', { team: proposedByName })}
+                    </p>
+                    <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-muted">
+                      <Tag>{n.proposedFormat.toUpperCase()}</Tag>
+                      <span className="inline-flex items-center gap-1.5">
+                        <CalendarRange className="bx-icon" aria-hidden />
+                        {formatDayRange(locale, n.proposedDateRangeStart, n.proposedDateRangeEnd)}
+                      </span>
+                      {n.proposedVenueSlug ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <MapPin className="bx-icon" aria-hidden />
+                          {n.proposedVenueSlug}
+                        </span>
+                      ) : null}
+                    </p>
+                    {n.message ? (
+                      <p className="text-[13px] leading-relaxed text-ink-muted">{n.message}</p>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+        ) : null}
+      </div>
     </main>
   );
 }

@@ -112,7 +112,14 @@ Federation / Brand / Venue / Community / Personal capability gating. Status: �
 
 Source: `Beatemall/docs/epics/FED-1-federation-features.md`. Depends on ORG-1.
 
-Sanctioned-tournament designation, Civil-ID requirement enforcement, ranking points engine, federation reporting. Status: 🔴.
+Sanctioned-tournament designation, Civil-ID requirement enforcement, ranking points engine, federation reporting.
+
+| Story | Title | Status | Verification |
+|---|---|---|---|
+| **FED-1-S1** *(read slice)* | `ranking_points` table (DOMAIN_MODEL §11.3) + seeds from two completed KEC spring '26 events + `GET /api/rankings` + `/[locale]/rankings` leaderboard (per federation, per game, per season; points, placement, movement) | ✅ | `curl /api/rankings?org=kec` returns 3 ranked teams; `/en/rankings` + `/ar/rankings` render podium + standings |
+| US-FED1.2 | Configure ranking points formula per tournament / season / game | 🔴 | Seeds use the epic's example scale (1st 100, 2nd 75) |
+| US-FED1.3 | Auto-award ranking points when a sanctioned tournament completes | 🔴 | |
+| — | Player leaderboard (same table, `recipient_type = player`) | 🔴 | |
 
 ---
 

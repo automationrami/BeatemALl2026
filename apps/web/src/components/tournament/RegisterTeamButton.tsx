@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { ArrowRight, Check } from 'lucide-react';
 import { Button } from '@beat-em-all/ui';
 
 type Props = {
@@ -21,6 +22,7 @@ export function RegisterTeamButton({
   alreadyRegistered,
 }: Props) {
   const t = useTranslations('registration');
+  const tTour = useTranslations('tournament');
   const locale = useLocale();
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
@@ -51,31 +53,43 @@ export function RegisterTeamButton({
 
   if (!isRegistrationOpen) {
     return (
-      <Button tone="ghost" size="md" disabled data-testid="register-disabled">
+      <Button variant="ink" disabled data-testid="register-disabled">
         {t('registrationClosedCta')}
       </Button>
     );
   }
   if (alreadyRegistered) {
     return (
-      <Button tone="ghost" size="md" disabled data-testid="register-already">
-        ✓ {t('alreadyRegisteredCta')}
+      <Button variant="ink" disabled data-testid="register-already">
+        <Check className="bx-icon text-positive" aria-hidden />
+        {t('alreadyRegisteredCta')}
       </Button>
     );
   }
   return (
-    <div className="flex flex-col gap-2">
+    <div className="grid gap-2">
       <Button
-        tone="primary"
-        size="md"
+        variant="gold"
         onClick={handleClick}
         disabled={submitting}
+        aria-label={submitting ? undefined : t('registerCta', { tournamentName })}
         data-testid="register-team-cta"
       >
-        {submitting ? '…' : `${t('registerCta', { tournamentName })} →`}
+        {submitting ? (
+          t('submitting')
+        ) : (
+          <>
+            {tTour('registerCta')}
+            <ArrowRight className="bx-icon bx-flip" aria-hidden />
+          </>
+        )}
       </Button>
       {error ? (
-        <p className="text-[var(--coral-2)] text-[12px] leading-relaxed" data-testid="register-error">
+        <p
+          className="m-0 max-w-[40ch] text-[12px] leading-relaxed text-negative"
+          role="alert"
+          data-testid="register-error"
+        >
           {t('errorGeneric', { message: error })}
         </p>
       ) : null}

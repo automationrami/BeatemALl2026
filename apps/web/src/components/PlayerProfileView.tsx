@@ -3,293 +3,425 @@
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import {
+  Award,
+  BadgeCheck,
+  Calendar,
+  Gamepad2,
+  Link2,
+  Lock,
+  MapPin,
+  PencilLine,
+  Share2,
+  Swords,
+  UserPlus,
+} from 'lucide-react';
+import {
   Avatar,
   Button,
-  MatchRow,
-  Pill,
-  StatCard,
+  EmptyState,
+  ProfileHeader,
+  SectionTitle,
   StatPentagon,
+  Tag,
   useHasMounted,
 } from '@beat-em-all/ui';
 import { useActAsPersona, getPlayerProfileForPersona } from '@beat-em-all/api-client';
 import { GAMES } from '@beat-em-all/mock-data';
 import type { PlayerProfile } from '@beat-em-all/types';
+import { ProfileMatchRow } from './player/ProfileMatchRow';
 
 const FALLBACK_PROFILE: PlayerProfile = getPlayerProfileForPersona('khaled');
 
-/** Renders the player profile of whatever persona is currently active in the store. */
+/** Renders the player profile of whatever persona is currently active in the store (/me). */
 export function PlayerProfileView() {
   const mounted = useHasMounted();
   const activePersonaId = useActAsPersona((s) => s.activePersonaId);
   const profile = mounted ? getPlayerProfileForPersona(activePersonaId) : FALLBACK_PROFILE;
-  return <PlayerProfileViewFor profile={profile} />;
+  return <PlayerProfileViewFor profile={profile} isSelf />;
 }
 
+type ViewProps = {
+  profile: PlayerProfile;
+  /** Force the "own profile" actions (Edit profile). When omitted, derived from the active persona. */
+  isSelf?: boolean;
+};
+
 /** Same body, but driven by an explicit profile prop — used by /players/[slug]. */
-export function PlayerProfileViewFor({ profile }: { profile: PlayerProfile }) {
-  const t = useTranslations('profile');
+export function PlayerProfileViewFor({ profile, isSelf }: ViewProps) {
+  const mounted = useHasMounted();
+  const activePersonaId = useActAsPersona((s) => s.activePersonaId);
+  const self = isSelf ?? (mounted && activePersonaId === profile.personaId);
+
   return (
-    <div>
-      {/* Action bar */}
-      <div className="flex items-center justify-end gap-2 mb-5">
-        <Button tone="soft" size="sm">
-          {t('follow')}
-        </Button>
-        <Button tone="primary" size="sm">
-          {t('challengeCta')} →
-        </Button>
+    <>
+      <Header profile={profile} self={self} />
+      <div className="bx-two">
+        <RecentMatches profile={profile} />
+        <Pentagon profile={profile} />
       </div>
-
-      {/* Hero card */}
-      <HeroCard profile={profile} />
-
-      {/* Stat quartet */}
-      <StatQuartet profile={profile} />
-
-      {/* Recent matches + achievements */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4">
-        <RecentMatchesCard profile={profile} />
-        <AchievementsCard profile={profile} />
+      <Games profile={profile} />
+      <div className="bx-two">
+        <Achievements profile={profile} />
+        <LinkedAccounts profile={profile} />
       </div>
-
-      {/* Linked accounts */}
-      <LinkedAccountsCard profile={profile} />
-    </div>
+    </>
   );
 }
 
-function HeroCard({ profile }: { profile: PlayerProfile }) {
+/* ---------- Header ---------- */
+
+function countryName(code: string, locale: string): string {
+  try {
+    return new Intl.DisplayNames([locale], { type: 'region' }).of(code) ?? code;
+  } catch {
+    // Non-ISO codes (e.g. "KSA") fall back to the raw code.
+    return code;
+  }
+}
+
+function Header({ profile, self }: { profile: PlayerProfile; self: boolean }) {
   const t = useTranslations('profile');
   const locale = useLocale();
-  const hasPentagon = profile.pentagon.sampleSize > 0;
+  const { stats } = profile;
+  const num = (n: number) => n.toLocaleString('en-US');
+  const hasMatches = stats.totalMatches > 0;
+
+  const tags = (
+    <>
+      {profile.civilIdVerified && (
+        <Tag tone="gold" icon={<BadgeCheck className="bx-icon" aria-hidden />}>
+          {t('civilIdVerified')}
+        </Tag>
+      )}
+      <Tag tone="ink">
+        {t('playerEyebrow')} · {profile.country}
+      </Tag>
+      {profile.badges
+        // Verification is shown by the Civil ID tag above.
+        .filter((b) => b.label !== 'Verified')
+        .map((b) =>
+          b.href ? (
+            <Link key={b.label} href={`/${locale}${b.href}`} className="hover:brightness-125">
+              <Tag tone="soft">
+                <bdi>{b.label}</bdi>
+              </Tag>
+            </Link>
+          ) : (
+            <Tag key={b.label}>
+              <bdi>{b.label}</bdi>
+            </Tag>
+          ),
+        )}
+    </>
+  );
+
+  const ids = Array.from(
+    new Set([...profile.linkedAccounts.map((a) => a.externalId), profile.handle].filter(Boolean)),
+  );
+  const placeParts = [profile.city, countryName(profile.country, locale)].filter(Boolean);
+  // Wrapped in <bdi>, not <span>: the meta row styles every descendant span as a flex
+  // item with a gap, which would split "City, Country".
+  const place = (
+    <bdi>
+      {placeParts.map((part, i) => (
+        <bdi key={part}>
+          {i > 0 && (locale === 'ar' ? '، ' : ', ')}
+          {part}
+        </bdi>
+      ))}
+    </bdi>
+  );
+
+  const meta = [
+    { icon: <MapPin className="bx-icon" aria-hidden />, text: place },
+    { icon: <Gamepad2 className="bx-icon" aria-hidden />, text: <bdi>{ids.join(' · ')}</bdi> },
+    {
+      icon: <Calendar className="bx-icon" aria-hidden />,
+      text: `${t('joinedPrefix')} ${profile.joinedLabel}`,
+    },
+  ];
+
+  const share = (
+    <Button
+      variant="ghost"
+      className="bx-btn--icon"
+      aria-label={t('shareProfile')}
+      title={t('shareProfile')}
+    >
+      <Share2 className="bx-icon" aria-hidden />
+    </Button>
+  );
+
+  const actions = self ? (
+    <>
+      <Button variant="ink">
+        <PencilLine className="bx-icon" aria-hidden />
+        {t('editProfile')}
+      </Button>
+      {share}
+    </>
+  ) : (
+    <>
+      <Button variant="gold">
+        <Swords className="bx-icon" aria-hidden />
+        {t('challengeCta')}
+      </Button>
+      <Button variant="ink">
+        <UserPlus className="bx-icon" aria-hidden />
+        {t('follow')}
+      </Button>
+      {share}
+    </>
+  );
+
+  const streak = stats.currentStreak;
+  const streakValue =
+    streak.count > 0 ? (
+      <span className={streak.streakType === 'W' ? 'text-positive' : 'text-negative'}>
+        {streak.streakType === 'W'
+          ? t('streakWinValue', { count: streak.count })
+          : t('streakLossValue', { count: streak.count })}
+      </span>
+    ) : (
+      '—'
+    );
+  const deltaSign = stats.ratingDelta30d >= 0 ? '+' : '';
+
+  const statItems = [
+    {
+      label:
+        stats.rating > 0 ? (
+          <>
+            {t('statRating')} ·{' '}
+            {t('ratingDeltaThisMonth', { delta: `${deltaSign}${stats.ratingDelta30d}` })}
+          </>
+        ) : (
+          t('statRating')
+        ),
+      value: stats.rating > 0 ? num(stats.rating) : '—',
+      tone: 'gold' as const,
+    },
+    { label: t('statWinRate'), value: hasMatches ? `${stats.winRate90d}%` : '—' },
+    {
+      label: t('statPrize'),
+      value: stats.prizeWonKWD > 0 ? t('prizeAmount', { amount: num(stats.prizeWonKWD) }) : '—',
+      tone: 'gold' as const,
+    },
+    {
+      label: hasMatches ? (
+        <>
+          {t('statMatches')} · {t('winsLossesSub', { wins: stats.wins, losses: stats.losses })}
+        </>
+      ) : (
+        t('statMatches')
+      ),
+      value: num(stats.totalMatches),
+    },
+    { label: t('statStreak'), value: streakValue },
+  ];
 
   return (
-    <section className="bx-card p-7 mb-4">
-      <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] gap-7 items-center">
+    <ProfileHeader
+      mark={
         <Avatar
           name={profile.displayName}
           size={120}
-          color={profile.avatarColor}
           verified={profile.civilIdVerified}
+          verifiedLabel={t('civilIdVerified')}
         />
-        <div>
-          <p className="bx-eyebrow mb-2">
-            {t('playerEyebrow')} · {profile.country}
-          </p>
-          <h1 className="font-display font-medium text-[40px] md:text-[44px] leading-[0.95] tracking-[-0.035em] mb-2">
-            {profile.displayName}
-          </h1>
-          <p className="font-mono text-[12px] text-[var(--t-3)] tracking-[0.04em]">
-            {profile.handle} · {profile.city} · {t('joinedPrefix')} {profile.joinedLabel}
-          </p>
-          <div className="flex flex-wrap gap-2 mt-4">
-            {profile.badges.map((b) => {
-              const pill = (
-                <Pill tone={b.tone} dot={b.label === 'Verified'}>
-                  {b.label}
-                </Pill>
-              );
-              return b.href ? (
-                <Link
-                  key={b.label}
-                  href={`/${locale}${b.href}`}
-                  className="hover:brightness-125 transition"
-                >
-                  {pill}
-                </Link>
-              ) : (
-                <span key={b.label}>{pill}</span>
-              );
-            })}
-          </div>
-        </div>
-        <div className="md:flex hidden justify-center">
-          {hasPentagon ? (
-            <StatPentagon
-              axes={profile.pentagon.axes}
-              overall={profile.pentagon.overallRating}
-              caption={t('pentagonCaption', { sample: profile.pentagon.sampleSize })}
-              size={220}
-            />
-          ) : (
-            <div className="w-[220px] h-[220px] rounded-full border border-dashed border-[var(--line-2)] grid place-items-center text-center px-6">
-              <p className="font-display text-[12px] text-[var(--t-3)] leading-[1.5]">
-                {t('noPentagon')}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
+      }
+      name={profile.displayName}
+      tags={tags}
+      meta={meta}
+      bio={profile.bio ? <span dir="auto">{profile.bio}</span> : undefined}
+      actions={actions}
+      stats={statItems}
+    />
   );
 }
 
-function StatQuartet({ profile }: { profile: PlayerProfile }) {
-  const t = useTranslations('profile');
-  const { stats } = profile;
-  const streakLabel = `${stats.currentStreak.streakType}${stats.currentStreak.count}`;
-  const streakColor = stats.currentStreak.streakType === 'W' ? '#BEF264' : '#FB7185';
-  const ratingDeltaSign = stats.ratingDelta30d >= 0 ? '+' : '';
-  const ratingDeltaSub =
-    stats.rating > 0
-      ? t('ratingDeltaThisMonth', { delta: `${ratingDeltaSign}${stats.ratingDelta30d}` })
-      : '—';
+/* ---------- Sections ---------- */
 
-  return (
-    <section className="grid grid-cols-2 md:grid-cols-4 gap-3.5 mb-4">
-      <StatCard
-        label={t('winRate')}
-        value={stats.totalMatches > 0 ? `${stats.winRate90d}%` : '—'}
-        sub={
-          stats.totalMatches > 0
-            ? t('winsLossesSub', { wins: stats.wins, losses: stats.losses })
-            : undefined
-        }
-      />
-      <StatCard
-        label={t('rating')}
-        value={stats.rating > 0 ? stats.rating.toLocaleString() : '—'}
-        sub={ratingDeltaSub}
-        subColor={stats.ratingDelta30d > 0 ? '#BEF264' : undefined}
-      />
-      <StatCard label={t('matches')} value={stats.totalMatches.toString()} />
-      <StatCard
-        label={t('streak')}
-        value={stats.currentStreak.count > 0 ? streakLabel : '—'}
-        valueColor={stats.currentStreak.count > 0 ? streakColor : undefined}
-        sub={
-          stats.currentStreak.count > 0
-            ? stats.currentStreak.streakType === 'W'
-              ? t('streakWin')
-              : t('streakLoss')
-            : undefined
-        }
-      />
-    </section>
-  );
-}
-
-function RecentMatchesCard({ profile }: { profile: PlayerProfile }) {
+function RecentMatches({ profile }: { profile: PlayerProfile }) {
   const t = useTranslations('profile');
   const matches = profile.recentMatches;
   return (
-    <section className="rounded-[20px] border border-[var(--line)] bg-[var(--bg-2)] p-5">
-      <header className="mb-3 flex items-baseline justify-between">
-        <p className="bx-eyebrow">{t('recentMatches')}</p>
-        <p className="bx-eyebrow text-[var(--t-3)]">{t('lastN', { n: matches.length })}</p>
-      </header>
+    <section className="min-w-0">
+      <SectionTitle
+        title={t('recentMatchesTitle')}
+        actions={
+          matches.length > 0 ? (
+            <span className="bx-eyebrow">{t('lastN', { n: matches.length })}</span>
+          ) : undefined
+        }
+      />
       {matches.length === 0 ? (
-        <EmptyHint>{t('emptyMatches')}</EmptyHint>
+        <EmptyState title={t('emptyMatches')} />
       ) : (
-        <div>
+        <ul className="bx-card grid gap-1 p-3">
           {matches.map((m) => (
-            <MatchRow
+            <ProfileMatchRow
               key={m.id}
               date={m.relativeDate}
               opponentLabel={m.opponentLabel}
               scoreLabel={m.scoreLabel}
               result={m.result}
+              resultLabel={t(
+                m.result === 'W' ? 'resultWin' : m.result === 'L' ? 'resultLoss' : 'resultDraw',
+              )}
               gameTag={GAMES[m.game].shortName}
               isTournament={m.isTournament}
+              tournamentLabel={t('tournamentMatch')}
             />
           ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function Pentagon({ profile }: { profile: PlayerProfile }) {
+  const t = useTranslations('profile');
+  const { pentagon } = profile;
+  const hasPentagon = pentagon.sampleSize > 0;
+  return (
+    <section className="min-w-0">
+      <SectionTitle title={t('pentagonTitle')} />
+      {hasPentagon ? (
+        <div className="bx-card grid justify-items-center gap-3 p-6">
+          <Tag tone="ink">{GAMES[pentagon.game].title}</Tag>
+          {/* The chart's axis labels are Latin abbreviations; keep its geometry left-to-right. */}
+          <div dir="ltr">
+            <StatPentagon
+              axes={pentagon.axes}
+              overall={pentagon.overallRating}
+              caption={t('pentagonCaption', { sample: pentagon.sampleSize })}
+              size={240}
+            />
+          </div>
+        </div>
+      ) : (
+        <EmptyState title={t('noPentagon')} />
+      )}
+    </section>
+  );
+}
+
+function Games({ profile }: { profile: PlayerProfile }) {
+  const t = useTranslations('profile');
+  return (
+    <section>
+      <SectionTitle title={t('gamesTitle')} />
+      {profile.games.length === 0 ? (
+        <EmptyState title={t('noGames')} />
+      ) : (
+        <div className="bx-comptiles max-[520px]:grid-cols-2">
+          {profile.games.map((id) => {
+            const g = GAMES[id];
+            return (
+              <article key={id} className="bx-comptile">
+                <div className="bx-comptile__top">
+                  <Tag tone="ink">{g.shortName}</Tag>
+                </div>
+                <div className="bx-comptile__name">{g.title}</div>
+                <div className="bx-comptile__sub">{g.publisher}</div>
+              </article>
+            );
+          })}
         </div>
       )}
     </section>
   );
 }
 
-function AchievementsCard({ profile }: { profile: PlayerProfile }) {
+function Achievements({ profile }: { profile: PlayerProfile }) {
   const t = useTranslations('profile');
   const unlockedCount = profile.achievements.filter((a) => a.unlocked).length;
   const total = profile.achievements.length;
   return (
-    <section className="rounded-[20px] border border-[var(--line)] bg-[var(--bg-2)] p-5">
-      <header className="mb-3 flex items-baseline justify-between">
-        <p className="bx-eyebrow">{t('achievements')}</p>
-        <p className="bx-eyebrow text-[var(--t-3)]">
-          {t('unlockedOf', { unlocked: unlockedCount, total })}
-        </p>
-      </header>
+    <section className="min-w-0">
+      <SectionTitle
+        title={t('achievementsTitle')}
+        actions={
+          total > 0 ? (
+            <span className="bx-eyebrow">
+              {t('unlockedOf', { unlocked: unlockedCount, total })}
+            </span>
+          ) : undefined
+        }
+      />
       {unlockedCount === 0 ? (
-        <EmptyHint>{t('emptyAchievements')}</EmptyHint>
+        <EmptyState title={t('emptyAchievements')} />
       ) : (
-        <div className="grid grid-cols-4 gap-2">
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {profile.achievements.slice(0, 12).map((a) => (
-            <div
+            <li
               key={a.id}
-              title={a.name}
-              className="aspect-square rounded-[10px] grid place-items-center font-mono text-[22px] font-medium border"
-              style={{
-                background: a.unlocked
-                  ? `linear-gradient(135deg, ${a.color}33, transparent)`
-                  : 'rgba(255,255,255,0.03)',
-                borderColor: a.unlocked ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)',
-                color: a.unlocked ? 'white' : 'var(--t-5)',
-                opacity: a.unlocked ? 1 : 0.5,
-              }}
+              className={[
+                'bx-card bx-card--flat flex min-w-0 items-center gap-2.5 px-3 py-3',
+                a.unlocked ? '' : 'opacity-50',
+              ].join(' ')}
             >
-              {a.unlocked ? a.glyph : '·'}
-            </div>
+              {a.unlocked ? (
+                <Award className="bx-icon shrink-0 text-gold-text" aria-hidden />
+              ) : (
+                <Lock
+                  className="bx-icon shrink-0 text-ink-muted"
+                  aria-label={t('achievementLocked')}
+                />
+              )}
+              <span
+                className={[
+                  'min-w-0 truncate font-display text-[13px] font-bold',
+                  a.unlocked ? 'text-ink' : 'text-ink-muted',
+                ].join(' ')}
+                title={a.name}
+                dir="auto"
+              >
+                {a.name}
+              </span>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </section>
   );
 }
 
-function LinkedAccountsCard({ profile }: { profile: PlayerProfile }) {
+function LinkedAccounts({ profile }: { profile: PlayerProfile }) {
   const t = useTranslations('profile');
   return (
-    <section className="rounded-[20px] border border-[var(--line)] bg-[var(--bg-2)] p-5 mt-4">
-      <p className="bx-eyebrow mb-3">{t('linkedAccounts')}</p>
+    <section className="min-w-0">
+      <SectionTitle title={t('linkedAccountsTitle')} />
       {profile.linkedAccounts.length === 0 ? (
-        <EmptyHint>{t('noLinkedAccounts')}</EmptyHint>
+        <EmptyState title={t('noLinkedAccounts')} />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <ul className="flex flex-wrap gap-3">
           {profile.linkedAccounts.map((a) => (
-            <div
+            <li
               key={a.provider}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[rgba(255,255,255,0.03)] border border-[var(--line-2)]"
+              className="flex min-w-0 max-w-full items-center gap-3 rounded-tile bg-band px-4 py-3 text-on-band"
             >
-              <span
-                className="w-8 h-8 rounded-lg grid place-items-center font-display font-bold text-[10px] text-white"
-                style={{ background: providerColor(a.provider) }}
-              >
-                {a.provider.toUpperCase().slice(0, 4)}
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="font-display text-[13px] font-medium truncate">{a.externalId}</p>
-                {a.rankLabel && (
-                  <p className="font-mono text-[10.5px] text-[var(--t-4)] tracking-[0.06em] mt-0.5">
-                    {a.rankLabel}
-                    {a.lastSync ? ` · ${a.lastSync}` : ''}
-                  </p>
+              <Link2 className="bx-icon shrink-0 text-gold-text" aria-hidden />
+              <div className="grid min-w-0 gap-1">
+                <div className="flex min-w-0 items-center gap-2">
+                  <Tag tone="soft">{a.provider}</Tag>
+                  <b className="truncate font-display text-[15px]" dir="ltr">
+                    {a.externalId}
+                  </b>
+                </div>
+                {(a.rankLabel || a.lastSync) && (
+                  <span className="truncate font-display text-[12px] text-on-band-muted">
+                    {[a.rankLabel, a.lastSync ? t('lastSynced', { when: a.lastSync }) : null]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
                 )}
               </div>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </section>
   );
-}
-
-function EmptyHint({ children }: { children: React.ReactNode }) {
-  return <p className="font-display text-[13px] text-[var(--t-3)] py-2">{children}</p>;
-}
-
-function providerColor(p: string): string {
-  switch (p) {
-    case 'steam':
-      return 'linear-gradient(135deg, #22D3EE, #06B6D4)';
-    case 'riot':
-      return 'linear-gradient(135deg, #FB7185, #E11D48)';
-    case 'psn':
-      return 'linear-gradient(135deg, #3B82F6, #1E40AF)';
-    case 'xbox':
-      return 'linear-gradient(135deg, #BEF264, #65A30D)';
-    default:
-      return 'linear-gradient(135deg, #A78BFA, #7C3AED)';
-  }
 }

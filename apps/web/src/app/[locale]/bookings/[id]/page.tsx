@@ -1,11 +1,12 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Pill, Wordmark } from '@beat-em-all/ui';
+import { ArrowLeft, CalendarDays, CircleCheck, Clock, MapPin, StickyNote } from 'lucide-react';
+import { Avatar, Notice, StatStrip, TeamCrest, buttonClass } from '@beat-em-all/ui';
 import { loadBookingById } from '@beat-em-all/db/queries';
-import { LanguageToggle } from '@/components/LanguageToggle';
-import { PersonaSwitcher } from '@/components/PersonaSwitcher';
 import { getCurrentUser } from '@/lib/current-user';
+import { BookingStatusTag, bookingStatusKey } from '@/components/booking/BookingStatusTag';
+import { dateLocale, formatAmount } from '@/components/booking/format';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -13,14 +14,6 @@ export const revalidate = 0;
 type PageProps = {
   params: Promise<{ locale: string; id: string }>;
 };
-
-function statusTone(status: string): 'amber' | 'lime' | 'coral' | 'cyan' | 'default' {
-  if (status === 'pending_payment') return 'amber';
-  if (status === 'confirmed' || status === 'checked_in') return 'lime';
-  if (status === 'completed') return 'cyan';
-  if (status === 'cancelled' || status === 'no_show') return 'coral';
-  return 'default';
-}
 
 export default async function BookingDetailPage({ params }: PageProps) {
   const { locale, id } = await params;
@@ -38,114 +31,162 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
   const t = await getTranslations('booking');
 
-  const dateFormat = new Intl.DateTimeFormat(locale === 'ar' ? 'ar-KW' : 'en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: 'Asia/Kuwait',
+  const tz = 'Asia/Kuwait';
+  const loc = dateLocale(locale);
+  const fullDate = new Intl.DateTimeFormat(loc, { dateStyle: 'full', timeZone: tz });
+  const shortDate = new Intl.DateTimeFormat(loc, { day: 'numeric', month: 'short', timeZone: tz });
+  const timeFormat = new Intl.DateTimeFormat(loc, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: tz,
   });
-  const dateRange = `${dateFormat.format(data.booking.startAt)} → ${dateFormat.format(
-    data.booking.endAt,
-  )}`;
-  const statusKey = `status${data.booking.status
-    .split('_')
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join('')}` as
-    | 'statusPendingPayment'
-    | 'statusConfirmed'
-    | 'statusCheckedIn'
-    | 'statusCompleted'
-    | 'statusCancelled'
-    | 'statusNoShow';
+
+  const { booking, venue, game, team } = data;
+  const hours =
+    Math.round(((booking.endAt.getTime() - booking.startAt.getTime()) / 3_600_000) * 10) / 10;
+  const timeRange = t('timeRange', {
+    start: timeFormat.format(booking.startAt),
+    end: timeFormat.format(booking.endAt),
+  });
 
   return (
-    <main className="min-h-screen px-6 py-8 md:px-16 md:py-12">
-      <header className="flex items-center justify-between mb-10">
-        <Link href={`/${locale}`}>
-          <Wordmark />
-        </Link>
-        <div className="flex items-center gap-3">
-          <LanguageToggle />
-          <PersonaSwitcher />
-        </div>
-      </header>
-
-      <Link
-        href={`/${locale}/bookings`}
-        className="inline-block bx-eyebrow mb-6 hover:text-white transition-colors"
-      >
-        ← {t('inboxTitle')}
-      </Link>
-
-      <section className="bx-card p-7 mb-4">
-        <p className="bx-eyebrow mb-3">
-          {t('detailEyebrow')} · {data.game.name.toUpperCase()}
-        </p>
-        <h1
-          className="font-display font-medium text-[36px] md:text-[48px] leading-[0.95] tracking-[-0.035em] mb-3"
-          data-testid="booking-title"
+    <main className="bx-page">
+      <div className="grid gap-4">
+        <Link
+          href={`/${locale}/bookings`}
+          className="bx-eyebrow inline-flex items-center gap-1.5 justify-self-start hover:text-ink"
         >
-          {t('detailHeadline', { venue: data.venue.name, team: data.team.name })}
-        </h1>
-        <div className="flex flex-wrap gap-2 mb-5">
-          <Pill tone={statusTone(data.booking.status)}>{t(statusKey)}</Pill>
-          <Pill>{t('seatsCount', { count: data.booking.seatsCount })}</Pill>
-        </div>
+          <ArrowLeft className="bx-icon bx-flip size-3.5" aria-hidden />
+          {t('inboxTitle')}
+        </Link>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <p className="bx-eyebrow mb-2">{t('whenEyebrow')}</p>
-            <p className="font-mono text-[12px] text-[var(--t-3)] tracking-[0.06em]">{dateRange}</p>
+        <section className="bx-card bg-band text-on-band">
+          <div className="grid gap-6 p-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-end md:p-8">
+            <div className="grid min-w-0 gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <BookingStatusTag
+                  status={booking.status}
+                  label={t(bookingStatusKey(booking.status))}
+                />
+                <span className="bx-eyebrow text-on-band-muted">
+                  {t('detailEyebrow')} · {game.name}
+                </span>
+              </div>
+              <h1
+                className="font-display text-[32px] font-bold leading-[34px] text-on-band md:text-[42px] md:leading-[42px]"
+                data-testid="booking-title"
+              >
+                {t('detailHeadline', { venue: venue.name, team: team.name })}
+              </h1>
+              <p className="flex items-center gap-1.5 font-display text-[14px] font-medium text-on-band-muted">
+                <MapPin className="bx-icon size-4" aria-hidden />
+                {venue.address ? `${venue.address}, ${venue.city}` : venue.city}
+              </p>
+            </div>
+            <div className="grid gap-1.5 md:justify-items-end md:text-end">
+              <span className="bx-eyebrow text-on-band-muted">{t('totalEyebrow')}</span>
+              <span className="bx-num bx-gold-num text-[48px] md:text-[56px]">
+                {t('money', { amount: formatAmount(booking.totalAmountKwd) })}
+              </span>
+              <span className="font-display text-[13px] font-medium tabular-nums text-on-band-muted">
+                {t('priceFormula', {
+                  rate: formatAmount(venue.defaultHourlyRateKwd),
+                  seats: booking.seatsCount,
+                  hours,
+                })}
+              </span>
+            </div>
           </div>
-          <div>
-            <p className="bx-eyebrow mb-2">{t('whereEyebrow')}</p>
-            <p className="font-display font-medium text-[16px]">{data.venue.name}</p>
-            <p className="text-[var(--t-3)] text-[13px]">
-              {data.venue.address ?? '—'}, {data.venue.city}
-            </p>
-          </div>
-          <div>
-            <p className="bx-eyebrow mb-2">{t('totalEyebrow')}</p>
-            <p className="font-display font-medium text-[20px]">
-              {t('totalKwd', { total: data.booking.totalAmountKwd.toFixed(2) })}
-            </p>
-            <p className="font-mono text-[10.5px] text-[var(--t-4)] tracking-[0.08em] uppercase">
-              {t('totalBreakdown', {
-                rate: data.venue.defaultHourlyRateKwd,
-                seats: data.booking.seatsCount,
-              })}
-            </p>
-          </div>
-          <div>
-            <p className="bx-eyebrow mb-2">{t('bookerEyebrow')}</p>
-            <p className="font-display font-medium text-[14px]">{data.bookerDisplayName}</p>
-            <p className="text-[var(--t-3)] text-[13px]">{data.team.name}</p>
-          </div>
-        </div>
+          <StatStrip
+            bordered
+            items={[
+              { label: t('statDate'), value: shortDate.format(booking.startAt) },
+              { label: t('statTime'), value: timeFormat.format(booking.startAt) },
+              { label: t('statHours'), value: hours },
+              { label: t('statSeats'), value: booking.seatsCount },
+            ]}
+          />
+        </section>
 
-        {data.booking.notes ? (
-          <div className="mt-5 pt-5 border-t border-[var(--line)]">
-            <p className="bx-eyebrow mb-2">{t('notesEyebrow')}</p>
-            <p className="text-[var(--t-3)] text-[13px] leading-relaxed">{data.booking.notes}</p>
+        {booking.status === 'pending_payment' ? (
+          <div data-testid="pending-notice">
+            <Notice icon={<Clock className="bx-icon" aria-hidden />}>
+              {t('pendingPaymentNotice')}
+            </Notice>
           </div>
         ) : null}
+        {booking.status === 'confirmed' ? (
+          <div data-testid="confirmed-notice">
+            <Notice
+              tone="neutral"
+              icon={<CircleCheck className="bx-icon text-positive" aria-hidden />}
+            >
+              {t('confirmedNotice')}
+            </Notice>
+          </div>
+        ) : null}
+      </div>
 
-        {data.booking.status === 'pending_payment' ? (
-          <p
-            className="mt-5 px-4 py-3 rounded-xl border border-[var(--amber)] bg-[rgba(251,191,36,0.08)] text-[var(--amber)] font-display text-[13px] leading-relaxed"
-            data-testid="pending-notice"
-          >
-            {t('pendingPaymentNotice')}
-          </p>
-        ) : null}
-        {data.booking.status === 'confirmed' ? (
-          <p
-            className="mt-5 px-4 py-3 rounded-xl border border-[var(--lime)] bg-[rgba(190,242,100,0.08)] text-[var(--lime)] font-display text-[13px] leading-relaxed"
-            data-testid="confirmed-notice"
-          >
-            {t('confirmedNotice')}
-          </p>
-        ) : null}
-      </section>
+      <div className="bx-two">
+        <section className="bx-card grid gap-6 p-6 md:p-8">
+          <div className="grid gap-2">
+            <p className="bx-eyebrow">{t('whenEyebrow')}</p>
+            <p className="flex items-center gap-2 font-display text-[16px] font-bold text-ink">
+              <CalendarDays className="bx-icon size-4 text-gold-text" aria-hidden />
+              {fullDate.format(booking.startAt)}
+            </p>
+            <p className="ps-6 font-display text-[14px] font-medium tabular-nums text-ink-muted">
+              {timeRange}
+            </p>
+          </div>
+
+          <div className="grid gap-2 border-t border-line pt-6">
+            <p className="bx-eyebrow">{t('whereEyebrow')}</p>
+            <p className="font-display text-[16px] font-bold text-ink">{venue.name}</p>
+            <p className="font-display text-[14px] font-medium text-ink-muted">
+              {venue.address ?? '—'}, {venue.city}
+            </p>
+          </div>
+
+          <div className="grid gap-3 border-t border-line pt-6">
+            <p className="bx-eyebrow">{t('bookerEyebrow')}</p>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+              <span className="flex items-center gap-3">
+                <Avatar name={data.bookerDisplayName} size={40} />
+                <span className="font-display text-[15px] font-bold text-ink">
+                  {data.bookerDisplayName}
+                </span>
+              </span>
+              <span className="flex items-center gap-3">
+                <TeamCrest tag={team.tag} size={40} />
+                <span className="font-display text-[15px] font-bold text-ink">{team.name}</span>
+              </span>
+            </div>
+          </div>
+
+          {booking.notes ? (
+            <div className="grid gap-2 border-t border-line pt-6">
+              <p className="bx-eyebrow">{t('notesEyebrow')}</p>
+              <p className="flex items-start gap-2 font-display text-[14px] font-medium leading-relaxed text-ink-muted">
+                <StickyNote className="bx-icon mt-0.5 size-4 shrink-0" aria-hidden />
+                {booking.notes}
+              </p>
+            </div>
+          ) : null}
+        </section>
+
+        <aside className="bx-card bx-card--flat grid gap-3 p-6">
+          <Link href={`/${locale}/venues/${venue.slug}`} className={buttonClass('ink', 'md', true)}>
+            <MapPin className="bx-icon size-4" aria-hidden />
+            {t('viewVenue')}
+          </Link>
+          <Link href={`/${locale}/bookings`} className={buttonClass('ghost', 'md', true)}>
+            <ArrowLeft className="bx-icon bx-flip size-4" aria-hidden />
+            {t('inboxTitle')}
+          </Link>
+        </aside>
+      </div>
     </main>
   );
 }

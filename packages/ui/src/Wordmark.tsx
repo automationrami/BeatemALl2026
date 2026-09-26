@@ -1,30 +1,22 @@
 type WordmarkProps = {
   showLabel?: boolean;
+  /** Pixel size of the monogram tile; 28 = sm, 36 = md, 56 = lg. */
   size?: number;
 };
 
-/** Beat'Em All wordmark — violet square with "Bx" + optional name. */
+/** Beat'Em All wordmark: the gold "Bx" tile + the name in Saira Black Italic. Type only; no drawn logo. */
 export function Wordmark({ showLabel = true, size = 36 }: WordmarkProps) {
+  const variant = size <= 30 ? 'bx-wordmark--sm' : size >= 52 ? 'bx-wordmark--lg' : '';
   return (
-    <div className="flex items-center gap-3">
-      <div
-        className="rounded-[10px] grid place-items-center font-display font-bold tracking-tight text-white"
-        style={{
-          width: size,
-          height: size,
-          fontSize: Math.round(size * 0.42),
-          background: 'linear-gradient(135deg, var(--violet) 0%, var(--violet-deep) 100%)',
-          boxShadow: 'var(--sh-glow)',
-        }}
-        aria-hidden
-      >
+    <span className={['bx-wordmark', variant].join(' ')} aria-label="Beat'Em All">
+      <span className="bx-wordmark__tile" aria-hidden>
         Bx
-      </div>
+      </span>
       {showLabel && (
-        <span className="font-display font-medium text-lg tracking-tight text-white">
+        <span className="bx-wordmark__name" aria-hidden>
           Beat&apos;Em All
         </span>
       )}
-    </div>
+    </span>
   );
 }

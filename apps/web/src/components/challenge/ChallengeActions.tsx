@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { Button } from '@beat-em-all/ui';
+import { Check, Info, X } from 'lucide-react';
+import { Button, Notice } from '@beat-em-all/ui';
 
 type Props = {
   challengeId: string;
@@ -23,7 +24,6 @@ type Props = {
 export function ChallengeActions({ challengeId, canAct, cannotActReason }: Props) {
   const t = useTranslations('challenge');
   const router = useRouter();
-  useLocale();
 
   const [busy, setBusy] = useState<null | 'accept' | 'reject'>(null);
   const [error, setError] = useState<string | null>(null);
@@ -54,36 +54,38 @@ export function ChallengeActions({ challengeId, canAct, cannotActReason }: Props
 
   if (!canAct) {
     return (
-      <p className="text-[var(--t-4)] text-[12px] leading-relaxed">
+      <Notice tone="neutral" icon={<Info className="bx-icon" aria-hidden />}>
         {cannotActReason ?? t('youCannotAct')}
-      </p>
+      </Notice>
     );
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex gap-2">
+    <div className="grid gap-3">
+      <div className="flex flex-wrap gap-2">
         <Button
-          tone="primary"
-          size="md"
+          variant="gold"
           onClick={() => act('accept')}
           disabled={busy !== null}
           data-testid="accept-challenge"
+          className="grow min-[600px]:grow-0"
         >
+          <Check className="bx-icon" aria-hidden />
           {busy === 'accept' ? t('acceptingCta') : t('acceptCta')}
         </Button>
         <Button
-          tone="danger"
-          size="md"
+          variant="danger"
           onClick={() => act('reject')}
           disabled={busy !== null}
           data-testid="reject-challenge"
+          className="grow min-[600px]:grow-0"
         >
+          <X className="bx-icon" aria-hidden />
           {busy === 'reject' ? t('rejectingCta') : t('rejectCta')}
         </Button>
       </div>
       {error ? (
-        <p className="text-[var(--coral-2)] text-[12px] leading-relaxed">
+        <p className="text-[13px] font-medium text-negative" role="alert">
           {t('errorGeneric', { message: error })}
         </p>
       ) : null}

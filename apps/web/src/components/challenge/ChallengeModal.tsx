@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { Button } from '@beat-em-all/ui';
+import { X } from 'lucide-react';
+import { Button, SegmentedTabs } from '@beat-em-all/ui';
 import { PERSONAS, useActAsPersona } from '@beat-em-all/api-client';
 
 type Props = {
@@ -126,15 +127,15 @@ export function ChallengeModal({
     const startDate = new Date(start);
     const endDate = new Date(end);
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-      setError('Pick valid dates.');
+      setError(t('errorInvalidDates'));
       return;
     }
     if (endDate <= startDate) {
-      setError('"Latest match date" must be after "Earliest match date".');
+      setError(t('errorEndBeforeStart'));
       return;
     }
     if (startDate < new Date(Date.now() - 60_000)) {
-      setError("Earliest match date can't be in the past.");
+      setError(t('errorStartInPast'));
       return;
     }
 
@@ -173,56 +174,72 @@ export function ChallengeModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center p-4 bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex justify-center overflow-y-auto bg-surface-000/80 p-4 backdrop-blur-sm"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
+      aria-labelledby="challenge-modal-title"
     >
       <div
-        className="w-full max-w-md rounded-[20px] border border-[var(--line-2)] bg-[var(--bg-2)] p-6"
+        className="my-auto grid w-full max-w-lg gap-6 rounded-xl bg-surface-100 p-6 text-ink shadow-bx-lift md:p-7"
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="mb-5">
-          <p className="bx-eyebrow mb-2">{t('detailEyebrow')}</p>
-          <h2 className="font-display font-medium text-[24px] tracking-[-0.025em] mb-1">
-            {t('modalTitle', { teamName: targetTeamName })}
-          </h2>
-          <p className="text-[var(--t-3)] text-[13px] leading-relaxed">
-            {loadingSelf
-              ? '…'
-              : selfTeam
-                ? t('modalSubtitle', { selfTeamName: selfTeam.teamName })
-                : t('errorNoTeam')}
-          </p>
+        <header className="flex items-start gap-4">
+          <div className="grid min-w-0 flex-1 gap-2">
+            <p className="bx-eyebrow">{t('detailEyebrow')}</p>
+            <h2
+              id="challenge-modal-title"
+              className="font-display text-[28px] font-bold leading-[1.1] text-ink"
+            >
+              {t('modalTitle', { teamName: targetTeamName })}
+            </h2>
+            <p className="text-[14px] leading-relaxed text-ink-muted">
+              {loadingSelf
+                ? t('loadingTeam')
+                : selfTeam
+                  ? t('modalSubtitle', { selfTeamName: selfTeam.teamName })
+                  : t('errorNoTeam')}
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="bx-btn--icon -me-2 -mt-1"
+            onClick={onClose}
+            aria-label={t('close')}
+          >
+            <X className="bx-icon" aria-hidden />
+          </Button>
         </header>
 
         {!loadingSelf && !selfTeam ? (
-          <div className="mt-4 space-y-3">
+          <div className="grid gap-4">
             {selfTeamError ? (
-              <p className="text-[var(--coral-2)] text-[12px] leading-relaxed">
+              <p className="rounded-md bg-negative-soft px-4 py-3 text-[14px] leading-relaxed text-negative">
                 {t('errorGeneric', { message: selfTeamError })}
               </p>
             ) : null}
-            <Button
-              tone="primary"
-              size="sm"
-              onClick={() => {
-                onClose();
-                router.push(`/${locale}/teams/new`);
-              }}
-              data-testid="challenge-create-team-cta"
-            >
-              {t('createTeamCta')} →
-            </Button>
-            <Button tone="ghost" size="sm" onClick={onClose}>
-              {t('cancelCta')}
-            </Button>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button variant="ghost" onClick={onClose}>
+                {t('cancelCta')}
+              </Button>
+              <Button
+                variant="gold"
+                onClick={() => {
+                  onClose();
+                  router.push(`/${locale}/teams/new`);
+                }}
+                data-testid="challenge-create-team-cta"
+              >
+                {t('createTeamCta')}
+              </Button>
+            </div>
           </div>
         ) : null}
 
         {!loadingSelf && selfTeam && sharedGames.length === 0 ? (
-          <div className="rounded-xl border border-[var(--coral)] bg-[rgba(251,113,133,0.08)] p-4 mb-4">
-            <p className="text-[var(--coral-2)] text-[13px] leading-relaxed">
+          <div className="grid gap-4">
+            <p className="rounded-md bg-negative-soft px-4 py-3 text-[14px] leading-relaxed text-ink">
               {t('errorNoSharedGames', {
                 selfTeam: selfTeam.teamName,
                 selfGames: selfTeam.games.map((g) => gameLabels[g] ?? g).join(', ') || '—',
@@ -230,8 +247,8 @@ export function ChallengeModal({
                 otherGames: targetTeamGames.map((g) => gameLabels[g] ?? g).join(', ') || '—',
               })}
             </p>
-            <div className="mt-3">
-              <Button tone="ghost" size="sm" onClick={onClose}>
+            <div className="flex justify-end">
+              <Button variant="ink" onClick={onClose}>
                 {t('cancelCta')}
               </Button>
             </div>
@@ -239,46 +256,46 @@ export function ChallengeModal({
         ) : null}
 
         {!loadingSelf && selfTeam && sharedGames.length > 0 ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="grid gap-5">
             <div>
-              <label className="bx-eyebrow block mb-2" htmlFor="challenge-game">
+              <p className="bx-eyebrow mb-2" id="challenge-game-label">
                 {t('fieldGame')}
-              </label>
-              <select
+              </p>
+              <div
+                className="bx-gametiles"
+                role="group"
+                aria-labelledby="challenge-game-label"
                 id="challenge-game"
-                value={game}
-                onChange={(e) => setGame(e.target.value)}
-                className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--bg-1)] px-3 py-2 text-sm font-display"
               >
                 {sharedGames.map((g) => (
-                  <option key={g} value={g} className="bg-[var(--bg-2)]">
+                  <button
+                    key={g}
+                    type="button"
+                    className="bx-gametile"
+                    aria-pressed={game === g}
+                    onClick={() => setGame(g)}
+                  >
                     {gameLabels[g] ?? g}
-                  </option>
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
 
             <div>
-              <label className="bx-eyebrow block mb-2" htmlFor="challenge-format">
+              <p className="bx-eyebrow mb-2" id="challenge-format">
                 {t('fieldFormat')}
-              </label>
-              <select
-                id="challenge-format"
+              </p>
+              <SegmentedTabs
+                label={t('fieldFormat')}
+                items={FORMATS.map((f) => ({ value: f, label: f.toUpperCase() }))}
                 value={format}
-                onChange={(e) => setFormat(e.target.value as (typeof FORMATS)[number])}
-                className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--bg-1)] px-3 py-2 text-sm font-display"
-              >
-                {FORMATS.map((f) => (
-                  <option key={f} value={f} className="bg-[var(--bg-2)]">
-                    {f.toUpperCase()}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setFormat(v as (typeof FORMATS)[number])}
+              />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="bx-eyebrow block mb-2" htmlFor="challenge-start">
+                <label className="bx-eyebrow mb-2 block" htmlFor="challenge-start">
                   {t('fieldDateRangeStart')}
                 </label>
                 <input
@@ -286,12 +303,12 @@ export function ChallengeModal({
                   type="datetime-local"
                   value={start}
                   onChange={(e) => setStart(e.target.value)}
-                  className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--bg-1)] px-3 py-2 text-sm font-display"
+                  className="bx-field"
                   required
                 />
               </div>
               <div>
-                <label className="bx-eyebrow block mb-2" htmlFor="challenge-end">
+                <label className="bx-eyebrow mb-2 block" htmlFor="challenge-end">
                   {t('fieldDateRangeEnd')}
                 </label>
                 <input
@@ -299,14 +316,14 @@ export function ChallengeModal({
                   type="datetime-local"
                   value={end}
                   onChange={(e) => setEnd(e.target.value)}
-                  className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--bg-1)] px-3 py-2 text-sm font-display"
+                  className="bx-field"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="bx-eyebrow block mb-2" htmlFor="challenge-venue">
+              <label className="bx-eyebrow mb-2 block" htmlFor="challenge-venue">
                 {t('fieldVenue')}
               </label>
               <input
@@ -315,12 +332,12 @@ export function ChallengeModal({
                 value={venue}
                 onChange={(e) => setVenue(e.target.value)}
                 placeholder={t('fieldVenuePlaceholder')}
-                className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--bg-1)] px-3 py-2 text-sm font-display placeholder:text-[var(--t-4)]"
+                className="bx-field"
               />
             </div>
 
             <div>
-              <label className="bx-eyebrow block mb-2" htmlFor="challenge-message">
+              <label className="bx-eyebrow mb-2 block" htmlFor="challenge-message">
                 {t('fieldMessage')}
               </label>
               <textarea
@@ -329,27 +346,32 @@ export function ChallengeModal({
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder={t('fieldMessagePlaceholder')}
                 rows={2}
-                className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--bg-1)] px-3 py-2 text-sm font-display placeholder:text-[var(--t-4)]"
+                className="bx-field py-2.5"
               />
             </div>
 
             {error ? (
-              <p className="text-[var(--coral-2)] text-[12px] leading-relaxed">
+              <p
+                className="rounded-md bg-negative-soft px-4 py-3 text-[14px] leading-relaxed text-negative"
+                role="alert"
+              >
                 {t('errorGeneric', { message: error })}
               </p>
             ) : null}
 
-            <div className="flex justify-end gap-2 pt-2">
-              <Button tone="ghost" size="sm" type="button" onClick={onClose} disabled={submitting}>
-                {t('cancelCta')}
-              </Button>
-              <Button tone="primary" size="sm" type="submit" disabled={submitting || !game}>
-                {submitting ? '…' : t('submitCta')}
-              </Button>
+            <div className="grid gap-4 border-t border-line pt-5">
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button variant="ghost" type="button" onClick={onClose} disabled={submitting}>
+                  {t('cancelCta')}
+                </Button>
+                <Button variant="gold" type="submit" disabled={submitting || !game}>
+                  {submitting ? '…' : t('submitCta')}
+                </Button>
+              </div>
+              <p className="bx-eyebrow text-end" data-testid="acting-as">
+                {t('actingAs', { persona: personaSlug })}
+              </p>
             </div>
-            <p className="bx-eyebrow text-[var(--t-4)]" data-testid="acting-as">
-              acting as: {personaSlug}
-            </p>
           </form>
         ) : null}
       </div>

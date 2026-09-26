@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { LogOut } from 'lucide-react';
 import { Button } from '@beat-em-all/ui';
 
 type Props = {
@@ -40,18 +41,18 @@ export function WithdrawRegistrationButton({ registrationId }: Props) {
   };
 
   return (
-    <div className="flex flex-col gap-2 items-start">
+    <div className="grid justify-items-start gap-2">
       <Button
-        tone="ghost"
-        size="sm"
+        variant="danger"
         onClick={handleClick}
         disabled={submitting}
         data-testid="withdraw-cta"
       >
-        {submitting ? '…' : t('withdrawCta')}
+        <LogOut className="bx-icon bx-flip" aria-hidden />
+        {submitting ? t('withdrawing') : t('withdrawCta')}
       </Button>
       {error ? (
-        <p className="text-[var(--coral-2)] text-[12px] leading-relaxed">
+        <p className="m-0 text-[12px] leading-relaxed text-negative" role="alert">
           {t('errorGeneric', { message: error })}
         </p>
       ) : null}

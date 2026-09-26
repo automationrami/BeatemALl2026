@@ -1,30 +1,24 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Button, Pill, StatCard, Wordmark } from '@beat-em-all/ui';
-import { GAMES } from '@beat-em-all/mock-data';
-import {
-  listRegistrationsForTournament,
-  loadTournamentBySlug,
-} from '@beat-em-all/db/queries';
-import { LanguageToggle } from '@/components/LanguageToggle';
-import { PersonaSwitcher } from '@/components/PersonaSwitcher';
+import { ArrowLeft } from 'lucide-react';
+import { Button, EmptyState, SectionTitle, Tag, TeamCrest } from '@beat-em-all/ui';
+import { listRegistrationsForTournament, loadTournamentBySlug } from '@beat-em-all/db/queries';
 import { RegisterTeamButton } from '@/components/tournament/RegisterTeamButton';
+import { TournamentHero } from '@/components/tournament/TournamentHero';
+import {
+  formatAmount,
+  gameShort,
+  gameTitle,
+  teamCrestColor,
+  tournamentStatusTone,
+} from '@/components/tournament/display';
 import { getCurrentUser } from '@/lib/current-user';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 type PageProps = { params: Promise<{ locale: string; slug: string }> };
-
-function formatKwd(amount: number): string {
-  if (amount >= 1000) {
-    const thousands = amount / 1000;
-    const formatted = Number.isInteger(thousands) ? thousands.toFixed(0) : thousands.toFixed(1);
-    return `${formatted}K`;
-  }
-  return amount.toLocaleString();
-}
 
 export default async function TournamentDetailPage({ params }: PageProps) {
   const { locale, slug } = await params;
@@ -51,110 +45,97 @@ export default async function TournamentDetailPage({ params }: PageProps) {
       ? t('inProgress')
       : tour.status === 'registration_open'
         ? t('registrationOpen')
-        : tour.startsInLabel;
+        : t('upcoming');
+
+  const facts = [
+    // The seeded labels already read as sentences ("Starts in 12d"), so no key prefix.
+    ...(tour.startsInLabel ? [{ k: null, v: tour.startsInLabel }] : []),
+    ...(tour.registrationLabel ? [{ k: null, v: tour.registrationLabel }] : []),
+    { k: t('registeredLabel'), v: tReg('registeredCount', { count: registrations.length }) },
+  ];
 
   return (
-    <main className="min-h-screen px-6 py-8 md:px-16 md:py-12">
-      <header className="flex items-center justify-between mb-10">
-        <Link href={`/${locale}`}>
-          <Wordmark />
+    <main className="bx-page">
+      <div className="grid gap-4">
+        <Link
+          href={`/${locale}/tournaments`}
+          className="bx-label inline-flex items-center gap-2 justify-self-start text-ink-muted no-underline hover:text-ink"
+        >
+          <ArrowLeft className="bx-icon bx-flip" aria-hidden />
+          {t('backToList')}
         </Link>
-        <div className="flex items-center gap-3">
-          <LanguageToggle />
-          <PersonaSwitcher />
-        </div>
-      </header>
 
-      <section
-        className="rounded-[20px] p-7 mb-4"
-        style={{
-          background: `radial-gradient(120% 80% at 100% 0%, ${tour.organizerAccent}33, transparent 55%), radial-gradient(120% 80% at 0% 100%, rgba(139,92,246,0.18), transparent 55%), linear-gradient(180deg,#16131F,#0F1015)`,
-          border: '1px solid rgba(255,255,255,0.10)',
-        }}
-      >
-        <p className="bx-eyebrow mb-3">
-          TOURNAMENT · {tour.country} · {GAMES[tour.game]?.shortName ?? tour.game}
-        </p>
-        <h1 className="font-display font-medium text-[44px] md:text-[64px] leading-[0.95] tracking-[-0.035em] mb-3">
-          {tour.name}
-        </h1>
-        <div className="flex flex-wrap gap-2 mt-3 mb-5">
-          {tour.isSanctioned ? (
-            <Pill tone="cyan" dot>
-              {t('sanctioned')}
-            </Pill>
-          ) : null}
-          <Pill>{statusLabel}</Pill>
-          <span className="font-mono text-[12px] text-[var(--t-3)] tracking-[0.06em]">
-            {tour.organizer}
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <RegisterTeamButton
-            tournamentSlug={tour.slug}
-            tournamentName={tour.name}
-            isRegistrationOpen={tour.status === 'registration_open'}
-            alreadyRegistered={Boolean(myRegistration)}
-          />
-          <Button tone="ghost" size="md">
-            {t('viewBracketCta')}
-          </Button>
-        </div>
-      </section>
-
-      <section className="grid grid-cols-2 md:grid-cols-3 gap-3.5 mb-4">
-        <StatCard
-          label={t('prizePoolLabel', { amount: '' }).trim().replace(/^—/, '').trim() || 'PRIZE'}
-          value={tour.prizePoolKWD > 0 ? `${formatKwd(tour.prizePoolKWD)} KWD` : t('free')}
+        <TournamentHero
+          status={statusLabel}
+          statusTone={tournamentStatusTone(tour.status)}
+          event={`${gameTitle(tour.game)} · ${tour.country}`}
+          org={tour.organizer}
+          sanctionedLabel={tour.isSanctioned ? t('sanctioned') : undefined}
+          name={tour.name}
+          prizeLabel={t('prizePool')}
+          prize={
+            tour.prizePoolKWD > 0
+              ? t('moneyKwd', { amount: formatAmount(tour.prizePoolKWD) })
+              : t('free')
+          }
+          facts={facts}
+          image={tour.coverImageUrl}
+          monogram={gameShort(tour.game)}
+          actions={
+            <>
+              <RegisterTeamButton
+                tournamentSlug={tour.slug}
+                tournamentName={tour.name}
+                isRegistrationOpen={tour.status === 'registration_open'}
+                alreadyRegistered={Boolean(myRegistration)}
+              />
+              <Button variant="ink">{t('viewBracketCta')}</Button>
+            </>
+          }
         />
-        <StatCard label="STATUS" value={statusLabel} />
-        <StatCard
-          label={tReg('registeredEyebrow')}
-          value={tReg('registeredCount', { count: registrations.length })}
-        />
-      </section>
+      </div>
 
-      <section className="rounded-[20px] border border-[var(--line)] bg-[var(--bg-2)] p-5">
-        <p className="bx-eyebrow mb-4">{tReg('rosterEyebrow')}</p>
+      <section aria-labelledby="registered-teams-title">
+        <SectionTitle
+          id="registered-teams-title"
+          title={tReg('rosterTitle')}
+          eyebrow={tReg('registeredCount', { count: registrations.length })}
+        />
         {registrations.length === 0 ? (
-          <p className="text-[var(--t-3)] text-sm leading-relaxed">{tReg('rosterEmpty')}</p>
+          <EmptyState title={tReg('rosterEmpty')} />
         ) : (
-          <ol className="space-y-2" data-testid="registered-teams">
+          <ol className="bx-roster" data-testid="registered-teams">
             {registrations.map(({ registration, team }, i) => {
               const isMine = myTeamIds.has(team.id);
               return (
-                <li
-                  key={registration.id}
-                  className={[
-                    'flex items-center justify-between rounded-xl border px-3 py-2.5 transition-colors',
-                    isMine
-                      ? 'border-[var(--violet-2)] bg-[rgba(139,92,246,0.10)]'
-                      : 'border-[var(--line)] bg-[var(--bg-1)]',
-                  ].join(' ')}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="font-mono text-[10.5px] text-[var(--t-4)] tracking-[0.06em] tabular-nums">
-                      {(i + 1).toString().padStart(2, '0')}
-                    </span>
+                <li key={registration.id} className={isMine ? 'bg-gold-soft' : undefined}>
+                  <TeamCrest tag={team.tag} color={teamCrestColor(team.slug)} size={40} />
+                  <div className="min-w-0">
                     <Link
                       href={`/${locale}/teams/${team.slug}`}
-                      className="font-display font-medium text-[14px] truncate hover:text-[var(--violet-2)] transition-colors"
+                      className="block truncate font-display text-[16px] font-bold leading-[19px] text-ink no-underline hover:text-gold-text"
                     >
                       {team.name}
                     </Link>
-                    <span className="font-mono text-[10.5px] text-[var(--t-4)] tracking-[0.06em] uppercase">
-                      {team.tag}
-                    </span>
+                    <small>{team.tag}</small>
                   </div>
                   {isMine ? (
-                    <Pill tone="violet">{tReg('yourTeamPill')}</Pill>
+                    <Tag tone="gold">{tReg('yourTeamPill')}</Tag>
                   ) : (
-                    <Pill>
+                    <Tag tone={registration.status === 'pending_payment' ? 'soft' : 'neutral'}>
                       {registration.status === 'pending_payment'
                         ? tReg('statusPendingPayment')
                         : tReg('statusConfirmed')}
-                    </Pill>
+                    </Tag>
                   )}
+                  <span
+                    className={[
+                      'bx-roster__rating',
+                      isMine ? 'text-gold-text' : 'text-ink-faint',
+                    ].join(' ')}
+                  >
+                    #{(i + 1).toString().padStart(2, '0')}
+                  </span>
                 </li>
               );
             })}

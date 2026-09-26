@@ -1,11 +1,13 @@
 'use client';
 
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTransition } from 'react';
 
+/** EN / عربي switch, styled as the Championship Gold segmented track. */
 export function LanguageToggle() {
   const locale = useLocale();
+  const t = useTranslations('nav');
   const router = useRouter();
   const pathname = usePathname();
   const [pending, startTransition] = useTransition();
@@ -23,15 +25,13 @@ export function LanguageToggle() {
   }
 
   return (
-    <div className="flex items-center gap-1 p-1 rounded-xl border border-[var(--line-2)] bg-[rgba(255,255,255,0.03)]">
+    <div className="bx-seg" role="group" aria-label={t('language')}>
       <button
         type="button"
         onClick={() => switchTo('en')}
         disabled={pending}
         aria-pressed={locale === 'en'}
-        className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-          locale === 'en' ? 'bg-[var(--violet)] text-white' : 'text-[var(--t-3)] hover:text-white'
-        }`}
+        lang="en"
       >
         EN
       </button>
@@ -40,11 +40,9 @@ export function LanguageToggle() {
         onClick={() => switchTo('ar')}
         disabled={pending}
         aria-pressed={locale === 'ar'}
-        className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-          locale === 'ar' ? 'bg-[var(--violet)] text-white' : 'text-[var(--t-3)] hover:text-white'
-        }`}
+        lang="ar"
       >
-        AR
+        عربي
       </button>
     </div>
   );

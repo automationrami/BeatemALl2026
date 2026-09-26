@@ -1,13 +1,13 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Star } from 'lucide-react';
-import { Button, Pill, Wordmark } from '@beat-em-all/ui';
+import { ArrowLeft, BadgeCheck, Gamepad2, MapPin, Monitor, Navigation } from 'lucide-react';
+import { ProfileHeader, SectionTitle, Tag, TeamCrest, buttonClass } from '@beat-em-all/ui';
 import { GAMES } from '@beat-em-all/mock-data';
+import type { GameId } from '@beat-em-all/types';
 import { listVenueSupportedGames, loadVenueBySlug } from '@beat-em-all/db/queries';
-import { LanguageToggle } from '@/components/LanguageToggle';
-import { PersonaSwitcher } from '@/components/PersonaSwitcher';
 import { BookingButton } from '@/components/booking/BookingButton';
+import { formatAmount, venueInitials } from '@/components/booking/format';
 
 type PageProps = { params: Promise<{ locale: string; slug: string }> };
 
@@ -21,89 +21,151 @@ export default async function VenueDetailPage({ params }: PageProps) {
   const supportedGames = await listVenueSupportedGames(slug);
   const t = await getTranslations('venue');
 
-  return (
-    <main className="min-h-screen px-6 py-8 md:px-16 md:py-12">
-      <header className="flex items-center justify-between mb-10">
-        <Link href={`/${locale}`}>
-          <Wordmark />
-        </Link>
-        <div className="flex items-center gap-3">
-          <LanguageToggle />
-          <PersonaSwitcher />
-        </div>
-      </header>
+  const stations = supportedGames.reduce((sum, g) => sum + g.seatsCount, 0);
+  const gameNames = supportedGames.map((g) => g.name);
+  const mapsHref = `https://www.google.com/maps/search/?api=1&query=${venue.geo.lat},${venue.geo.lng}`;
 
-      <section className="bx-card p-7 mb-4">
-        <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] gap-7 items-start">
-          <span
-            className="w-[120px] h-[120px] rounded-2xl shrink-0 grid place-items-center font-display font-bold text-white text-[36px]"
-            style={{
-              background: 'linear-gradient(135deg, rgba(34,211,238,0.22), rgba(139,92,246,0.10))',
-              border: '1px solid rgba(255,255,255,0.10)',
-            }}
-            aria-hidden
-          >
-            {venue.name.slice(0, 2).toUpperCase()}
-          </span>
-          <div>
-            <p className="bx-eyebrow mb-2">
-              VENUE · {venue.country} · {venue.city}
-            </p>
-            <h1 className="font-display font-medium text-[44px] md:text-[56px] leading-[0.95] tracking-[-0.035em] mb-2">
-              {venue.name}
-            </h1>
-            <div className="flex flex-wrap gap-2 mt-3 mb-4">
+  return (
+    <main className="bx-page">
+      <div className="grid gap-4">
+        <Link
+          href={`/${locale}/venues`}
+          className="bx-eyebrow inline-flex items-center gap-1.5 justify-self-start hover:text-ink"
+        >
+          <ArrowLeft className="bx-icon bx-flip size-3.5" aria-hidden />
+          {t('backToVenues')}
+        </Link>
+
+        <ProfileHeader
+          mark={<TeamCrest tag={venueInitials(venue.name)} color="var(--gold-700)" size={120} />}
+          tags={
+            <>
               {venue.isVerified ? (
-                <Pill tone="cyan" dot>
+                <Tag tone="soft" icon={<BadgeCheck className="bx-icon" aria-hidden />}>
                   {t('verified')}
-                </Pill>
+                </Tag>
               ) : null}
-              {venue.rating !== null ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(251,191,36,0.12)] border border-[rgba(251,191,36,0.30)] font-display font-medium text-[10.5px] text-[var(--amber)]">
-                  <Star size={12} className="text-[var(--amber)] fill-[var(--amber)]" aria-hidden />
-                  {t('ratingLabel', { rating: venue.rating.toFixed(1) })}
-                </span>
-              ) : null}
-              <Pill>{t('perHour', { rate: venue.hourlyRateKWD })}</Pill>
-            </div>
-          </div>
-          <div className="md:text-end text-start flex flex-col gap-2">
+              <Tag>{t('venueTag')}</Tag>
+            </>
+          }
+          name={venue.name}
+          meta={[
+            {
+              icon: <MapPin className="bx-icon" aria-hidden />,
+              text: t('cityCountry', { city: venue.city, country: venue.country }),
+            },
+            ...(gameNames.length > 0
+              ? [
+                  {
+                    icon: <Gamepad2 className="bx-icon" aria-hidden />,
+                    text: gameNames.join(' · '),
+                  },
+                ]
+              : []),
+            ...(stations > 0
+              ? [
+                  {
+                    icon: <Monitor className="bx-icon" aria-hidden />,
+                    text: t('seatsLabel', { count: stations }),
+                  },
+                ]
+              : []),
+          ]}
+          bio={t('bookHint')}
+          actions={
             <BookingButton
               venueSlug={venue.slug}
               venueName={venue.name}
               venueHourlyRateKwd={venue.hourlyRateKWD}
               supportedGames={supportedGames}
             />
-            <Button tone="ghost" size="sm">
-              {t('directionsCta')}
-            </Button>
-          </div>
-        </div>
-      </section>
+          }
+          stats={[
+            {
+              label: t('perSeatHour'),
+              value: t('money', { amount: formatAmount(venue.hourlyRateKWD) }),
+              tone: 'gold',
+            },
+            { label: t('statStations'), value: stations },
+            { label: t('statGames'), value: supportedGames.length },
+            venue.rating !== null
+              ? { label: t('statRating'), value: venue.rating.toFixed(1), of: 5 }
+              : { label: t('statRating'), value: t('statRatingNone') },
+          ]}
+        />
+      </div>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-[20px] border border-[var(--line)] bg-[var(--bg-2)] p-5">
-          <p className="bx-eyebrow mb-4">{t('supportedGames')}</p>
-          <div className="flex flex-wrap gap-2">
-            {venue.supportedGames.length === 0 ? (
-              <p className="text-[var(--t-4)] text-sm">—</p>
-            ) : (
-              venue.supportedGames.map((g) => (
-                <Pill key={g} tone="violet">
-                  {GAMES[g]?.shortName ?? g}
-                </Pill>
-              ))
-            )}
+      <div className="bx-two">
+        <section aria-labelledby="venue-games">
+          <SectionTitle id="venue-games" eyebrow={t('gamesEyebrow')} title={t('gamesTitle')} />
+          {supportedGames.length === 0 ? (
+            <div className="bx-card bx-card--flat p-6 text-[14px] text-ink-muted">—</div>
+          ) : (
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {supportedGames.map((g) => {
+                const meta = GAMES[g.slug as GameId];
+                return (
+                  <li key={g.slug} className="bx-card bx-card--flat grid gap-3 p-5">
+                    <span
+                      className="font-display text-[22px] font-extrabold uppercase italic leading-none tracking-[0.02em] text-ink"
+                      aria-hidden
+                    >
+                      {meta?.shortName ?? g.name}
+                    </span>
+                    <div className="flex items-end justify-between gap-3">
+                      <span className="font-display text-[14px] font-medium text-ink-muted">
+                        {g.name}
+                      </span>
+                      <span className="grid justify-items-end gap-0.5">
+                        <span className="bx-num text-[24px] text-ink">{g.seatsCount}</span>
+                        <span className="bx-eyebrow">{t('statStations')}</span>
+                      </span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        <section aria-labelledby="venue-location">
+          <SectionTitle
+            id="venue-location"
+            eyebrow={t('cityCountry', { city: venue.city, country: venue.country })}
+            title={t('locationTitle')}
+          />
+          <div className="bx-card grid gap-5 p-6">
+            <div className="flex items-start gap-3">
+              <span className="bx-inset grid size-11 shrink-0 place-items-center text-gold-text">
+                <MapPin className="bx-icon" aria-hidden />
+              </span>
+              <div className="grid gap-1">
+                <p className="font-display text-[18px] font-bold leading-[22px] text-ink">
+                  {venue.city}
+                </p>
+                <p className="font-display text-[14px] font-medium text-ink-muted">
+                  {venue.country}
+                </p>
+              </div>
+            </div>
+            <div className="bx-inset grid gap-1 px-4 py-3">
+              <span className="bx-eyebrow">{t('coordinates')}</span>
+              <span className="bx-num text-[15px] font-bold text-ink" dir="ltr">
+                {venue.geo.lat.toFixed(4)}, {venue.geo.lng.toFixed(4)}
+              </span>
+            </div>
+            <a
+              href={mapsHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonClass('outline', 'md', true)}
+            >
+              <Navigation className="bx-icon size-4" aria-hidden />
+              {t('directionsCta')}
+            </a>
           </div>
-        </div>
-        <div className="rounded-[20px] border border-[var(--line)] bg-[var(--bg-2)] p-5">
-          <p className="bx-eyebrow mb-4">{t('location')}</p>
-          <p className="font-display font-medium text-[16px] mb-1">{venue.city}</p>
-          <p className="font-mono text-[10.5px] text-[var(--t-4)] tracking-[0.08em] uppercase">
-            {venue.country} · {venue.geo.lat.toFixed(4)}, {venue.geo.lng.toFixed(4)}
-          </p>
-        </div>
-      </section>
+        </section>
+      </div>
     </main>
   );
 }

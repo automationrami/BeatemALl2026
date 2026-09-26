@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { ArrowRight, ChevronLeft } from 'lucide-react';
 import { Button, GameCard, StepIndicator } from '@beat-em-all/ui';
 import { GAMES_LIST } from '@beat-em-all/mock-data';
 import type { GameId } from '@beat-em-all/types';
@@ -43,7 +44,7 @@ export function OnboardingForm() {
   }
 
   return (
-    <div>
+    <div className="grid gap-6">
       <StepIndicator
         step={CURRENT_STEP}
         total={TOTAL_STEPS}
@@ -52,7 +53,7 @@ export function OnboardingForm() {
         subtitle={t('subtitle')}
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 mt-8">
+      <div className="grid grid-cols-2 gap-3 min-[600px]:grid-cols-3">
         {GAMES_LIST.map((g) => (
           <GameCard
             key={g.id}
@@ -65,27 +66,27 @@ export function OnboardingForm() {
         ))}
       </div>
 
-      {error && <p className="mt-4 text-[12px] font-display text-[var(--coral-2)]">{error}</p>}
+      {error && (
+        <p className="text-[13px] font-medium text-negative" role="alert">
+          {error}
+        </p>
+      )}
 
-      <div className="flex gap-3 mt-8">
-        <Button
-          tone="ghost"
-          size="md"
-          type="button"
-          onClick={() => router.push(`/${locale}/verify`)}
-        >
-          ← {t('back')}
+      <div className="flex gap-3 border-t border-line pt-6">
+        <Button variant="ghost" type="button" onClick={() => router.push(`/${locale}/verify`)}>
+          <ChevronLeft className="bx-icon bx-flip" aria-hidden />
+          {t('back')}
         </Button>
         <div className="flex-1">
           <Button
-            tone="primary"
-            size="md"
+            variant="gold"
             full
             type="button"
             onClick={handleContinue}
             disabled={pending || selected.size === 0}
           >
-            {t('continue')} →
+            {t('continue')}
+            <ArrowRight className="bx-icon bx-flip" aria-hidden />
           </Button>
         </div>
       </div>

@@ -2,99 +2,93 @@
 
 import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
-import { Pill } from '@beat-em-all/ui';
+import { BadgeCheck, ChevronRight } from 'lucide-react';
+import { EmptyState, SectionTitle, Tag, TeamCrest, buttonClass } from '@beat-em-all/ui';
 import { GAMES } from '@beat-em-all/mock-data';
-import type { TournamentSummary } from '@beat-em-all/types';
+import type { TournamentStatus, TournamentSummary } from '@beat-em-all/types';
 
 type Props = { tournaments: TournamentSummary[] };
+
+const STATUS_TONE: Record<TournamentStatus, 'live' | 'soft' | 'neutral'> = {
+  in_progress: 'live',
+  registration_open: 'soft',
+  published: 'neutral',
+};
+
+/** Western digits in both languages. */
+const kwd = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+
+/** Crest text for a tournament: a leading acronym ("KEC"), else the word initials. */
+function crestTag(name: string): string {
+  const words = name.split(/\s+/).filter(Boolean);
+  const first = words[0] ?? name;
+  if (/^[A-Z0-9]{2,4}$/.test(first)) return first;
+  const initials = words.map((w) => w.match(/[\p{L}\p{N}]/u)?.[0] ?? '').join('');
+  return (initials.length >= 2 ? initials : name).slice(0, 3);
+}
 
 export function TournamentList({ tournaments }: Props) {
   const t = useTranslations('home.tournaments');
   const locale = useLocale();
 
   return (
-    <div className="rounded-[20px] border border-[var(--line)] bg-[var(--bg-2)] p-5">
-      <header className="mb-4 flex items-baseline justify-between">
-        <div>
-          <p className="bx-eyebrow mb-1">{t('eyebrow')}</p>
-          <h2 className="font-display font-medium text-[20px] tracking-[-0.02em]">{t('title')}</h2>
-        </div>
-        <Link
-          href={`/${locale}/tournaments`}
-          className="text-xs font-display font-medium text-[var(--violet-2)] hover:text-white transition-colors"
-        >
-          {t('viewAll')} →
-        </Link>
-      </header>
+    <section aria-labelledby="home-tournaments" className="min-w-0">
+      <SectionTitle
+        id="home-tournaments"
+        eyebrow={t('eyebrow')}
+        title={t('title')}
+        actions={
+          <Link href={`/${locale}/tournaments`} className={buttonClass('ghost', 'sm')}>
+            {t('viewAll')}
+            <ChevronRight className="bx-icon bx-flip" aria-hidden />
+          </Link>
+        }
+      />
 
       {tournaments.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-[var(--line-2)] bg-[rgba(255,255,255,0.02)] p-6 text-center">
-          <p className="text-[var(--t-3)] text-sm leading-relaxed">{t('empty')}</p>
-        </div>
+        <EmptyState title={t('empty')} />
       ) : (
-        <div className="space-y-3">
+        <ul className="bx-card m-0 grid list-none p-0">
           {tournaments.map((tour) => (
-            <Link
-              key={tour.id}
-              href={`/${locale}/tournaments/${tour.slug}`}
-              className={[
-                'flex items-center gap-4 rounded-xl border bg-[var(--bg-1)] p-4 hover:bg-[var(--bg-3)] transition-colors',
-                tour.isSanctioned
-                  ? 'border-[var(--line)] border-s-2 border-s-[var(--cyan-2)]'
-                  : 'border-[var(--line)]',
-              ].join(' ')}
-            >
-              <span
-                className="w-14 h-14 rounded-xl shrink-0 grid place-items-center font-display font-bold text-white"
-                style={{
-                  background: `linear-gradient(135deg, ${tour.organizerAccent}, ${tour.organizerAccent}55)`,
-                  border: '1px solid rgba(255,255,255,0.08)',
-                }}
-                aria-hidden
+            <li key={tour.id} className="border-b border-line last:border-b-0">
+              <Link
+                href={`/${locale}/tournaments/${tour.slug}`}
+                className="group flex items-center gap-4 px-5 py-4 transition-colors hover:bg-surface-200 focus-visible:shadow-[var(--focus-ring)] focus-visible:outline-none"
               >
-                {tour.name.slice(0, 2).toUpperCase()}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-display font-medium text-[15px] truncate">{tour.name}</p>
-                <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                  <Pill>{GAMES[tour.game].shortName}</Pill>
-                  <span className="font-mono text-[10.5px] text-[var(--t-4)] tracking-[0.08em] uppercase">
-                    {tour.organizer}
-                  </span>
-                  {tour.isSanctioned ? (
-                    <Pill tone="cyan" dot>
-                      {t('sanctioned')}
-                    </Pill>
-                  ) : null}
+                <TeamCrest tag={crestTag(tour.name)} color={tour.organizerAccent} size={48} />
+                <div className="grid min-w-0 flex-1 gap-1.5">
+                  <p className="m-0 truncate font-display text-[17px] font-bold leading-[21px] text-ink">
+                    {tour.name}
+                  </p>
+                  <p className="m-0 truncate text-[13px] leading-[16px] text-ink-muted">
+                    {GAMES[tour.game].shortName} · {tour.organizer}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Tag tone={STATUS_TONE[tour.status]}>{t(`status.${tour.status}`)}</Tag>
+                    {tour.isSanctioned ? (
+                      <Tag tone="paper" icon={<BadgeCheck className="bx-icon" aria-hidden />}>
+                        {t('sanctioned')}
+                      </Tag>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-              <div className="text-end shrink-0">
-                {tour.prizePoolKWD > 0 ? (
-                  <p className="bx-num text-[20px]">
-                    {t('prizePoolLabel', { amount: formatKwd(tour.prizePoolKWD) })}
-                  </p>
-                ) : (
-                  <p className="font-mono text-[11px] text-[var(--t-4)] uppercase tracking-[0.08em]">
-                    {t('free')}
-                  </p>
-                )}
-                <p className="font-mono text-[10.5px] text-[var(--t-3)] tracking-[0.06em] mt-1">
-                  {tour.startsInLabel}
-                </p>
-              </div>
-            </Link>
+                <div className="grid shrink-0 justify-items-end gap-1.5 text-end">
+                  {tour.prizePoolKWD > 0 ? (
+                    <span className="bx-num bx-gold-num text-[22px] sm:text-[26px]">
+                      {t('prize', { amount: kwd.format(tour.prizePoolKWD) })}
+                    </span>
+                  ) : (
+                    <span className="bx-label text-ink-muted">{t('free')}</span>
+                  )}
+                  <span className="text-[12px] leading-[16px] text-ink-muted">
+                    {tour.startsInLabel}
+                  </span>
+                </div>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
-    </div>
+    </section>
   );
-}
-
-function formatKwd(amount: number): string {
-  if (amount >= 1000) {
-    const thousands = amount / 1000;
-    const formatted = Number.isInteger(thousands) ? thousands.toFixed(0) : thousands.toFixed(1);
-    return `${formatted}K`;
-  }
-  return amount.toLocaleString();
 }

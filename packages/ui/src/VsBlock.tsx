@@ -23,9 +23,7 @@ export function VsBlock({ teamA, teamB, status, crestSize = 48 }: VsBlockProps) 
       <Side team={teamA} align="end" crestSize={crestSize} />
       <div className="text-center">
         {status && <div className="mb-1.5">{status}</div>}
-        <div className="font-mono font-medium text-[11px] text-[var(--t-4)] tracking-[0.3em]">
-          VS
-        </div>
+        <div className="bx-vs">VS</div>
       </div>
       <Side team={teamB} align="start" crestSize={crestSize} />
     </div>
@@ -49,12 +47,10 @@ function Side({
     >
       <TeamCrest tag={team.tag} color={team.accentColor} size={crestSize} />
       <div className={textAlign}>
-        <div className="font-display font-medium text-[16px] tracking-[-0.02em] text-white">
+        <div className="font-display font-bold text-[18px] uppercase tracking-[0.06em] text-ink rtl:normal-case rtl:tracking-normal">
           {team.name}
         </div>
-        <div className="font-mono font-medium text-[10px] text-[var(--t-4)] tracking-[0.18em] mt-0.5">
-          {team.country}
-        </div>
+        <div className="bx-eyebrow mt-0.5">{team.country}</div>
       </div>
     </div>
   );

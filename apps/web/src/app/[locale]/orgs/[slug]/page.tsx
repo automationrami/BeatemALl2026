@@ -1,12 +1,29 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Pill, Wordmark } from '@beat-em-all/ui';
-import { loadOrganizationBySlug } from '@beat-em-all/db/queries';
-import { LanguageToggle } from '@/components/LanguageToggle';
-import { PersonaSwitcher } from '@/components/PersonaSwitcher';
+import { Globe, Mail, MapPin, ShieldCheck } from 'lucide-react';
+import { EmptyState, ProfileHeader, SectionTitle, Tag, TeamCrest } from '@beat-em-all/ui';
+import { GAMES } from '@beat-em-all/mock-data';
+import { listSurfaceableTournaments, loadOrganizationBySlug } from '@beat-em-all/db/queries';
+import { OrgTournamentTile } from '@/components/org/OrgTournamentTile';
 
 type PageProps = { params: Promise<{ locale: string; slug: string }> };
+
+/** Up to three initials from the organization name, e.g. "Kuwait Esports Club" → "KEC". */
+function orgInitials(name: string): string {
+  const letters = name
+    .split(/\s+/)
+    .map((w) => w.replace(/[^\p{L}\p{N}]/gu, '').charAt(0))
+    .filter(Boolean);
+  return (letters.length > 1 ? letters.slice(0, 3).join('') : name.slice(0, 3)).toUpperCase();
+}
+
+function countryName(locale: string, code: string): string {
+  try {
+    return new Intl.DisplayNames([locale], { type: 'region' }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+}
 
 export default async function OrgDetailPage({ params }: PageProps) {
   const { locale, slug } = await params;
@@ -16,6 +33,11 @@ export default async function OrgDetailPage({ params }: PageProps) {
   if (!org) notFound();
 
   const t = await getTranslations('organization');
+  const tTour = await getTranslations('tournament');
+
+  // Open and upcoming events hosted by this organization (the public tournaments feed,
+  // narrowed to this organizer).
+  const tournaments = (await listSurfaceableTournaments()).filter((x) => x.organizer === org.name);
 
   const tierLabel =
     org.tier === 'federation'
@@ -28,90 +50,112 @@ export default async function OrgDetailPage({ params }: PageProps) {
             ? t('tierCommunity')
             : t('tierPersonal');
 
-  const accent = org.accentColor ?? '#A78BFA';
+  const money = (amount: number) => t('prizeAmount', { amount: amount.toLocaleString('en-US') });
+  const openCount = tournaments.filter((x) => x.status === 'registration_open').length;
+  const prizeTotal = tournaments.reduce((sum, x) => sum + x.prizePoolKWD, 0);
+
+  const statusOf = (status: string) =>
+    status === 'registration_open'
+      ? { label: tTour('registrationOpen'), tone: 'soft' as const }
+      : status === 'in_progress'
+        ? { label: tTour('inProgress'), tone: 'live' as const }
+        : { label: t('statusUpcoming'), tone: 'neutral' as const };
+
+  const meta: { icon?: React.ReactNode; text: React.ReactNode }[] = [
+    {
+      icon: <MapPin className="bx-icon" aria-hidden />,
+      text: countryName(locale, org.countryCode),
+    },
+  ];
+  if (org.websiteUrl) {
+    meta.push({
+      icon: <Globe className="bx-icon" aria-hidden />,
+      text: (
+        <a
+          href={org.websiteUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-ink hover:text-gold-text hover:underline"
+          aria-label={`${t('websiteLabel')}: ${org.websiteUrl}`}
+        >
+          {org.websiteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+        </a>
+      ),
+    });
+  }
+  if (org.contactEmail) {
+    meta.push({
+      icon: <Mail className="bx-icon" aria-hidden />,
+      text: (
+        <a
+          href={`mailto:${org.contactEmail}`}
+          className="text-ink hover:text-gold-text hover:underline"
+          aria-label={`${t('contactLabel')}: ${org.contactEmail}`}
+        >
+          {org.contactEmail}
+        </a>
+      ),
+    });
+  }
 
   return (
-    <main className="min-h-screen px-6 py-8 md:px-16 md:py-12">
-      <header className="flex items-center justify-between mb-10">
-        <Link href={`/${locale}`}>
-          <Wordmark />
-        </Link>
-        <div className="flex items-center gap-3">
-          <LanguageToggle />
-          <PersonaSwitcher />
-        </div>
-      </header>
-
-      <section
-        className="rounded-[20px] p-7 mb-4"
-        style={{
-          background: `radial-gradient(120% 80% at 100% 0%, ${accent}33, transparent 55%), linear-gradient(180deg,#16131F,#0F1015)`,
-          border: '1px solid rgba(255,255,255,0.10)',
-        }}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-7 items-start">
-          <span
-            className="w-[120px] h-[120px] rounded-2xl shrink-0 grid place-items-center font-display font-bold text-white text-[36px]"
-            style={{
-              background: `linear-gradient(135deg, ${accent}, ${accent}55)`,
-              border: '1px solid rgba(255,255,255,0.10)',
-            }}
-            aria-hidden
-          >
-            {org.name.slice(0, 2).toUpperCase()}
-          </span>
-          <div>
-            <p className="bx-eyebrow mb-2">
-              ORG · {tierLabel.toUpperCase()} · {org.countryCode}
-            </p>
-            <h1 className="font-display font-medium text-[44px] md:text-[56px] leading-[0.95] tracking-[-0.035em] mb-3">
-              {org.name}
-            </h1>
-            <div className="flex flex-wrap gap-2 mb-4">
-              <Pill tone="violet">{tierLabel}</Pill>
-              {org.verificationStatus === 'verified' ? (
-                <Pill tone="cyan" dot>
-                  {t('verified')}
-                </Pill>
-              ) : null}
-            </div>
-            {org.description ? (
-              <p className="text-[var(--t-3)] max-w-2xl text-base leading-relaxed">
-                {org.description}
-              </p>
+    <main className="bx-page">
+      <ProfileHeader
+        mark={
+          <TeamCrest
+            tag={orgInitials(org.name)}
+            color={org.accentColor ?? undefined}
+            src={org.logoUrl}
+            size={120}
+          />
+        }
+        tags={
+          <>
+            {org.verificationStatus === 'verified' ? (
+              <Tag
+                tone={org.tier === 'federation' ? 'org' : 'soft'}
+                icon={<ShieldCheck className="bx-icon" aria-hidden />}
+              >
+                {t('verified')}
+              </Tag>
             ) : null}
-          </div>
-        </div>
-      </section>
+            <Tag tone="ink">{tierLabel}</Tag>
+          </>
+        }
+        name={org.name}
+        meta={meta}
+        bio={org.description ?? undefined}
+        stats={[
+          { label: t('statTournaments'), value: tournaments.length },
+          { label: t('statOpen'), value: openCount },
+          { label: t('statPrizePool'), value: money(prizeTotal), tone: 'gold' },
+        ]}
+      />
 
-      {org.websiteUrl || org.contactEmail ? (
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {org.websiteUrl ? (
-            <div className="rounded-[20px] border border-[var(--line)] bg-[var(--bg-2)] p-5">
-              <p className="bx-eyebrow mb-2">{t('websiteLabel')}</p>
-              <a
-                href={org.websiteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-display font-medium text-[16px] text-[var(--cyan-2)] hover:underline break-all"
-              >
-                {org.websiteUrl}
-              </a>
-            </div>
-          ) : null}
-          {org.contactEmail ? (
-            <div className="rounded-[20px] border border-[var(--line)] bg-[var(--bg-2)] p-5">
-              <p className="bx-eyebrow mb-2">{t('contactLabel')}</p>
-              <a
-                href={`mailto:${org.contactEmail}`}
-                className="font-display font-medium text-[16px] text-[var(--cyan-2)] hover:underline break-all"
-              >
-                {org.contactEmail}
-              </a>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
+      <section aria-labelledby="org-tournaments">
+        <SectionTitle
+          id="org-tournaments"
+          eyebrow={t('tournamentsEyebrow')}
+          title={t('tournamentsTitle')}
+        />
+        {tournaments.length === 0 ? (
+          <EmptyState title={t('tournamentsEmpty')} />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 min-[600px]:grid-cols-2 min-[1100px]:grid-cols-3">
+            {tournaments.map((tour) => (
+              <OrgTournamentTile
+                key={tour.id}
+                href={`/${locale}/tournaments/${tour.slug}`}
+                name={tour.name}
+                game={GAMES[tour.game]?.title ?? tour.game}
+                status={statusOf(tour.status)}
+                sanctionedLabel={tour.isSanctioned ? tTour('sanctioned') : undefined}
+                prize={tour.prizePoolKWD > 0 ? money(tour.prizePoolKWD) : undefined}
+              />
+            ))}
+          </div>
+        )}
+      </section>
     </main>
   );
 }

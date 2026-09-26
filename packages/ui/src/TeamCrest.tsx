@@ -1,31 +1,35 @@
 type TeamCrestProps = {
   /** 2–6 char team tag, e.g. "SND". Will be uppercased. */
   tag: string;
-  /** Hex accent for the gradient fill. */
-  color: string;
+  /** Team colour from the team record. */
+  color?: string;
   /** Pixel size (square). */
   size?: number;
+  /** Uploaded logo; when present it replaces the tag. */
+  src?: string | null;
+  /** Accessible name. Omit when the team name is already next to the crest. */
+  label?: string;
 };
 
 /**
- * Team identity tile — a rounded square with the team tag in display font.
- * Sister component to <Avatar/> for players.
+ * Team mark (Championship Gold `Crest`): the uploaded logo, or the tag in white on the
+ * team colour. The size and colour are per-team data, so they travel as CSS custom
+ * properties read by `.bx-crest` in styles.css.
  */
-export function TeamCrest({ tag, color, size = 56 }: TeamCrestProps) {
+export function TeamCrest({ tag, color, size = 56, src, label }: TeamCrestProps) {
+  const vars = {
+    '--size': `${size}px`,
+    ...(color ? { '--crest': color } : {}),
+  } as React.CSSProperties;
   return (
-    <div
-      className="grid place-items-center font-display font-bold text-white border border-white/10 shrink-0"
-      style={{
-        width: size,
-        height: size,
-        borderRadius: Math.max(8, Math.round(size * 0.18)),
-        background: `linear-gradient(135deg, ${color}, ${color}77)`,
-        fontSize: Math.round(size * 0.32),
-        letterSpacing: '-0.04em',
-      }}
-      aria-hidden
+    <span
+      className={['bx-crest', src ? 'bx-crest--img' : ''].join(' ')}
+      style={vars}
+      role={label ? 'img' : undefined}
+      aria-label={label}
+      aria-hidden={label ? undefined : true}
     >
-      {tag.slice(0, 4).toUpperCase()}
-    </div>
+      {src ? <img src={src} alt="" /> : tag.slice(0, 4).toUpperCase()}
+    </span>
   );
 }

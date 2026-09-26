@@ -36,7 +36,7 @@ Beat'Em All is a GCC-first competitive gaming platform. **As of 2026-05 the arch
 | React | 19.2 |
 | TypeScript | strict mode, `noUncheckedIndexedAccess` on |
 | Styling | **Tailwind v4** + custom CSS tokens from `@beat-em-all/design-tokens` |
-| Components | Custom dark-mode bento primitives + shadcn/ui (added per-epic as needed) |
+| Components | `@beat-em-all/ui` Championship Gold components + shadcn/ui (added per-epic as needed) |
 | Icons | **Lucide** |
 | i18n | **next-intl 4.x** with `[locale]` segment routing (`/en/...` and `/ar/...`) |
 | Forms | React Hook Form + Zod |
@@ -64,25 +64,32 @@ Beat'Em All is a GCC-first competitive gaming platform. **As of 2026-05 the arch
 
 ---
 
-## Brand tokens (from Claude Design — `Screens/beat-em-all/project/`)
+## Design system — Championship Gold (since 2026-09-26)
 
-| Token | Value |
+The violet "glass bento" kit is retired. The whole app uses **Championship Gold**: black stages, metallic gold for value and victory, big confident numbers, small tracked uppercase labels. Canonical references:
+
+- Rules and component docs: `..\Beatemall\docs\design\DESIGN_DIRECTION.md` and `..\Beatemall\docs\design\championship-gold\README.md`
+- What screens should look like: `..\Beatemall\docs\design\championship-gold\screens\*.jpg` (Leaderboard, Leaderboard Arabic, Team, Player, Tournament, plus component shots)
+- Design-system artifact (live previews): https://claude.ai/artifact/9WK7AwJXHSHRBCsBFCy83x
+
+How it is wired here:
+
+| Layer | Where |
 |---|---|
-| Background | `#0A0B0F` (`--bg-0`) |
-| Brand violet | `#8B5CF6` (`--violet`) |
-| Accent cyan | `#22D3EE` (`--cyan-2`) |
-| Accent coral | `#FB7185` (`--coral`) |
-| Display font | **Space Grotesk** (`--f-display`) |
-| Mono / numerical | **JetBrains Mono** (`--f-mono`) |
-| Arabic body | **IBM Plex Sans Arabic** (`--f-arabic`) |
-| English body | **Inter** (`--f-body-en`) |
-| Default card style | `glass` |
-| Signature visualisations | Pentagon stat plot, sparklines, oversized display numerals |
-| Layout | Bento grid, **dark mode only** (no light mode at MVP) |
+| Tokens (CSS vars, `night` default + `stage` light) | `packages/design-tokens/src/tokens.css` — semantic names: `--surface-000…300`, `--band`, `--ink`, `--ink-muted`, `--ink-faint`, `--gold-*`, `--gold-text`, `--on-gold`, `--medal-*`, `--positive`, `--negative`, `--live`, `--gradient-gold/silver/bronze/fire` |
+| Tailwind utilities | `apps/web/src/app/globals.css` `@theme` — `bg-surface-100`, `bg-band`, `text-ink`, `text-ink-muted`, `text-gold-text`, `text-on-gold`, `text-positive`, `rounded-chip/sm/md/tile/lg/xl/2xl`, `shadow-bx-card/lift` |
+| Component classes | `packages/ui/src/styles.css` (`@layer components`, prefix `bx-`) — the one place component CSS lives |
+| React components | `@beat-em-all/ui`: `Button`/`buttonClass`, `Tag`, `PlaceTag`, `RankDelta`, `MedalSet`, `TeamCrest`, `Avatar`, `Wordmark`, `SectionTitle`, `PageHead`, `StatStrip`, `Notice`, `SeasonChip`, `EmptyState`, `PodiumCard`, `StandingsTable`, `MatchCard`, `BracketMatch`, `BracketWinner`, `CompetitionTile`, `ProfileHeader`, `RosterList`, `WinnerHero`, `SegmentedTabs`, `GameTiles`, plus the older `StatCard`, `Pill`, `VsBlock`, `MatchRow`, `GameCard`, `TextInput`/`Field`, `OtpInput`, `StepIndicator`, `StatPentagon` (restyled) |
+| App frame | `apps/web/src/components/shell/AppShell.tsx` — side rail (desktop) + bottom tabs (phones) + top bar (language, persona). Pages render **only** `<main className="bx-page">…</main>`; never their own header, wordmark, language toggle or persona switcher |
 
-Country accents: KW=coral, KSA=violet, AE=cyan, BH=lime, QA=amber, OM=coral-2.
+Rules:
 
----
+- Fonts: Saira (Latin) + Tajawal (Arabic), bundled via `@fontsource`. Uppercase tracked labels come from `bx-eyebrow` / `bx-label` / component classes; Arabic is never uppercased or tracked (handled by `[dir=rtl]` rules).
+- Gold (`gradient-gold` + `on-gold`) is for the one primary action per screen, #1 / 1st place, the eligibility crown, the current page. Silver/bronze only for places 2–3. Fire (`gradient-fire`) once per page at most.
+- Legacy names (`--bg-*`, `--t-*`, `--violet`, `--cyan`, `--coral`, `font-mono`…) still resolve to the new palette so old markup renders, but **new or touched code uses the semantic names**. Replace `text-[var(--t-3)]` with `text-ink-muted`, etc.
+- Western digits (0–9) in both languages; money `KWD 25,000` / `25,000 د.ك`.
+- Dynamic per-entity colours (team accent) are the only inline styles, passed as CSS custom properties (see `TeamCrest`).
+- Dark only at MVP: `<html data-theme="night">`. `stage` exists and is fully tokenised but is not switched on until the founder decides.
 
 ## Folder structure
 
@@ -128,7 +135,7 @@ app/
 ### While writing code
 
 - TypeScript strict mode. Never `any` without a `// reason` comment.
-- Tailwind classes only. Never inline styles. Never CSS-in-JS.
+- Tailwind classes and the `bx-` component classes from `packages/ui/src/styles.css` only. No inline styles except per-entity CSS custom properties. Never CSS-in-JS.
 - shadcn/ui components only. Lucide icons only.
 - Zod for all validation.
 - Server Components by default; `"use client"` only when interactivity demands it.

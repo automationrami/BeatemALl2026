@@ -36,18 +36,16 @@ export function MatchRow({
   return (
     <div
       className={[
-        'grid items-center gap-3 py-3 border-b border-[rgba(255,255,255,0.04)] last:border-b-0',
+        'grid items-center gap-3 px-3 py-3 border-b border-line last:border-b-0',
         'grid-cols-[2.25rem_1fr_auto_auto]',
-        isTournament ? 'pl-3 -ml-3 border-s-2 border-s-[var(--violet-2)]' : '',
+        isTournament ? 'bg-gold-soft rounded-md' : '',
       ].join(' ')}
     >
-      <span className="bx-eyebrow text-[10px]">{date.toUpperCase()}</span>
-      <span className="font-display font-medium text-[14px] text-white truncate">
-        {opponentLabel}
-      </span>
+      <span className="bx-eyebrow">{date.toUpperCase()}</span>
+      <span className="font-display font-bold text-[15px] text-ink truncate">{opponentLabel}</span>
       <Pill>{gameTag}</Pill>
       <span className="flex items-center gap-2.5">
-        <span className="bx-num text-[18px]">{scoreLabel}</span>
+        <span className="bx-num text-[18px] text-ink">{scoreLabel}</span>
         <Pill tone={resultTone[result]}>{result}</Pill>
       </span>
     </div>

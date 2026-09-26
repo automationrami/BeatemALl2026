@@ -12,6 +12,22 @@ deployment URL and are dated.
 
 Build queue priority pivot 2026-05-02: skip Phone OTP, populate DB with demo data so every model can be tested without auth.
 
+### Design — Championship Gold redesign of the whole app (2026-09-26)
+
+The violet glass-bento look is replaced app-wide by **Championship Gold** (picked by the founder from a 10-direction scouting board; system at https://claude.ai/artifact/9WK7AwJXHSHRBCsBFCy83x).
+
+- **Tokens** (`packages/design-tokens/src/tokens.css`): semantic palette for `night` (default, dark-only MVP) and `stage` (light, not switched on); legacy names (`--bg-*`, `--t-*`, `--violet`…) alias the new values. Tailwind theme bridge in `apps/web` + `apps/admin` `globals.css`, scanning `packages/ui`.
+- **Fonts**: Saira + Tajawal via `@fontsource` (Space Grotesk, Inter, JetBrains Mono, IBM Plex Sans Arabic removed).
+- **Components** (`@beat-em-all/ui`): new `Tag`, `PlaceTag`, `RankDelta`, `MedalSet`, `SectionTitle`, `PageHead`, `StatStrip`, `Notice`, `SeasonChip`, `EmptyState`, `PodiumCard`, `StandingsTable`, `MatchCard`, `BracketMatch`, `BracketWinner`, `CompetitionTile`, `ProfileHeader`, `RosterList`, `WinnerHero`, `SegmentedTabs`, `GameTiles`, server-safe `buttonClass`; all older components restyled. Component CSS lives in `packages/ui/src/styles.css`.
+- **App shell**: side rail (desktop) + bottom tabs (phones) + top bar (language, persona). Every page rebuilt: home, player, me, team, create team, challenges (+detail), tournaments (+detail), entries (+detail), venues (+detail), bookings (+detail), organisation, sign-in / verify / onboarding / callback, all not-found pages, admin placeholder.
+- **Fixes found on the way**: `/ar/teams/*` and `/ar/players/*` rendered in English (not-found pages forced `en`); hardcoded English in the challenge and booking modals; Arabic-script digits in a hint; inert "Open in Maps" now links to Google Maps.
+
+### FED-1 — Rankings read slice (2026-09-26)
+
+- `ranking_points` table (DOMAIN_MODEL §11.3), migration `0007_steady_the_professor.sql`, applied to v2.
+- Seeds: two completed KEC spring '26 events (`kec-spring-opener-26`, `kec-eafc-open-26`) with 1st/2nd placements at the FED-1 example scale (100 / 75).
+- `GET /api/rankings?org=&season=&game=` and `/[locale]/rankings`: per federation, per game, per season; podium, standings with medals and movement since the last event, viewer's team highlighted.
+
 ### Infra — new Vercel instance `beat-em-all-v2` (2026-09-25)
 
 Fresh, fully isolated production instance alongside the original `beat-em-all` project (which is untouched and still live).

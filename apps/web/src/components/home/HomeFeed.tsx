@@ -6,11 +6,16 @@
  * Phase 1 status (post-pivot 2026-05-02): viewer is resolved via the persona switcher
  * (Zustand → personaId → /api/home?personaId=...). Auth.js v5 (E1-S2) replaces this with
  * a real session lookup later — same payload shape; same callers.
+ *
+ * Renders a fragment: each section is a direct child of `.bx-page`, so the page grid
+ * owns the vertical rhythm.
  */
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { TriangleAlert } from 'lucide-react';
 import type { HomeFeedData } from '@beat-em-all/types';
 import { useActAsPersona } from '@beat-em-all/api-client';
-import { useHasMounted } from '@beat-em-all/ui';
+import { Notice, useHasMounted } from '@beat-em-all/ui';
 import { HomeHero } from './HomeHero';
 import { RecommendedTeams } from './RecommendedTeams';
 import { QuickActions } from './QuickActions';
@@ -21,6 +26,7 @@ import { GreetingStrip } from './GreetingStrip';
 import { HomeFeedSkeleton } from './HomeFeedSkeleton';
 
 export function HomeFeed() {
+  const t = useTranslations('home');
   const mounted = useHasMounted();
   const personaId = useActAsPersona((s) => s.activePersonaId);
   const [data, setData] = useState<HomeFeedData | null>(null);
@@ -57,42 +63,42 @@ export function HomeFeed() {
 
   if (error) {
     return (
-      <div className="rounded-[20px] border border-[var(--coral)] bg-[rgba(251,113,133,0.10)] p-6 text-center">
-        <p className="text-[var(--coral-2)] text-sm">Couldn’t load the home feed: {error}.</p>
-      </div>
+      <Notice tone="neutral" icon={<TriangleAlert className="bx-icon text-negative" aria-hidden />}>
+        {t('loadError')} <span className="bx-num text-ink-muted">({error})</span>
+      </Notice>
     );
   }
   if (!data) return <HomeFeedSkeleton />;
 
   if (data.viewer.mode === 'incomplete') {
     return (
-      <div className="space-y-6">
+      <>
         <GreetingStrip viewer={data.viewer} />
         <HomeHero hero={data.hero} />
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <GreetingStrip viewer={data.viewer} />
-      <HomeHero hero={data.hero} />
-
-      <section className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4">
-        <RecommendedTeams teams={data.recommendedTeams} primaryGame={data.viewer.primaryGame} />
+    <>
+      <div className="grid gap-6">
+        <GreetingStrip viewer={data.viewer} />
+        <HomeHero hero={data.hero} />
         <QuickActions />
-      </section>
+      </div>
 
-      <section className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4">
+      <RecommendedTeams teams={data.recommendedTeams} primaryGame={data.viewer.primaryGame} />
+
+      <div className="bx-two">
         <TournamentList tournaments={data.tournaments} />
-        <VenueList venues={data.nearbyVenues} />
-      </section>
+        <RecentActivity
+          matches={data.recentActivity}
+          mode={data.viewer.mode}
+          primaryTeamSlug={data.recommendedTeams[0]?.slug ?? null}
+        />
+      </div>
 
-      <RecentActivity
-        matches={data.recentActivity}
-        mode={data.viewer.mode}
-        primaryTeamSlug={data.recommendedTeams[0]?.slug ?? null}
-      />
-    </div>
+      <VenueList venues={data.nearbyVenues} />
+    </>
   );
 }

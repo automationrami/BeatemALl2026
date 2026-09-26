@@ -1,14 +1,17 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
-import { Pill, Wordmark } from '@beat-em-all/ui';
+import { EmptyState, MatchCard, PageHead, SegmentedTabs, Tag, buttonClass } from '@beat-em-all/ui';
 import {
   listChallengesForPlayer,
   type ChallengeDirection,
   type ChallengeWithRelations,
 } from '@beat-em-all/db/queries';
-import { LanguageToggle } from '@/components/LanguageToggle';
-import { PersonaSwitcher } from '@/components/PersonaSwitcher';
 import { getCurrentUser } from '@/lib/current-user';
+import {
+  challengeStatusKey,
+  challengeStatusTone,
+  formatDayRange,
+} from '@/components/challenge/challengeStatus';
 
 type PageProps = {
   params: Promise<{ locale: string }>;
@@ -16,14 +19,6 @@ type PageProps = {
 };
 
 const VALID_DIRECTIONS: ChallengeDirection[] = ['incoming', 'outgoing', 'all'];
-
-function statusTone(status: string): 'amber' | 'lime' | 'coral' | 'cyan' | 'default' {
-  if (status === 'pending') return 'amber';
-  if (status === 'negotiating') return 'cyan';
-  if (status === 'accepted' || status === 'booked') return 'lime';
-  if (status === 'rejected' || status === 'expired' || status === 'cancelled') return 'coral';
-  return 'default';
-}
 
 export default async function ChallengesIndexPage({ params, searchParams }: PageProps) {
   const { locale } = await params;
@@ -51,101 +46,97 @@ export default async function ChallengesIndexPage({ params, searchParams }: Page
 
   const myTeamIds = new Set(me.teamMemberships.map((m) => m.teamId));
 
-  const tabs: ChallengeDirection[] = ['incoming', 'outgoing', 'all'];
+  const tabs: { value: ChallengeDirection; label: string }[] = [
+    { value: 'incoming', label: t('tabIncoming') },
+    { value: 'outgoing', label: t('tabOutgoing') },
+    { value: 'all', label: t('tabAll') },
+  ];
+
+  const emptyText =
+    direction === 'incoming'
+      ? t('emptyIncoming')
+      : direction === 'outgoing'
+        ? t('emptyOutgoing')
+        : t('emptyAll');
 
   return (
-    <main className="min-h-screen px-6 py-8 md:px-16 md:py-12">
-      <header className="flex items-center justify-between mb-10">
-        <Link href={`/${locale}`}>
-          <Wordmark />
-        </Link>
-        <div className="flex items-center gap-3">
-          <LanguageToggle />
-          <PersonaSwitcher />
-        </div>
-      </header>
-
-      <section className="mb-8">
-        <p className="bx-eyebrow mb-3">{t('inboxEyebrow')}</p>
-        <h1 className="font-display font-medium text-[40px] md:text-[56px] leading-[0.95] tracking-[-0.035em] mb-4">
-          {t('inboxTitle')}
-        </h1>
-        <p className="text-[var(--t-3)] max-w-xl text-base leading-relaxed">
-          {primaryTeam ? t('inboxSubtitle', { teamName: primaryTeam.teamName }) : t('inboxNoTeam')}
-        </p>
-      </section>
-
-      <nav className="flex gap-2 mb-6 border-b border-[var(--line)]">
-        {tabs.map((tab) => {
-          const active = tab === direction;
-          const labelKey = `tab${tab.charAt(0).toUpperCase() + tab.slice(1)}` as
-            | 'tabIncoming'
-            | 'tabOutgoing'
-            | 'tabAll';
-          return (
-            <Link
-              key={tab}
-              href={`/${locale}/challenges?direction=${tab}`}
-              className={[
-                'px-4 py-2 text-sm font-display font-medium transition-colors border-b-2',
-                active
-                  ? 'border-[var(--violet-2)] text-white'
-                  : 'border-transparent text-[var(--t-4)] hover:text-white',
-              ].join(' ')}
-            >
-              {t(labelKey)}
-            </Link>
-          );
-        })}
-      </nav>
+    <main className="bx-page">
+      <PageHead
+        eyebrow={[t('inboxEyebrow'), ...(primaryTeam ? [primaryTeam.teamName] : [])]}
+        title={t('inboxTitle')}
+        description={
+          primaryTeam ? t('inboxSubtitle', { teamName: primaryTeam.teamName }) : undefined
+        }
+      >
+        {primaryTeam ? (
+          <div className="px-5 pb-5 min-[900px]:px-8 min-[900px]:pb-8">
+            <SegmentedTabs
+              label={t('inboxTitle')}
+              value={direction}
+              items={tabs.map((tab) => ({
+                ...tab,
+                href: `/${locale}/challenges?direction=${tab.value}`,
+              }))}
+            />
+          </div>
+        ) : null}
+      </PageHead>
 
       {!primaryTeam ? (
-        <p className="text-[var(--t-3)] text-sm leading-relaxed py-8 text-center">
-          {t('inboxNoTeam')}
-        </p>
+        <EmptyState
+          title={t('inboxNoTeam')}
+          action={
+            <Link href={`/${locale}/teams/new`} className={buttonClass('gold')}>
+              {t('createTeamCta')}
+            </Link>
+          }
+        />
       ) : challenges.length === 0 ? (
-        <p className="text-[var(--t-3)] text-sm leading-relaxed py-8 text-center">
-          {direction === 'incoming'
-            ? t('emptyIncoming')
-            : direction === 'outgoing'
-              ? t('emptyOutgoing')
-              : t('emptyAll')}
-        </p>
+        <EmptyState title={emptyText} />
       ) : (
-        <section className="space-y-3" data-testid="challenge-rows">
+        <section className="grid gap-4" data-testid="challenge-rows">
           {challenges.map(({ challenge, challengerTeam, challengedTeam, game }) => {
             const isOutgoing = myTeamIds.has(challenge.challengerTeamId);
             const otherTeam = isOutgoing ? challengedTeam : challengerTeam;
-            const directionLabel = isOutgoing
-              ? t('rowTo', { team: otherTeam.name })
-              : t('rowFrom', { team: otherTeam.name });
             return (
               <Link
                 key={challenge.id}
                 href={`/${locale}/challenges/${challenge.id}`}
-                className="flex items-center justify-between rounded-[20px] border border-[var(--line)] bg-[var(--bg-2)] p-4 hover:bg-[var(--bg-3)] transition-colors"
+                aria-label={
+                  isOutgoing
+                    ? t('rowTo', { team: otherTeam.name })
+                    : t('rowFrom', { team: otherTeam.name })
+                }
+                className="block rounded-md transition-[filter] hover:brightness-110 focus-visible:shadow-[var(--focus-ring)] focus-visible:outline-none"
               >
-                <div className="min-w-0">
-                  <p className="font-display font-medium text-[15px] truncate">{directionLabel}</p>
-                  <p className="font-mono text-[10.5px] text-[var(--t-4)] tracking-[0.08em] uppercase mt-0.5">
-                    {t('rowFormat', {
-                      format: challenge.proposedFormat.toUpperCase(),
-                      game: game.name,
-                    })}
-                  </p>
-                </div>
-                <Pill tone={statusTone(challenge.status)}>
-                  {t(
-                    `status${challenge.status.charAt(0).toUpperCase() + challenge.status.slice(1)}` as
-                      | 'statusPending'
-                      | 'statusNegotiating'
-                      | 'statusAccepted'
-                      | 'statusRejected'
-                      | 'statusExpired'
-                      | 'statusCancelled'
-                      | 'statusBooked',
+                <MatchCard
+                  home={{
+                    name: challengerTeam.name,
+                    sub: challengerTeam.city ?? challengerTeam.countryCode,
+                    crest: { tag: challengerTeam.tag },
+                  }}
+                  away={{
+                    name: challengedTeam.name,
+                    sub: challengedTeam.city ?? challengedTeam.countryCode,
+                    crest: { tag: challengedTeam.tag },
+                  }}
+                  game={game.name}
+                  when={formatDayRange(
+                    locale,
+                    challenge.proposedDateRangeStart,
+                    challenge.proposedDateRangeEnd,
                   )}
-                </Pill>
+                  round={challenge.proposedFormat.toUpperCase()}
+                  venue={challenge.proposedVenueSlug ?? t('inboxVenueTbd')}
+                  status={
+                    <span className="flex flex-wrap items-center justify-end gap-2">
+                      <Tag>{isOutgoing ? t('tabOutgoing') : t('tabIncoming')}</Tag>
+                      <Tag tone={challengeStatusTone(challenge.status)}>
+                        {t(challengeStatusKey(challenge.status))}
+                      </Tag>
+                    </span>
+                  }
+                />
               </Link>
             );
           })}

@@ -32,7 +32,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps) {
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
 
   return (
-    <html lang={locale} dir={dir} className="h-full">
+    <html lang={locale} dir={dir} data-theme="night" className="h-full">
       <body className="min-h-full">
         <NextIntlClientProvider locale={locale} messages={messages}>
           {children}

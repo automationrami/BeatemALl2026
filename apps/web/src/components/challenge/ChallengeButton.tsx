@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { Swords } from 'lucide-react';
 import { Button } from '@beat-em-all/ui';
 import { ChallengeModal } from './ChallengeModal';
 
@@ -35,8 +36,9 @@ export function ChallengeButton({
 
   return (
     <>
-      <Button tone="primary" size="sm" onClick={() => setOpen(true)}>
-        {t('challengeTeam')} →
+      <Button variant="gold" onClick={() => setOpen(true)} aria-haspopup="dialog">
+        <Swords className="bx-icon" aria-hidden />
+        {t('challengeTeam')}
       </Button>
       {open ? (
         <ChallengeModal

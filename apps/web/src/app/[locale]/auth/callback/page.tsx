@@ -1,7 +1,7 @@
 import { setRequestLocale } from 'next-intl/server';
-import { Wordmark } from '@beat-em-all/ui';
-import { CallbackRedirect } from '@/components/CallbackRedirect';
 import { useTranslations } from 'next-intl';
+import { CallbackRedirect } from '@/components/CallbackRedirect';
+import { AuthLayout } from '@/components/auth/AuthLayout';
 
 type PageProps = {
   params: Promise<{ locale: string }>;
@@ -16,27 +16,18 @@ export default async function AuthCallbackPage({ params }: PageProps) {
 function CallbackContent() {
   const t = useTranslations('callback');
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-8 gap-6">
-      <Wordmark showLabel={false} size={48} />
-      <div
-        className="w-32 h-[3px] rounded-[2px] overflow-hidden relative"
-        style={{ background: 'rgba(255,255,255,0.06)' }}
-        aria-hidden
-      >
-        <div
-          className="absolute h-full w-2/5"
-          style={{
-            background: 'linear-gradient(90deg, transparent, #A78BFA, transparent)',
-            animation: 'bxSlide 1.4s infinite ease-in-out',
-          }}
-        />
-      </div>
-      <div className="text-center">
-        <p className="bx-eyebrow">{t('eyebrow')}</p>
-        <p className="font-display font-medium text-lg mt-2">{t('title')}</p>
-        <p className="font-display text-xs text-[var(--t-4)] mt-1.5">{t('subtitle')}</p>
+    <AuthLayout>
+      <div className="grid justify-items-center gap-6 text-center" role="status" aria-live="polite">
+        <div className="relative h-1 w-40 overflow-hidden rounded-chip bg-surface-300" aria-hidden>
+          <div className="absolute inset-y-0 w-2/5 rounded-chip bg-[image:var(--gradient-gold)] animate-[bxSlide_1.4s_ease-in-out_infinite]" />
+        </div>
+        <div className="grid gap-2">
+          <p className="bx-eyebrow">{t('eyebrow')}</p>
+          <p className="bx-display">{t('title')}</p>
+          <p className="text-[15px] font-medium text-ink-muted">{t('subtitle')}</p>
+        </div>
       </div>
       <CallbackRedirect />
-    </main>
+    </AuthLayout>
   );
 }

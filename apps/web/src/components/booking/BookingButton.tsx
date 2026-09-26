@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { CalendarPlus } from 'lucide-react';
 import { Button } from '@beat-em-all/ui';
 import { BookingModal } from './BookingModal';
 
@@ -18,8 +19,14 @@ export function BookingButton({ venueSlug, venueName, venueHourlyRateKwd, suppor
   const t = useTranslations('booking');
   return (
     <>
-      <Button tone="primary" size="md" onClick={() => setOpen(true)}>
-        {t('bookCta')} →
+      <Button
+        variant="gold"
+        onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
+        data-testid="booking-open"
+      >
+        <CalendarPlus className="bx-icon size-4" aria-hidden />
+        {t('bookCta')}
       </Button>
       {open ? (
         <BookingModal

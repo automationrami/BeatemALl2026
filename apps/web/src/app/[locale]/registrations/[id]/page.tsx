@@ -1,24 +1,22 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Pill, Wordmark } from '@beat-em-all/ui';
+import { ArrowLeft, CircleAlert, CircleCheck, Clock } from 'lucide-react';
+import { Notice, Tag, TeamCrest } from '@beat-em-all/ui';
 import { loadRegistrationById } from '@beat-em-all/db/queries';
-import { LanguageToggle } from '@/components/LanguageToggle';
-import { PersonaSwitcher } from '@/components/PersonaSwitcher';
 import { WithdrawRegistrationButton } from '@/components/tournament/WithdrawRegistrationButton';
+import {
+  formatAmount,
+  registrationStatusKey,
+  registrationStatusTone,
+  teamCrestColor,
+} from '@/components/tournament/display';
 import { getCurrentUser } from '@/lib/current-user';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 type PageProps = { params: Promise<{ locale: string; id: string }> };
-
-function statusTone(status: string): 'amber' | 'lime' | 'coral' | 'cyan' | 'default' {
-  if (status === 'pending_payment') return 'amber';
-  if (status === 'confirmed' || status === 'checked_in') return 'lime';
-  if (status === 'disqualified' || status === 'withdrawn') return 'coral';
-  return 'default';
-}
 
 export default async function RegistrationDetailPage({ params }: PageProps) {
   const { locale, id } = await params;
@@ -34,131 +32,132 @@ export default async function RegistrationDetailPage({ params }: PageProps) {
   if (!isRegistrant && !isTeammate) notFound();
 
   const t = await getTranslations('registration');
+  const tTour = await getTranslations('tournament');
 
-  const statusKey = `status${data.registration.status
-    .split('_')
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join('')}` as
-    | 'statusPendingPayment'
-    | 'statusConfirmed'
-    | 'statusCheckedIn'
-    | 'statusDisqualified'
-    | 'statusWithdrawn';
+  const status = data.registration.status;
+  const canWithdraw = status === 'pending_payment' || status === 'confirmed';
+  const statusTone = registrationStatusTone(status);
 
-  const canWithdraw =
-    data.registration.status === 'pending_payment' || data.registration.status === 'confirmed';
+  const factLabel = 'bx-eyebrow text-on-band-muted';
+  const factValue = 'font-display text-[16px] font-bold leading-[20px] text-on-band';
 
   return (
-    <main className="min-h-screen px-6 py-8 md:px-16 md:py-12">
-      <header className="flex items-center justify-between mb-10">
-        <Link href={`/${locale}`}>
-          <Wordmark />
-        </Link>
-        <div className="flex items-center gap-3">
-          <LanguageToggle />
-          <PersonaSwitcher />
-        </div>
-      </header>
-
-      <Link
-        href={`/${locale}/registrations`}
-        className="inline-block bx-eyebrow mb-6 hover:text-white transition-colors"
-      >
-        ← {t('inboxTitle')}
-      </Link>
-
-      <section className="bx-card p-7 mb-4">
-        <p className="bx-eyebrow mb-3">
-          {t('detailEyebrow')} · {data.game.name.toUpperCase()}
-        </p>
-        <h1
-          className="font-display font-medium text-[36px] md:text-[48px] leading-[0.95] tracking-[-0.035em] mb-3"
-          data-testid="registration-title"
+    <main className="bx-page">
+      <div className="grid gap-4">
+        <Link
+          href={`/${locale}/registrations`}
+          className="bx-label inline-flex items-center gap-2 justify-self-start text-ink-muted no-underline hover:text-ink"
         >
-          {t('detailHeadline', { tournament: data.tournament.name, team: data.team.name })}
-        </h1>
-        <div className="flex flex-wrap gap-2 mb-5">
-          <Pill tone={statusTone(data.registration.status)}>{t(statusKey)}</Pill>
-          {data.registration.seedNumber != null && data.registration.seedNumber > 0 ? (
-            <Pill>{t('seedLabel', { seed: data.registration.seedNumber })}</Pill>
-          ) : null}
-        </div>
+          <ArrowLeft className="bx-icon bx-flip" aria-hidden />
+          {t('inboxTitle')}
+        </Link>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <p className="bx-eyebrow mb-2">{t('tournamentEyebrow')}</p>
-            <Link
-              href={`/${locale}/tournaments/${data.tournament.slug}`}
-              className="font-display font-medium text-[16px] hover:text-[var(--violet-2)] transition-colors"
-            >
-              {data.tournament.name}
-            </Link>
-            {data.tournament.startsInLabel ? (
-              <p className="font-mono text-[10.5px] text-[var(--t-4)] tracking-[0.08em] uppercase mt-1">
-                {data.tournament.startsInLabel}
-              </p>
-            ) : null}
+        <section className="overflow-hidden rounded-2xl bg-band text-on-band shadow-bx-lift">
+          <div className="grid gap-5 p-6 md:grid-cols-[auto_minmax(0,1fr)] md:items-center md:p-8">
+            <TeamCrest tag={data.team.tag} color={teamCrestColor(data.team.slug)} size={88} />
+            <div className="grid min-w-0 gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={factLabel}>
+                  {t('detailEyebrow')} · {data.game.name}
+                </span>
+                <Tag tone={statusTone === 'neutral' ? 'outline' : statusTone}>
+                  {t(registrationStatusKey(status))}
+                </Tag>
+                {data.registration.seedNumber != null && data.registration.seedNumber > 0 ? (
+                  <Tag tone="outline">{t('seedLabel', { seed: data.registration.seedNumber })}</Tag>
+                ) : null}
+              </div>
+              <h1
+                className="m-0 font-display text-[32px] font-bold leading-[34px] md:text-[42px] md:leading-[42px]"
+                data-testid="registration-title"
+              >
+                {t('detailHeadline', { tournament: data.tournament.name, team: data.team.name })}
+              </h1>
+            </div>
           </div>
-          <div>
-            <p className="bx-eyebrow mb-2">{t('teamEyebrow')}</p>
-            <Link
-              href={`/${locale}/teams/${data.team.slug}`}
-              className="font-display font-medium text-[16px] hover:text-[var(--violet-2)] transition-colors"
-            >
-              {data.team.name}
-            </Link>
-            <p className="font-mono text-[10.5px] text-[var(--t-4)] tracking-[0.08em] uppercase mt-1">
-              {data.team.tag}
-            </p>
-          </div>
-          <div>
-            <p className="bx-eyebrow mb-2">{t('registeredByEyebrow')}</p>
-            <p className="font-display font-medium text-[14px]">{data.registeredByDisplayName}</p>
-            <p className="font-mono text-[10.5px] text-[var(--t-4)] tracking-[0.08em] uppercase mt-1">
-              {data.registration.createdAt.toISOString().slice(0, 10)}
-            </p>
-          </div>
-          {data.tournament.entryFeeKwd > 0 ? (
-            <div>
-              <p className="bx-eyebrow mb-2">{t('entryFeeEyebrow')}</p>
-              <p className="font-display font-medium text-[16px]">
-                {t('entryFeeKwd', { amount: data.tournament.entryFeeKwd.toFixed(2) })}
-              </p>
+
+          <dl className="m-0 grid grid-cols-1 border-t border-line sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-1.5 p-5 md:px-8">
+              <dt className={factLabel}>{t('tournamentEyebrow')}</dt>
+              <dd className="m-0 grid gap-1">
+                <Link
+                  href={`/${locale}/tournaments/${data.tournament.slug}`}
+                  className={`${factValue} no-underline hover:text-gold-text`}
+                >
+                  {data.tournament.name}
+                </Link>
+                {data.tournament.startsInLabel ? (
+                  <span className="text-[13px] font-medium text-on-band-muted">
+                    {data.tournament.startsInLabel}
+                  </span>
+                ) : null}
+              </dd>
+            </div>
+            <div className="grid gap-1.5 border-t border-line p-5 sm:border-s sm:border-t-0 md:px-8">
+              <dt className={factLabel}>{t('teamEyebrow')}</dt>
+              <dd className="m-0 grid gap-1">
+                <Link
+                  href={`/${locale}/teams/${data.team.slug}`}
+                  className={`${factValue} no-underline hover:text-gold-text`}
+                >
+                  {data.team.name}
+                </Link>
+                <span className="text-[13px] font-medium text-on-band-muted">{data.team.tag}</span>
+              </dd>
+            </div>
+            <div className="grid gap-1.5 border-t border-line p-5 lg:border-s lg:border-t-0 md:px-8">
+              <dt className={factLabel}>{t('registeredByEyebrow')}</dt>
+              <dd className="m-0 grid gap-1">
+                <span className={factValue}>{data.registeredByDisplayName}</span>
+                <span className="bx-num text-[13px] font-medium text-on-band-muted">
+                  {data.registration.createdAt.toISOString().slice(0, 10)}
+                </span>
+              </dd>
+            </div>
+            <div className="grid gap-1.5 border-t border-line p-5 sm:border-s lg:border-t-0 md:px-8">
+              <dt className={factLabel}>{t('entryFeeEyebrow')}</dt>
+              <dd className="m-0">
+                {data.tournament.entryFeeKwd > 0 ? (
+                  <span className="bx-num bx-gold-num text-[24px] leading-[28px]">
+                    {tTour('moneyKwd', { amount: formatAmount(data.tournament.entryFeeKwd) })}
+                  </span>
+                ) : (
+                  <span className={factValue}>{tTour('free')}</span>
+                )}
+              </dd>
+            </div>
+          </dl>
+
+          {canWithdraw || status === 'withdrawn' ? (
+            <div className="grid gap-4 border-t border-line p-5 md:px-8 md:py-6">
+              {status === 'pending_payment' ? (
+                <div data-testid="pending-notice">
+                  <Notice icon={<Clock className="bx-icon" aria-hidden />}>
+                    {t('pendingPaymentNotice')}
+                  </Notice>
+                </div>
+              ) : null}
+              {status === 'confirmed' ? (
+                <div data-testid="confirmed-notice">
+                  <Notice icon={<CircleCheck className="bx-icon" aria-hidden />}>
+                    {t('confirmedNotice')}
+                  </Notice>
+                </div>
+              ) : null}
+              {status === 'withdrawn' ? (
+                <div data-testid="withdrawn-notice">
+                  <Notice tone="neutral" icon={<CircleAlert className="bx-icon" aria-hidden />}>
+                    {t('withdrawnNotice')}
+                  </Notice>
+                </div>
+              ) : null}
+              {canWithdraw ? (
+                <WithdrawRegistrationButton registrationId={data.registration.id} locale={locale} />
+              ) : null}
             </div>
           ) : null}
-        </div>
-
-        {data.registration.status === 'pending_payment' ? (
-          <p
-            className="mt-5 px-4 py-3 rounded-xl border border-[var(--amber)] bg-[rgba(251,191,36,0.08)] text-[var(--amber)] font-display text-[13px] leading-relaxed"
-            data-testid="pending-notice"
-          >
-            {t('pendingPaymentNotice')}
-          </p>
-        ) : null}
-        {data.registration.status === 'confirmed' ? (
-          <p
-            className="mt-5 px-4 py-3 rounded-xl border border-[var(--lime)] bg-[rgba(190,242,100,0.08)] text-[var(--lime)] font-display text-[13px] leading-relaxed"
-            data-testid="confirmed-notice"
-          >
-            {t('confirmedNotice')}
-          </p>
-        ) : null}
-        {data.registration.status === 'withdrawn' ? (
-          <p
-            className="mt-5 px-4 py-3 rounded-xl border border-[var(--coral)] bg-[rgba(251,113,133,0.08)] text-[var(--coral-2)] font-display text-[13px] leading-relaxed"
-            data-testid="withdrawn-notice"
-          >
-            {t('withdrawnNotice')}
-          </p>
-        ) : null}
-
-        {canWithdraw ? (
-          <div className="mt-5 pt-5 border-t border-[var(--line)]">
-            <WithdrawRegistrationButton registrationId={data.registration.id} locale={locale} />
-          </div>
-        ) : null}
-      </section>
+        </section>
+      </div>
     </main>
   );
 }

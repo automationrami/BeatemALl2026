@@ -95,12 +95,12 @@ export function OtpInput({
         const filled = !!d;
         const focused = activeIdx === idx;
         const slotState = invalid
-          ? 'border-[rgba(251,113,133,0.45)] bg-[rgba(251,113,133,0.10)]'
+          ? 'border-negative bg-negative-soft'
           : filled
-            ? 'border-[rgba(139,92,246,0.45)] bg-[rgba(139,92,246,0.12)]'
+            ? 'border-gold-500 bg-gold-soft'
             : focused
-              ? 'border-[rgba(255,255,255,0.25)] bg-[rgba(255,255,255,0.04)]'
-              : 'border-[var(--line-2)] bg-[rgba(255,255,255,0.03)]';
+              ? 'border-gold-300 bg-surface-200'
+              : 'border-line-strong bg-surface-200';
         return (
           <input
             key={`${id}-${idx}`}
@@ -118,7 +118,7 @@ export function OtpInput({
             onFocus={() => setActiveIdx(idx)}
             aria-label={`Digit ${idx + 1}`}
             className={[
-              'w-full min-w-0 h-14 text-center text-2xl font-display font-medium text-white rounded-xl border transition-colors',
+              'bx-num w-full min-w-0 h-14 text-center text-2xl text-ink rounded-md border transition-colors',
               'outline-none focus:ring-0',
               slotState,
             ].join(' ')}

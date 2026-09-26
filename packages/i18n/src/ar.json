@@ -8,7 +8,14 @@
     "discover": "اكتشف",
     "challenges": "التحديات",
     "tournaments": "البطولات",
-    "profile": "الملف"
+    "profile": "الملف الشخصي",
+    "rankings": "التصنيف",
+    "venues": "الصالات",
+    "bookings": "الحجوزات",
+    "entries": "المشاركات",
+    "main": "التنقل الرئيسي",
+    "skipToContent": "انتقل إلى المحتوى",
+    "language": "اللغة"
   },
   "actAs": {
     "label": "تتصرّف بصفة",
@@ -48,7 +55,8 @@
       "incompleteCta": "أكمل الإعداد",
       "idleEyebrow": "هدوء تام",
       "idleTitle": "لا توجد مباريات قادمة.",
-      "idleBody": "اختر تحدياً أو ادخل بطولة — كلاهما على بُعد نقرة واحدة."
+      "idleBody": "اختر تحدياً أو ادخل بطولة — كلاهما على بُعد نقرة واحدة.",
+      "vs": "ضد"
     },
     "recommendedTeams": {
       "eyebrow": "مقترحة لك · قريبة منك",
@@ -66,7 +74,8 @@
       "tournamentsTitle": "تصفّح البطولات",
       "tournamentsCaption": "بطولات النادي وكؤوس المجتمع.",
       "venuesTitle": "اعثر على صالة",
-      "venuesCaption": "صالات ألعاب موثّقة في الخليج."
+      "venuesCaption": "صالات ألعاب موثّقة في الخليج.",
+      "title": "إجراءات سريعة"
     },
     "tournaments": {
       "eyebrow": "بطولات · مفتوحة أو قريبة",
@@ -76,7 +85,13 @@
       "registrationOpen": "التسجيل مفتوح",
       "free": "دخول مجاني",
       "prizePoolLabel": "{amount} د.ك",
-      "empty": "لا توجد بطولات تناسب ألعابك بعد. ستظهر هنا أول بطولة معتمدة من النادي."
+      "empty": "لا توجد بطولات تناسب ألعابك بعد. ستظهر هنا أول بطولة معتمدة من النادي.",
+      "prize": "{amount} د.ك",
+      "status": {
+        "published": "قريباً",
+        "registration_open": "التسجيل مفتوح",
+        "in_progress": "مباشر"
+      }
     },
     "venues": {
       "eyebrow": "صالات · الأقرب",
@@ -84,7 +99,9 @@
       "viewAll": "عرض الكل",
       "perHour": "{rate} د.ك/ساعة",
       "distanceLabel": "{km} كم",
-      "empty": "لا توجد صالات موثّقة قريبة بعد. نطلق شركاء الصالات في الكويت أولاً."
+      "empty": "لا توجد صالات موثّقة قريبة بعد. نطلق شركاء الصالات في الكويت أولاً.",
+      "rate": "{rate} د.ك/ساعة",
+      "unrated": "لا تقييمات بعد"
     },
     "activity": {
       "eyebrow": "النتائج · فرقك",
@@ -92,8 +109,15 @@
       "viewAll": "عرض الفريق",
       "soloEmptyTitle": "ما إن تنضم إلى فريق ستظهر هنا سجلات مبارياته.",
       "soloEmptyCta": "تصفّح الفرق",
-      "activeEmptyTitle": "لا توجد مباريات بعد — أول نتيجة تظهر هنا."
-    }
+      "activeEmptyTitle": "لا توجد مباريات بعد — أول نتيجة تظهر هنا.",
+      "result": {
+        "W": "فوز",
+        "L": "خسارة",
+        "D": "تعادل"
+      },
+      "tournamentMatch": "بطولة"
+    },
+    "loadError": "تعذّر تحميل الصفحة الرئيسية."
   },
   "signIn": {
     "eyebrow": "تسجيل الدخول",
@@ -113,7 +137,8 @@
       "invalid_phone": "هذا لا يبدو رقم هاتف صحيحاً.",
       "rate_limited": "حاولت كثيراً. أعد المحاولة بعد 15 دقيقة.",
       "unknown": "حدث خطأ. حاول مجدداً."
-    }
+    },
+    "countryCodeLabel": "رمز الدولة"
   },
   "verify": {
     "eyebrow": "التحقّق",
@@ -169,7 +194,30 @@
     "emptyMatches": "لا توجد مباريات بعد. أرسل تحدياً لتكون الأول.",
     "emptyAchievements": "اكسب أول وسام بإكمال مباراة.",
     "pentagonCaption": "محسوب من آخر {sample} مباراة مصنّفة",
-    "noPentagon": "العب بضع مباريات مصنّفة لفتح خماسي مهاراتك."
+    "noPentagon": "العب بضع مباريات مصنّفة لفتح خماسي مهاراتك.",
+    "civilIdVerified": "موثّق بالبطاقة المدنية",
+    "editProfile": "تعديل الملف",
+    "shareProfile": "مشاركة الملف",
+    "statRating": "التقييم",
+    "statWinRate": "نسبة الفوز · 90 يوماً",
+    "statPrize": "الجوائز المحققة",
+    "statMatches": "المباريات",
+    "statStreak": "السلسلة الحالية",
+    "prizeAmount": "{amount} د.ك",
+    "streakWinValue": "{count} ف",
+    "streakLossValue": "{count} خ",
+    "recentMatchesTitle": "آخر المباريات",
+    "pentagonTitle": "خماسي المهارات",
+    "gamesTitle": "الألعاب",
+    "noGames": "لم تُضَف أي لعبة بعد.",
+    "achievementsTitle": "الإنجازات",
+    "achievementLocked": "مقفل",
+    "linkedAccountsTitle": "الحسابات المربوطة",
+    "lastSynced": "آخر مزامنة {when}",
+    "tournamentMatch": "بطولة",
+    "resultWin": "ف",
+    "resultLoss": "خ",
+    "resultDraw": "ت"
   },
   "team": {
     "eyebrow": "فريق",
@@ -193,7 +241,21 @@
     "coCaptain": "نائب القائد",
     "back": "← رجوع",
     "notFoundTitle": "الفريق غير موجود",
-    "notFoundBody": "لم نعثر على هذا الفريق. ربما تم حلّه أو لم يكن موجوداً أصلاً."
+    "notFoundBody": "لم نعثر على هذا الفريق. ربما تم حلّه أو لم يكن موجوداً أصلاً.",
+    "verified": "موثّق",
+    "streakWin": "{count} انتصارات متتالية",
+    "streakLoss": "{count} هزائم متتالية",
+    "location": "{city}، {country}",
+    "statTrophies": "الكؤوس المحققة",
+    "statMatches": "المباريات الملعوبة",
+    "statWinRate": "نسبة الفوز",
+    "statRating": "التقييم",
+    "statRatingWithDelta": "التقييم · {delta} خلال 30 يوماً",
+    "matchHistory": "سجل المباريات",
+    "rosterTitle": "التشكيلة",
+    "vs": "ضد",
+    "upcomingEmptyTitle": "لا توجد مباراة في الجدول",
+    "notFoundCta": "العودة للرئيسية"
   },
   "teamCreate": {
     "eyebrow": "فريق جديد",
@@ -204,7 +266,7 @@
     "fieldName": "اسم الفريق",
     "fieldNamePlaceholder": "Sandstorm",
     "fieldTag": "الوسم",
-    "fieldTagHint": "٢-٦ أحرف أو أرقام، أحرف كبيرة. يظهر على التشكيلات وبطاقات المباريات.",
+    "fieldTagHint": "2–6 أحرف أو أرقام بالأحرف الكبيرة. يظهر على التشكيلات وبطاقات المباريات.",
     "fieldSlug": "رابط الفريق",
     "fieldSlugHint": "سيكون فريقك على /teams/{slug}",
     "fieldCountry": "الدولة",
@@ -213,15 +275,19 @@
     "fieldBio": "التعريف (اختياري)",
     "fieldBioPlaceholder": "ما هي قصة فريقك؟ سنة التأسيس، البطولات التي تنافسون فيها.",
     "fieldGames": "الألعاب التي ستنافسون فيها",
-    "fieldGamesHint": "● = الألعاب التي تلعبها بالفعل. اختر واحدة على الأقل.",
+    "fieldGamesHint": "الألعاب التي تلعبها بالفعل مميّزة. اختر واحدة على الأقل.",
     "fieldRecruiting": "مفتوح لانضمام أعضاء جدد",
     "submitCta": "أنشئ الفريق",
     "errorNoGames": "اختر لعبة واحدة على الأقل سيلعبها فريقك.",
-    "errorGeneric": "تعذّر إنشاء الفريق. {message}"
+    "errorGeneric": "تعذّر إنشاء الفريق. {message}",
+    "gamePlayed": "تلعبها",
+    "formTitle": "بيانات الفريق",
+    "gamesTitle": "الألعاب"
   },
   "playerNotFound": {
     "title": "اللاعب غير موجود",
-    "body": "لم نعثر على ملف اللاعب."
+    "body": "لم نعثر على ملف اللاعب.",
+    "backHome": "العودة إلى الرئيسية"
   },
   "challenge": {
     "modalTitle": "تحدّى {teamName}",
@@ -276,7 +342,21 @@
     "rejectedNotice": "تمّ رفض التحدّي.",
     "youCannotAct": "انتقل إلى قائد ضمن الفريق المُتحدَّى للرد.",
     "notFoundTitle": "التحدّي غير موجود",
-    "notFoundBody": "لم نعثر على هذا التحدّي."
+    "notFoundBody": "لم نعثر على هذا التحدّي.",
+    "close": "إغلاق",
+    "loadingTeam": "جارٍ تحميل فريقك…",
+    "errorInvalidDates": "اختر تواريخ صحيحة.",
+    "errorEndBeforeStart": "يجب أن يكون «أقصى موعد» بعد «أبكر موعد».",
+    "errorStartInPast": "لا يمكن أن يكون أبكر موعد في الماضي.",
+    "actingAs": "تتصرّف بصفة: {persona}",
+    "inboxVenueTbd": "المكان يُحدَّد بالاتفاق",
+    "detailChallenger": "الفريق المتحدّي",
+    "detailChallenged": "الفريق المُتحدّى",
+    "detailFormat": "النظام",
+    "detailGame": "اللعبة",
+    "detailWindow": "فترة المباراة",
+    "detailVenue": "المكان",
+    "detailRespondBy": "الرد قبل"
   },
   "booking": {
     "bookCta": "احجز موعدًا",
@@ -288,7 +368,7 @@
     "fieldDuration": "المدّة",
     "fieldSeats": "المقاعد (بحدّ أقصى {max})",
     "fieldNotes": "ملاحظة للصالة (اختياري)",
-    "fieldNotesPlaceholder": "أيّ شيء تودّ إخبار الصالة به — مثلاً الوصول مبكّرًا بـ ١٥ دقيقة.",
+    "fieldNotesPlaceholder": "أيّ شيء تودّ إخبار الصالة به — مثلاً الوصول مبكّرًا بـ 15 دقيقة.",
     "hoursLabel": "{hours} ساعة",
     "seatsAvailable": "{count} مقاعد",
     "priceEyebrow": "السعر التقديري",
@@ -325,7 +405,21 @@
     "pendingPaymentNotice": "الحجز معلَّق بانتظار الدفع. الدفع متاح فور تفعيل Tap Payments.",
     "confirmedNotice": "تمّ تأكيد الحجز. الصالة بانتظارك.",
     "notFoundTitle": "الحجز غير موجود",
-    "notFoundBody": "لم نعثر على هذا الحجز."
+    "notFoundBody": "لم نعثر على هذا الحجز.",
+    "money": "{amount} د.ك",
+    "countEyebrow": "{count, plural, zero {لا توجد حجوزات} one {حجز واحد} two {حجزان} few {# حجوزات} many {# حجزًا} other {# حجز}}",
+    "loadingTeam": "جارٍ تحميل فريقك…",
+    "submitting": "جارٍ الحجز…",
+    "actingAs": "بصفة {persona}",
+    "priceFormula": "{rate} د.ك × {seats} مقعد × {hours} ساعة",
+    "statDate": "التاريخ",
+    "statTime": "البدء",
+    "statHours": "الساعات",
+    "statSeats": "المقاعد",
+    "timeRange": "{start} – {end}",
+    "viewVenue": "عرض الصالة",
+    "browseVenues": "تصفّح الصالات",
+    "closeDialog": "إغلاق"
   },
   "registration": {
     "registerCta": "سجّل {tournamentName}",
@@ -359,7 +453,16 @@
     "confirmedNotice": "تمّ تأكيد تسجيلك. تابع صفحة البطولة لإعلان جدول المباريات.",
     "withdrawnNotice": "لقد انسحبت من البطولة. يمكنك التسجيل مجدداً ما دام التسجيل مفتوحاً.",
     "withdrawCta": "انسحب من البطولة",
-    "withdrawConfirm": "هل تريد انسحاب الفريق من البطولة؟ سيُتاح المقعد لفريق آخر."
+    "withdrawConfirm": "هل تريد انسحاب الفريق من البطولة؟ سيُتاح المقعد لفريق آخر.",
+    "rosterTitle": "الفِرق المسجَّلة",
+    "submitting": "جارٍ التسجيل…",
+    "withdrawing": "جارٍ الانسحاب…",
+    "browseCta": "تصفّح البطولات",
+    "statTotal": "التسجيلات",
+    "statActive": "نشطة",
+    "statPending": "بانتظار الدفع",
+    "registeredOn": "سُجِّلت في {date}",
+    "seedShort": "المرتبة"
   },
   "venue": {
     "indexEyebrow": "صالات · الخليج",
@@ -376,7 +479,24 @@
     "directionsCta": "افتح في الخرائط",
     "notFoundTitle": "الصالة غير موجودة",
     "notFoundBody": "لم نعثر على هذه الصالة. ربما أُلغيت أو لم تكن موجودة.",
-    "emptyList": "لا توجد صالات موثّقة بعد."
+    "emptyList": "لا توجد صالات موثّقة بعد.",
+    "money": "{amount} د.ك",
+    "countEyebrow": "{count, plural, zero {لا توجد صالات} one {صالة واحدة} two {صالتان} few {# صالات} many {# صالة} other {# صالة}}",
+    "venueTag": "صالة",
+    "perSeatHour": "للمقعد في الساعة",
+    "statStations": "محطات اللعب",
+    "statGames": "الألعاب",
+    "statRating": "التقييم",
+    "statRatingNone": "جديدة",
+    "gamesTitle": "الألعاب المتوفّرة",
+    "gamesEyebrow": "المحطات حسب اللعبة",
+    "locationTitle": "الموقع",
+    "coordinates": "الإحداثيات",
+    "cityCountry": "{city} · {country}",
+    "openVenue": "عرض الصالة",
+    "myBookings": "حجوزاتي",
+    "backToVenues": "كل الصالات",
+    "bookHint": "اختر اللعبة ووقت البدء وعدد المقاعد. تحتفظ الصالة بالموعد حتى إتمام الدفع."
   },
   "tournament": {
     "indexEyebrow": "بطولات",
@@ -395,7 +515,24 @@
     "viewBracketCta": "عرض الجدول",
     "notFoundTitle": "البطولة غير موجودة",
     "notFoundBody": "لم نعثر على هذه البطولة.",
-    "emptyList": "لا توجد بطولات مجدولة حالياً."
+    "emptyList": "لا توجد بطولات مجدولة حالياً.",
+    "eventCount": "{count, plural, zero {لا بطولات} one {بطولة واحدة} two {بطولتان} few {# بطولات} many {# بطولة} other {# بطولة}}",
+    "moneyKwd": "{amount} د.ك",
+    "prizePool": "مجموع الجوائز",
+    "statPrizeTotal": "إجمالي الجوائز",
+    "statEvents": "البطولات",
+    "statOpen": "التسجيل مفتوح",
+    "statLive": "مباشر الآن",
+    "statSanctioned": "بطولات معتمدة",
+    "upcoming": "قادمة",
+    "statusLabel": "الحالة",
+    "startsLabel": "تبدأ",
+    "registrationLabel": "التسجيل",
+    "organizerLabel": "المنظِّم",
+    "viewCta": "عرض البطولة",
+    "backToList": "كل البطولات",
+    "gameLabel": "اللعبة",
+    "registeredLabel": "المسجَّلون"
   },
   "organization": {
     "tierFederation": "اتحاد",
@@ -407,6 +544,65 @@
     "websiteLabel": "الموقع",
     "contactLabel": "للتواصل",
     "notFoundTitle": "المنظمة غير موجودة",
-    "notFoundBody": "لم نعثر على هذه المنظمة."
+    "notFoundBody": "لم نعثر على هذه المنظمة.",
+    "prizeAmount": "{amount} د.ك",
+    "statTournaments": "البطولات",
+    "statOpen": "مفتوحة للتسجيل",
+    "statPrizePool": "مجموع الجوائز",
+    "statusUpcoming": "قادمة",
+    "tournamentsEyebrow": "المفتوحة والقادمة",
+    "tournamentsTitle": "البطولات",
+    "tournamentsEmpty": "لا توجد بطولات مفتوحة أو قادمة من هذه المنظمة حالياً."
+  },
+  "rankings": {
+    "title": "تصنيف {org}",
+    "description": "تحصل الفرق على نقاط مقابل المراكز الأولى في البطولات المعتمدة من {org}. يصدر الاتحاد كل نقطة وتُحتسب ضمن لقب الموسم.",
+    "season": "الموسم",
+    "selectSeason": "الموسم",
+    "seasonLabel": "{term} {year}",
+    "term": {
+      "spring": "ربيع",
+      "summer": "صيف",
+      "autumn": "خريف",
+      "winter": "شتاء"
+    },
+    "updatedAfter": "آخر تحديث بعد {event}",
+    "allGames": "كل الألعاب",
+    "gamesLabel": "تصفية حسب اللعبة",
+    "stats": {
+      "prizePool": "مجموع الجوائز في البطولات المصنّفة",
+      "tournaments": "البطولات المصنّفة",
+      "teams": "الفرق المصنّفة",
+      "points": "النقاط الممنوحة"
+    },
+    "podium": {
+      "position": "المركز",
+      "kicker": "فريق",
+      "events": "البطولات المصنّفة: {count}",
+      "medals": "الميداليات",
+      "points": "النقاط"
+    },
+    "standings": "الترتيب الكامل",
+    "table": {
+      "caption": "ترتيب فرق {org}، {season}",
+      "rank": "الترتيب",
+      "delta": "+/-",
+      "team": "الفريق",
+      "points": "النقاط",
+      "medals": "الميداليات",
+      "prize": "الجائزة",
+      "eligible": "مؤهل للقب الموسم",
+      "more": "صفحة الفريق",
+      "up": "تقدم {n}",
+      "down": "تراجع {n}",
+      "held": "دون تغيير"
+    },
+    "formula": "النقاط لكل مركز في البطولات المعتمدة من {org}: المركز الأول 100، المركز الثاني 75. تقارن الحركة الترتيب قبل آخر بطولة وبعدها.",
+    "yourTeam": "فريقك مميّز باللون الذهبي.",
+    "emptyTitle": "لا توجد نتائج مصنّفة بعد",
+    "emptyBody": "يظهر الترتيب هنا بعد انتهاء أول بطولة معتمدة من {org} هذا الموسم.",
+    "browseTournaments": "تصفّح البطولات",
+    "unavailableTitle": "التصنيف غير متاح",
+    "unavailableBody": "تعذّر تحميل الترتيب. حدّث الصفحة وحاول مرة أخرى."
   }
 }

@@ -9,7 +9,7 @@ import {
   type PersonaId,
   useActAsPersona,
 } from '@beat-em-all/api-client';
-import { useHasMounted } from '@beat-em-all/ui';
+import { Avatar, useHasMounted } from '@beat-em-all/ui';
 
 const FALLBACK_PERSONA = PERSONAS.khaled;
 
@@ -45,30 +45,18 @@ export function PersonaSwitcher() {
   };
 
   return (
-    <label className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--line-2)] bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.06)] transition-colors">
-      <span
-        className="w-7 h-7 rounded-full grid place-items-center text-xs font-medium border border-white/10 text-white"
-        style={{
-          background: `linear-gradient(135deg, ${active.avatarColor}, ${active.avatarColor}77)`,
-        }}
-        aria-hidden
-      >
-        {active.displayName
-          .split(' ')
-          .map((s) => s[0])
-          .slice(0, 2)
-          .join('')}
-      </span>
+    <label className="flex h-11 items-center gap-2 rounded-md bg-surface-100 ps-1.5 pe-2 shadow-bx-card">
+      <Avatar name={active.displayName} size={32} />
       <span className="bx-eyebrow hidden sm:inline">{t('label')}</span>
       <select
         aria-label={t('label')}
-        className="bg-transparent outline-none text-sm font-medium pr-2 cursor-pointer"
+        className="cursor-pointer bg-transparent pe-1 text-sm font-bold text-ink outline-none"
         value={mounted ? activePersonaId : 'khaled'}
         onChange={(e) => handleChange(e.target.value as PersonaId)}
         disabled={!mounted}
       >
         {PERSONA_IDS.map((id) => (
-          <option key={id} value={id} className="bg-[var(--bg-2)] text-white">
+          <option key={id} value={id} className="bg-surface-100 text-ink">
             {t(id)}
           </option>
         ))}

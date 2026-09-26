@@ -3,7 +3,8 @@
 import { useEffect, useState, useTransition } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { Button, OtpInput, useHasMounted } from '@beat-em-all/ui';
+import { ArrowRight, ChevronLeft, ShieldAlert } from 'lucide-react';
+import { Button, Notice, OtpInput, buttonClass, useHasMounted } from '@beat-em-all/ui';
 import { useAuthDraft, verifyOtp } from '@beat-em-all/api-client';
 
 const RESEND_SECONDS = 30;
@@ -68,66 +69,65 @@ export function VerifyForm() {
         e.preventDefault();
         handleVerify();
       }}
-      className="flex flex-col"
+      className="grid gap-6"
     >
       <button
         type="button"
         onClick={() => router.push(`/${locale}/sign-in`)}
-        className="font-mono text-[12px] text-[var(--t-3)] mb-9 self-start hover:text-white transition-colors"
+        className={buttonClass('ghost', 'sm', false, 'justify-self-start -ms-3.5')}
       >
-        ← {t('back')}
+        <ChevronLeft className="bx-icon bx-flip" aria-hidden />
+        {t('back')}
       </button>
 
-      <p className="bx-eyebrow mb-2.5">{t('eyebrow')}</p>
-      <h1 className="font-display font-medium text-[36px] leading-[1] tracking-[-0.035em] mb-2.5">
-        {t('title')}
-      </h1>
-      <p className="font-display text-[14px] text-[var(--t-3)] mb-8">
-        {t('subtitlePrefix')} <span className="text-white font-mono">{maskedPhone}</span>
-      </p>
-
-      <OtpInput
-        value={code}
-        onChange={setCode}
-        autoFocus
-        invalid={!!error}
-        onComplete={(c) => handleVerify(c)}
-      />
-
-      {error && <p className="mt-3 text-[12px] font-display text-[var(--coral-2)]">{error}</p>}
-
-      <div className="mt-6">
-        <Button tone="primary" size="lg" full type="submit" disabled={pending || code.length !== 6}>
-          {t('verifyCta')} →
-        </Button>
+      <div className="grid gap-2.5">
+        <p className="bx-eyebrow">{t('eyebrow')}</p>
+        <h1 className="bx-display">{t('title')}</h1>
+        <p className="text-[15px] font-medium text-ink-muted">
+          {t('subtitlePrefix')}{' '}
+          <span className="bx-num text-ink" dir="ltr">
+            {maskedPhone}
+          </span>
+        </p>
       </div>
 
-      <p className="mt-6 text-center font-display text-[12px] text-[var(--t-3)]">
+      <div className="grid gap-3">
+        <OtpInput
+          value={code}
+          onChange={setCode}
+          autoFocus
+          invalid={!!error}
+          onComplete={(c) => handleVerify(c)}
+        />
+        {error && (
+          <p className="text-[13px] font-medium text-negative" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+
+      <Button variant="gold" size="lg" full type="submit" disabled={pending || code.length !== 6}>
+        {t('verifyCta')}
+        <ArrowRight className="bx-icon bx-flip" aria-hidden />
+      </Button>
+
+      <p className="text-center text-[13px] font-medium text-ink-muted">
         {secondsUntilResend > 0 ? (
-          <span className="text-[var(--t-4)]">
-            {t('resendIn', { seconds: secondsUntilResend })}
-          </span>
+          <span>{t('resendIn', { seconds: secondsUntilResend })}</span>
         ) : (
           <button
             type="button"
             onClick={() => setSecondsUntilResend(RESEND_SECONDS)}
-            className="underline hover:text-white"
+            className="font-bold text-gold-text underline hover:text-gold-text-hi"
           >
             {t('resendNow')}
           </button>
         )}
       </p>
 
-      <div className="mt-auto pt-8">
-        <div className="flex gap-2.5 p-3.5 rounded-xl bg-[rgba(251,113,133,0.08)] border border-[rgba(251,113,133,0.2)]">
-          <span className="bx-dot mt-1.5 flex-shrink-0" />
-          <p className="font-display text-[11px] text-[var(--t-2)] leading-[1.5]">
-            <strong className="text-[var(--coral-2)] me-1">
-              {t('lockoutWarning', { remaining: attemptsLeft })}
-            </strong>
-          </p>
-        </div>
-      </div>
+      <Notice tone="neutral" icon={<ShieldAlert className="bx-icon text-negative" aria-hidden />}>
+        {t('lockoutWarning', { remaining: attemptsLeft })}
+      </Notice>
     </form>
   );
 }

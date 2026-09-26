@@ -2,9 +2,16 @@
 
 import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
-import { MatchRow } from '@beat-em-all/ui';
+import { ChevronRight } from 'lucide-react';
+import { EmptyState, SectionTitle, Tag, buttonClass } from '@beat-em-all/ui';
 import { GAMES } from '@beat-em-all/mock-data';
 import type { ActivityMatch, HomeViewerMode } from '@beat-em-all/types';
+
+const RESULT_CLASS: Record<ActivityMatch['result'], string> = {
+  W: 'bg-positive-soft text-positive',
+  L: 'bg-negative-soft text-negative',
+  D: '',
+};
 
 type Props = {
   matches: ActivityMatch[];
@@ -16,56 +23,60 @@ export function RecentActivity({ matches, mode, primaryTeamSlug }: Props) {
   const t = useTranslations('home.activity');
   const locale = useLocale();
 
-  if (mode === 'solo') {
-    return (
-      <div className="rounded-[20px] border border-dashed border-[var(--line-2)] bg-[rgba(255,255,255,0.02)] p-6 text-center">
-        <p className="text-[var(--t-3)] text-sm leading-relaxed mb-3">{t('soloEmptyTitle')}</p>
-        <Link
-          href={`/${locale}/discover/teams`}
-          className="inline-flex items-center justify-center rounded-xl border border-[var(--line-2)] bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.08)] px-4 py-2 text-xs font-display font-medium text-white transition-colors"
-        >
-          {t('soloEmptyCta')} →
-        </Link>
-      </div>
-    );
-  }
+  const viewAll =
+    mode !== 'solo' && primaryTeamSlug ? (
+      <Link href={`/${locale}/teams/${primaryTeamSlug}`} className={buttonClass('ghost', 'sm')}>
+        {t('viewAll')}
+        <ChevronRight className="bx-icon bx-flip" aria-hidden />
+      </Link>
+    ) : undefined;
 
   return (
-    <div className="rounded-[20px] border border-[var(--line)] bg-[var(--bg-2)] p-5">
-      <header className="mb-2 flex items-baseline justify-between">
-        <div>
-          <p className="bx-eyebrow mb-1">{t('eyebrow')}</p>
-          <h2 className="font-display font-medium text-[20px] tracking-[-0.02em]">{t('title')}</h2>
-        </div>
-        {primaryTeamSlug ? (
-          <Link
-            href={`/${locale}/teams/${primaryTeamSlug}`}
-            className="text-xs font-display font-medium text-[var(--violet-2)] hover:text-white transition-colors"
-          >
-            {t('viewAll')} →
-          </Link>
-        ) : null}
-      </header>
+    <section aria-labelledby="home-activity" className="min-w-0">
+      <SectionTitle
+        id="home-activity"
+        eyebrow={t('eyebrow')}
+        title={t('title')}
+        actions={viewAll}
+      />
 
-      {matches.length === 0 ? (
-        <p className="text-[var(--t-3)] text-sm leading-relaxed py-6 text-center">
-          {t('activeEmptyTitle')}
-        </p>
+      {mode === 'solo' ? (
+        <EmptyState
+          title={t('soloEmptyTitle')}
+          action={
+            <Link href={`/${locale}/discover/teams`} className={buttonClass('ink', 'sm')}>
+              {t('soloEmptyCta')}
+              <ChevronRight className="bx-icon bx-flip" aria-hidden />
+            </Link>
+          }
+        />
+      ) : matches.length === 0 ? (
+        <EmptyState title={t('activeEmptyTitle')} />
       ) : (
-        <div>
+        <ul className="bx-card m-0 grid list-none p-0">
           {matches.map((m) => (
-            <MatchRow
+            <li
               key={m.id}
-              date={m.relativeDate}
-              opponentLabel={m.opponentLabel}
-              scoreLabel={m.scoreLabel}
-              result={m.result}
-              gameTag={GAMES[m.game].shortName}
-              isTournament={m.isTournament}
-            />
+              className="flex items-center gap-4 border-b border-line px-5 py-4 last:border-b-0"
+            >
+              <span className="bx-eyebrow w-7 shrink-0">{m.relativeDate}</span>
+              <div className="grid min-w-0 flex-1 gap-1.5">
+                <p className="m-0 truncate font-display text-[15px] font-bold leading-[19px] text-ink">
+                  {m.opponentLabel}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  <Tag>{GAMES[m.game].shortName}</Tag>
+                  {m.isTournament ? <Tag tone="soft">{t('tournamentMatch')}</Tag> : null}
+                </div>
+              </div>
+              <div className="grid shrink-0 justify-items-end gap-1.5">
+                <span className="bx-num text-[22px] text-ink">{m.scoreLabel}</span>
+                <Tag className={RESULT_CLASS[m.result]}>{t(`result.${m.result}`)}</Tag>
+              </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
-    </div>
+    </section>
   );
 }

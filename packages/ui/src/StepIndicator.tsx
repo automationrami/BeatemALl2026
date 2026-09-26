@@ -12,13 +12,9 @@ export function StepIndicator({ step, total, eyebrow, title, subtitle }: StepInd
   return (
     <div className="mb-6">
       {eyebrow && <div className="bx-eyebrow mb-2.5">{eyebrow}</div>}
-      {title && (
-        <h2 className="font-display font-medium text-[36px] leading-[1.05] tracking-[-0.03em] mb-1.5">
-          {title}
-        </h2>
-      )}
+      {title && <h2 className="bx-display mb-2">{title}</h2>}
       {subtitle && (
-        <div className="font-display font-normal text-[14px] text-[var(--t-3)] max-w-[520px]">
+        <div className="font-display font-medium text-[15px] text-ink-muted max-w-[520px]">
           {subtitle}
         </div>
       )}
@@ -33,10 +29,8 @@ export function StepIndicator({ step, total, eyebrow, title, subtitle }: StepInd
           <div
             key={i}
             className={[
-              'flex-1 h-[3px] rounded-[2px]',
-              i < step
-                ? 'bg-[linear-gradient(90deg,#A78BFA,#7C3AED)]'
-                : 'bg-[rgba(255,255,255,0.08)]',
+              'flex-1 h-[4px] rounded-chip',
+              i < step ? 'bg-[image:var(--gradient-gold)]' : 'bg-surface-300',
             ].join(' ')}
           />
         ))}

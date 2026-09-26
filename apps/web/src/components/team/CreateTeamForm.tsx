@@ -3,9 +3,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { Button } from '@beat-em-all/ui';
+import { Button, GameCard } from '@beat-em-all/ui';
 
-type Game = { slug: string; name: string; isPlayed: boolean };
+type Game = {
+  slug: string;
+  name: string;
+  isPlayed: boolean;
+  /** Short wordmark for the game tile, e.g. "VAL". Falls back to `name`. */
+  shortName?: string;
+  brandColor?: string;
+};
 
 type Props = {
   locale: string;
@@ -111,167 +118,164 @@ export function CreateTeamForm({ locale, defaultCountry, games, viewerHasTeam }:
   return (
     <form
       onSubmit={handleSubmit}
-      className="max-w-xl space-y-5 rounded-[20px] border border-[var(--line-2)] bg-[var(--bg-2)] p-6"
+      className="bx-card grid max-w-3xl gap-8 p-6 md:p-8"
       data-testid="create-team-form"
     >
       {viewerHasTeam ? (
-        <p className="text-[var(--t-4)] text-[12px] leading-relaxed">{t('hintAlreadyOnTeam')}</p>
+        <p className="bx-inset px-4 py-3 text-[14px] leading-relaxed text-ink-muted">
+          {t('hintAlreadyOnTeam')}
+        </p>
       ) : null}
 
-      <div>
-        <label className="bx-eyebrow block mb-2" htmlFor="team-name">
-          {t('fieldName')}
-        </label>
-        <input
-          id="team-name"
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={t('fieldNamePlaceholder')}
-          maxLength={60}
-          className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--bg-1)] px-3 py-2 text-sm font-display placeholder:text-[var(--t-4)]"
-          required
-        />
-      </div>
+      <fieldset className="grid gap-5">
+        <legend className="bx-label mb-5 text-ink">{t('formTitle')}</legend>
 
-      <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="bx-eyebrow block mb-2" htmlFor="team-tag">
-            {t('fieldTag')}
+          <label className="bx-eyebrow mb-2 block" htmlFor="team-name">
+            {t('fieldName')}
           </label>
           <input
-            id="team-tag"
+            id="team-name"
             type="text"
-            value={tag}
-            onChange={(e) => setTag(e.target.value.toUpperCase())}
-            placeholder="SND"
-            maxLength={6}
-            className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--bg-1)] px-3 py-2 text-sm font-display uppercase tracking-widest placeholder:text-[var(--t-4)]"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t('fieldNamePlaceholder')}
+            maxLength={60}
+            className="bx-field"
             required
           />
-          <p className="text-[var(--t-4)] text-[11px] mt-1">{t('fieldTagHint')}</p>
         </div>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label className="bx-eyebrow mb-2 block" htmlFor="team-tag">
+              {t('fieldTag')}
+            </label>
+            <input
+              id="team-tag"
+              type="text"
+              value={tag}
+              onChange={(e) => setTag(e.target.value.toUpperCase())}
+              placeholder="SND"
+              maxLength={6}
+              className="bx-field uppercase tracking-[0.12em]"
+              required
+            />
+            <p className="mt-1.5 text-[13px] text-ink-muted">{t('fieldTagHint')}</p>
+          </div>
+          <div>
+            <label className="bx-eyebrow mb-2 block" htmlFor="team-country">
+              {t('fieldCountry')}
+            </label>
+            <select
+              id="team-country"
+              value={countryCode}
+              onChange={(e) => setCountryCode(e.target.value)}
+              className="bx-field"
+            >
+              {COUNTRIES.map((c) => (
+                <option key={c} value={c} className="bg-surface-200">
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <div>
-          <label className="bx-eyebrow block mb-2" htmlFor="team-country">
-            {t('fieldCountry')}
+          <label className="bx-eyebrow mb-2 block" htmlFor="team-slug">
+            {t('fieldSlug')}
           </label>
-          <select
-            id="team-country"
-            value={countryCode}
-            onChange={(e) => setCountryCode(e.target.value)}
-            className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--bg-1)] px-3 py-2 text-sm font-display"
-          >
-            {COUNTRIES.map((c) => (
-              <option key={c} value={c} className="bg-[var(--bg-2)]">
-                {c}
-              </option>
-            ))}
-          </select>
+          <input
+            id="team-slug"
+            type="text"
+            dir="ltr"
+            value={slug}
+            onChange={(e) => {
+              setSlug(e.target.value);
+              setSlugTouched(true);
+            }}
+            placeholder="sandstorm"
+            maxLength={40}
+            className="bx-field lowercase"
+            required
+          />
+          <p className="mt-1.5 text-[13px] text-ink-muted">
+            {t('fieldSlugHint', { slug: slug || '<your-slug>' })}
+          </p>
         </div>
-      </div>
 
-      <div>
-        <label className="bx-eyebrow block mb-2" htmlFor="team-slug">
-          {t('fieldSlug')}
-        </label>
-        <input
-          id="team-slug"
-          type="text"
-          value={slug}
-          onChange={(e) => {
-            setSlug(e.target.value);
-            setSlugTouched(true);
-          }}
-          placeholder="sandstorm"
-          maxLength={40}
-          className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--bg-1)] px-3 py-2 text-sm font-mono lowercase placeholder:text-[var(--t-4)]"
-          required
-        />
-        <p className="text-[var(--t-4)] text-[11px] mt-1">
-          {t('fieldSlugHint', { slug: slug || '<your-slug>' })}
-        </p>
-      </div>
-
-      <div>
-        <label className="bx-eyebrow block mb-2" htmlFor="team-city">
-          {t('fieldCity')}
-        </label>
-        <input
-          id="team-city"
-          type="text"
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          placeholder={t('fieldCityPlaceholder')}
-          maxLength={80}
-          className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--bg-1)] px-3 py-2 text-sm font-display placeholder:text-[var(--t-4)]"
-        />
-      </div>
-
-      <div>
-        <label className="bx-eyebrow block mb-2" htmlFor="team-bio">
-          {t('fieldBio')}
-        </label>
-        <textarea
-          id="team-bio"
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-          placeholder={t('fieldBioPlaceholder')}
-          rows={3}
-          maxLength={500}
-          className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--bg-1)] px-3 py-2 text-sm font-display placeholder:text-[var(--t-4)]"
-        />
-      </div>
-
-      <div>
-        <p className="bx-eyebrow mb-2">{t('fieldGames')}</p>
-        <div className="flex flex-wrap gap-2">
-          {games.map((g) => {
-            const picked = pickedGames.includes(g.slug);
-            return (
-              <button
-                key={g.slug}
-                type="button"
-                onClick={() => toggleGame(g.slug)}
-                className={[
-                  'px-3 py-1.5 rounded-full border text-[12px] font-display font-medium transition-colors',
-                  picked
-                    ? 'border-[var(--violet-2)] bg-[rgba(139,92,246,0.14)] text-white'
-                    : 'border-[var(--line-2)] bg-[var(--bg-1)] text-[var(--t-3)] hover:text-white',
-                ].join(' ')}
-                data-testid={`game-toggle-${g.slug}`}
-              >
-                {g.name}
-                {g.isPlayed ? <span className="ms-2 text-[var(--cyan-2)]">●</span> : null}
-              </button>
-            );
-          })}
+        <div>
+          <label className="bx-eyebrow mb-2 block" htmlFor="team-city">
+            {t('fieldCity')}
+          </label>
+          <input
+            id="team-city"
+            type="text"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder={t('fieldCityPlaceholder')}
+            maxLength={80}
+            className="bx-field"
+          />
         </div>
-        <p className="text-[var(--t-4)] text-[11px] mt-2">{t('fieldGamesHint')}</p>
-      </div>
 
-      <label className="flex items-center gap-2 text-sm cursor-pointer">
+        <div>
+          <label className="bx-eyebrow mb-2 block" htmlFor="team-bio">
+            {t('fieldBio')}
+          </label>
+          <textarea
+            id="team-bio"
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            placeholder={t('fieldBioPlaceholder')}
+            rows={3}
+            maxLength={500}
+            className="bx-field py-2.5"
+          />
+        </div>
+      </fieldset>
+
+      <fieldset className="grid gap-3">
+        <legend className="bx-label mb-3 text-ink">{t('fieldGames')}</legend>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {games.map((g) => (
+            <div key={g.slug} data-testid={`game-toggle-${g.slug}`}>
+              <GameCard
+                shortName={g.shortName ?? g.name}
+                title={g.isPlayed ? `${g.name} · ${t('gamePlayed')}` : g.name}
+                brandColor={g.brandColor ?? ''}
+                selected={pickedGames.includes(g.slug)}
+                onToggle={() => toggleGame(g.slug)}
+              />
+            </div>
+          ))}
+        </div>
+        <p className="text-[13px] text-ink-muted">{t('fieldGamesHint')}</p>
+      </fieldset>
+
+      <label className="bx-check justify-self-start">
         <input
           type="checkbox"
           checked={isRecruiting}
           onChange={(e) => setIsRecruiting(e.target.checked)}
-          className="accent-[var(--violet-2)]"
         />
-        <span className="text-[var(--t-3)]">{t('fieldRecruiting')}</span>
+        <span>{t('fieldRecruiting')}</span>
       </label>
 
       {error ? (
         <p
-          className="text-[var(--coral-2)] text-[12px] leading-relaxed"
+          className="rounded-md bg-negative-soft px-4 py-3 text-[14px] leading-relaxed text-negative"
+          role="alert"
           data-testid="create-team-error"
         >
           {t('errorGeneric', { message: error })}
         </p>
       ) : null}
 
-      <div className="flex justify-end gap-2 pt-2 border-t border-[var(--line)]">
+      <div className="flex justify-end border-t border-line pt-6">
         <Button
-          tone="primary"
-          size="md"
+          variant="gold"
           type="submit"
           disabled={submitting || !name || !tag || !slug || pickedGames.length === 0}
           data-testid="create-team-submit"

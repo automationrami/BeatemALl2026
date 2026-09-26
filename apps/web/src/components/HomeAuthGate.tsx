@@ -2,6 +2,7 @@
 
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { ArrowRight, LogOut } from 'lucide-react';
 import { Button, useHasMounted } from '@beat-em-all/ui';
 import { useAuthDraft, signOut } from '@beat-em-all/api-client';
 
@@ -23,30 +24,35 @@ export function HomeAuthGate() {
   const signedIn = useAuthDraft((s) => s.signedIn);
 
   const showSignedIn = mounted && signedIn;
+  const arrow = <ArrowRight className="bx-icon bx-flip" aria-hidden />;
 
   return (
-    <section className="mb-16">
-      <p className="bx-eyebrow mb-6">PHASE 1 · LOCALHOST · MOCK DATA</p>
-      <h1 className="font-display font-medium text-[64px] md:text-[96px] leading-[0.9] tracking-[-0.04em] mb-6">
-        {t('welcome')}
-      </h1>
-      <p className="text-[var(--t-3)] max-w-xl text-lg leading-relaxed mb-8">{t('subtitle')}</p>
-      <div className="min-h-[52px] flex items-center gap-3 flex-wrap">
+    <section className="bx-card grid gap-4 bg-band bg-[linear-gradient(120deg,var(--gold-soft),transparent_55%)] p-6 text-on-band md:p-8">
+      <h1 className="bx-display m-0 max-w-[20ch] text-on-band">{t('welcome')}</h1>
+      <p className="m-0 max-w-[56ch] font-display text-[16px] leading-[22px] text-on-band-muted">
+        {t('subtitle')}
+      </p>
+      <div className="mt-2 flex min-h-[52px] flex-wrap items-center gap-3">
         {showSignedIn ? (
           <>
-            <Button tone="primary" size="md" onClick={() => router.push(`/${locale}/me`)}>
-              {tProfile('viewProfile')} →
+            <Button variant="gold" onClick={() => router.push(`/${locale}/me`)}>
+              {tProfile('viewProfile')}
+              {arrow}
             </Button>
-            <Button tone="ghost" size="sm" onClick={() => signOut()}>
+            <Button variant="ghost" size="sm" className="text-on-band" onClick={() => signOut()}>
+              <LogOut className="bx-icon" aria-hidden />
               {t('signOut')}
             </Button>
           </>
         ) : (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <Button tone="primary" size="lg" onClick={() => router.push(`/${locale}/sign-in`)}>
-              {t('signedOutCta')} →
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+            <Button variant="gold" size="lg" onClick={() => router.push(`/${locale}/sign-in`)}>
+              {t('signedOutCta')}
+              {arrow}
             </Button>
-            <p className="text-[var(--t-4)] text-sm font-mono">{t('signedOutHint')}</p>
+            <p className="m-0 text-[13px] leading-[18px] text-on-band-muted">
+              {t('signedOutHint')}
+            </p>
           </div>
         )}
       </div>

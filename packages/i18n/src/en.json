@@ -8,7 +8,14 @@
     "discover": "Discover",
     "challenges": "Challenges",
     "tournaments": "Tournaments",
-    "profile": "Profile"
+    "profile": "Profile",
+    "rankings": "Rankings",
+    "venues": "Venues",
+    "bookings": "Bookings",
+    "entries": "Entries",
+    "main": "Main navigation",
+    "skipToContent": "Skip to content",
+    "language": "Language"
   },
   "actAs": {
     "label": "Acting as",
@@ -48,7 +55,8 @@
       "incompleteCta": "Finish setup",
       "idleEyebrow": "ALL QUIET",
       "idleTitle": "No upcoming match scheduled.",
-      "idleBody": "Pick a fight or jump into a tournament — both are one tap away."
+      "idleBody": "Pick a fight or jump into a tournament — both are one tap away.",
+      "vs": "VS"
     },
     "recommendedTeams": {
       "eyebrow": "FOR YOU · NEARBY",
@@ -66,7 +74,8 @@
       "tournamentsTitle": "Browse tournaments",
       "tournamentsCaption": "KEC events and community cups.",
       "venuesTitle": "Find a venue",
-      "venuesCaption": "Verified gaming cafés across the GCC."
+      "venuesCaption": "Verified gaming cafés across the GCC.",
+      "title": "Quick actions"
     },
     "tournaments": {
       "eyebrow": "TOURNAMENTS · OPEN OR UPCOMING",
@@ -76,7 +85,13 @@
       "registrationOpen": "Registration open",
       "free": "Free entry",
       "prizePoolLabel": "{amount} KWD",
-      "empty": "No tournaments matching your games yet. KEC's next sanctioned event will show up here."
+      "empty": "No tournaments matching your games yet. KEC's next sanctioned event will show up here.",
+      "prize": "KWD {amount}",
+      "status": {
+        "published": "Upcoming",
+        "registration_open": "Registration open",
+        "in_progress": "Live"
+      }
     },
     "venues": {
       "eyebrow": "VENUES · NEAREST",
@@ -84,7 +99,9 @@
       "viewAll": "View all",
       "perHour": "{rate} KWD/hr",
       "distanceLabel": "{km} km",
-      "empty": "No verified venues near you yet. We're rolling out venue partners across Kuwait first."
+      "empty": "No verified venues near you yet. We're rolling out venue partners across Kuwait first.",
+      "rate": "KWD {rate}/hr",
+      "unrated": "No reviews yet"
     },
     "activity": {
       "eyebrow": "FORM · YOUR TEAMS",
@@ -92,8 +109,15 @@
       "viewAll": "View team",
       "soloEmptyTitle": "Once you join a team, your match history will live here.",
       "soloEmptyCta": "Browse teams",
-      "activeEmptyTitle": "No matches yet — your first result will appear here."
-    }
+      "activeEmptyTitle": "No matches yet — your first result will appear here.",
+      "result": {
+        "W": "Win",
+        "L": "Loss",
+        "D": "Draw"
+      },
+      "tournamentMatch": "Tournament"
+    },
+    "loadError": "Couldn't load the home feed."
   },
   "signIn": {
     "eyebrow": "SIGN IN",
@@ -113,7 +137,8 @@
       "invalid_phone": "That doesn't look like a valid phone number.",
       "rate_limited": "Too many attempts. Try again in 15 minutes.",
       "unknown": "Something went wrong. Try again."
-    }
+    },
+    "countryCodeLabel": "Country code"
   },
   "verify": {
     "eyebrow": "VERIFICATION",
@@ -169,7 +194,30 @@
     "emptyMatches": "No matches played yet. Send a challenge to be the first.",
     "emptyAchievements": "Earn your first badge by completing a match.",
     "pentagonCaption": "Calculated from last {sample} ranked matches",
-    "noPentagon": "Play a few ranked matches to unlock your stat pentagon."
+    "noPentagon": "Play a few ranked matches to unlock your stat pentagon.",
+    "civilIdVerified": "Civil ID verified",
+    "editProfile": "Edit profile",
+    "shareProfile": "Share profile",
+    "statRating": "Rating",
+    "statWinRate": "Win rate · 90 days",
+    "statPrize": "Prize won",
+    "statMatches": "Matches",
+    "statStreak": "Current streak",
+    "prizeAmount": "KWD {amount}",
+    "streakWinValue": "W{count}",
+    "streakLossValue": "L{count}",
+    "recentMatchesTitle": "Recent matches",
+    "pentagonTitle": "Skill pentagon",
+    "gamesTitle": "Games",
+    "noGames": "No games added yet.",
+    "achievementsTitle": "Achievements",
+    "achievementLocked": "Locked",
+    "linkedAccountsTitle": "Linked accounts",
+    "lastSynced": "Synced {when}",
+    "tournamentMatch": "Tournament",
+    "resultWin": "W",
+    "resultLoss": "L",
+    "resultDraw": "D"
   },
   "team": {
     "eyebrow": "TEAM",
@@ -193,7 +241,21 @@
     "coCaptain": "CO-CAPTAIN",
     "back": "← Back",
     "notFoundTitle": "Team not found",
-    "notFoundBody": "We couldn't find that team. It may have been disbanded or never existed."
+    "notFoundBody": "We couldn't find that team. It may have been disbanded or never existed.",
+    "verified": "Verified",
+    "streakWin": "W{count} streak",
+    "streakLoss": "L{count} streak",
+    "location": "{city}, {country}",
+    "statTrophies": "Trophies won",
+    "statMatches": "Matches played",
+    "statWinRate": "Win rate",
+    "statRating": "Rating",
+    "statRatingWithDelta": "Rating · {delta} 30d",
+    "matchHistory": "Match history",
+    "rosterTitle": "Roster",
+    "vs": "VS",
+    "upcomingEmptyTitle": "No match on the calendar",
+    "notFoundCta": "Back to home"
   },
   "teamCreate": {
     "eyebrow": "NEW TEAM",
@@ -213,15 +275,19 @@
     "fieldBio": "Bio (optional)",
     "fieldBioPlaceholder": "What's your team about? Year founded, what you compete in.",
     "fieldGames": "Games you'll compete in",
-    "fieldGamesHint": "● = games you already play. Pick at least one.",
+    "fieldGamesHint": "Games you already play are marked. Pick at least one.",
     "fieldRecruiting": "Open to new members joining the team",
     "submitCta": "Create team",
     "errorNoGames": "Pick at least one game your team will play.",
-    "errorGeneric": "Couldn't create the team. {message}"
+    "errorGeneric": "Couldn't create the team. {message}",
+    "gamePlayed": "You play this",
+    "formTitle": "Team details",
+    "gamesTitle": "Games"
   },
   "playerNotFound": {
     "title": "Player not found",
-    "body": "We couldn't find that player profile."
+    "body": "We couldn't find that player profile.",
+    "backHome": "Back to home"
   },
   "challenge": {
     "modalTitle": "Challenge {teamName}",
@@ -276,7 +342,21 @@
     "rejectedNotice": "Challenge rejected.",
     "youCannotAct": "Switch to a captain on the challenged team to respond.",
     "notFoundTitle": "Challenge not found",
-    "notFoundBody": "We couldn't find that challenge."
+    "notFoundBody": "We couldn't find that challenge.",
+    "close": "Close",
+    "loadingTeam": "Loading your team…",
+    "errorInvalidDates": "Pick valid dates.",
+    "errorEndBeforeStart": "\"Latest match date\" must be after \"Earliest match date\".",
+    "errorStartInPast": "Earliest match date can't be in the past.",
+    "actingAs": "Acting as: {persona}",
+    "inboxVenueTbd": "Venue to be agreed",
+    "detailChallenger": "Challenger",
+    "detailChallenged": "Challenged",
+    "detailFormat": "Format",
+    "detailGame": "Game",
+    "detailWindow": "Match window",
+    "detailVenue": "Venue",
+    "detailRespondBy": "Respond by"
   },
   "booking": {
     "bookCta": "Book a slot",
@@ -325,7 +405,21 @@
     "pendingPaymentNotice": "Booking held pending payment. Payment goes live once Tap Payments is wired in.",
     "confirmedNotice": "Booking confirmed. The venue will be expecting you.",
     "notFoundTitle": "Booking not found",
-    "notFoundBody": "We couldn't find that booking."
+    "notFoundBody": "We couldn't find that booking.",
+    "money": "KWD {amount}",
+    "countEyebrow": "{count, plural, one {# booking} other {# bookings}}",
+    "loadingTeam": "Loading your team…",
+    "submitting": "Booking…",
+    "actingAs": "Acting as {persona}",
+    "priceFormula": "KWD {rate} × {seats} seat(s) × {hours} hr",
+    "statDate": "Date",
+    "statTime": "Start",
+    "statHours": "Hours",
+    "statSeats": "Seats",
+    "timeRange": "{start} – {end}",
+    "viewVenue": "View venue",
+    "browseVenues": "Browse venues",
+    "closeDialog": "Close"
   },
   "registration": {
     "registerCta": "Register {tournamentName}",
@@ -359,7 +453,16 @@
     "confirmedNotice": "Entry confirmed. Watch the tournament page for the bracket reveal.",
     "withdrawnNotice": "You withdrew this entry. Re-registering is allowed while registration is still open.",
     "withdrawCta": "Withdraw entry",
-    "withdrawConfirm": "Withdraw this team from the tournament? This frees up the seat for another team."
+    "withdrawConfirm": "Withdraw this team from the tournament? This frees up the seat for another team.",
+    "rosterTitle": "Registered teams",
+    "submitting": "Registering…",
+    "withdrawing": "Withdrawing…",
+    "browseCta": "Browse tournaments",
+    "statTotal": "Entries",
+    "statActive": "Active",
+    "statPending": "Pending payment",
+    "registeredOn": "Registered {date}",
+    "seedShort": "Seed"
   },
   "venue": {
     "indexEyebrow": "VENUES · GCC",
@@ -376,7 +479,24 @@
     "directionsCta": "Open in Maps",
     "notFoundTitle": "Venue not found",
     "notFoundBody": "We couldn't find that venue. It may have been delisted or never existed.",
-    "emptyList": "No verified venues yet."
+    "emptyList": "No verified venues yet.",
+    "money": "KWD {amount}",
+    "countEyebrow": "{count, plural, one {# venue} other {# venues}}",
+    "venueTag": "Venue",
+    "perSeatHour": "Per seat · hour",
+    "statStations": "Stations",
+    "statGames": "Games",
+    "statRating": "Rating",
+    "statRatingNone": "New",
+    "gamesTitle": "Games on the floor",
+    "gamesEyebrow": "Stations by game",
+    "locationTitle": "Location",
+    "coordinates": "Coordinates",
+    "cityCountry": "{city} · {country}",
+    "openVenue": "View venue",
+    "myBookings": "My bookings",
+    "backToVenues": "All venues",
+    "bookHint": "Pick a game, a start time and your seats. The venue holds the slot until payment."
   },
   "tournament": {
     "indexEyebrow": "TOURNAMENTS",
@@ -395,7 +515,24 @@
     "viewBracketCta": "View bracket",
     "notFoundTitle": "Tournament not found",
     "notFoundBody": "We couldn't find that tournament.",
-    "emptyList": "No tournaments are scheduled right now."
+    "emptyList": "No tournaments are scheduled right now.",
+    "eventCount": "{count, plural, one {# event} other {# events}}",
+    "moneyKwd": "KWD {amount}",
+    "prizePool": "Prize pool",
+    "statPrizeTotal": "Total prize pool",
+    "statEvents": "Tournaments",
+    "statOpen": "Open for registration",
+    "statLive": "Live now",
+    "statSanctioned": "Sanctioned events",
+    "upcoming": "Upcoming",
+    "statusLabel": "Status",
+    "startsLabel": "Starts",
+    "registrationLabel": "Registration",
+    "organizerLabel": "Organizer",
+    "viewCta": "View tournament",
+    "backToList": "All tournaments",
+    "gameLabel": "Game",
+    "registeredLabel": "Registered"
   },
   "organization": {
     "tierFederation": "Federation",
@@ -407,6 +544,65 @@
     "websiteLabel": "Website",
     "contactLabel": "Contact",
     "notFoundTitle": "Organization not found",
-    "notFoundBody": "We couldn't find that organization."
+    "notFoundBody": "We couldn't find that organization.",
+    "prizeAmount": "KWD {amount}",
+    "statTournaments": "Tournaments",
+    "statOpen": "Open for registration",
+    "statPrizePool": "Prize pool",
+    "statusUpcoming": "Upcoming",
+    "tournamentsEyebrow": "Open and upcoming",
+    "tournamentsTitle": "Tournaments",
+    "tournamentsEmpty": "No open or upcoming tournaments from this organization right now."
+  },
+  "rankings": {
+    "title": "{org} Ranking",
+    "description": "Teams earn points for top placements in tournaments sanctioned by {org}. Every point is issued by the federation and counts toward the season title.",
+    "season": "Season",
+    "selectSeason": "Season",
+    "seasonLabel": "{term} {year}",
+    "term": {
+      "spring": "Spring",
+      "summer": "Summer",
+      "autumn": "Autumn",
+      "winter": "Winter"
+    },
+    "updatedAfter": "Updated after {event}",
+    "allGames": "All games",
+    "gamesLabel": "Filter by game",
+    "stats": {
+      "prizePool": "Prize pool in ranked events",
+      "tournaments": "Ranked tournaments",
+      "teams": "Teams ranked",
+      "points": "Points awarded"
+    },
+    "podium": {
+      "position": "Position",
+      "kicker": "Team",
+      "events": "Ranked events: {count}",
+      "medals": "Medals",
+      "points": "Points"
+    },
+    "standings": "Standings",
+    "table": {
+      "caption": "{org} team standings, {season}",
+      "rank": "Rank",
+      "delta": "+/-",
+      "team": "Team",
+      "points": "Points",
+      "medals": "Medals",
+      "prize": "Prize",
+      "eligible": "Eligible for the season title",
+      "more": "Open team",
+      "up": "Up {n}",
+      "down": "Down {n}",
+      "held": "No change"
+    },
+    "formula": "Points per finish in tournaments sanctioned by {org}: 1st place 100, 2nd place 75. Movement compares the standings before and after the latest event.",
+    "yourTeam": "Your team is highlighted in gold.",
+    "emptyTitle": "No ranked results yet",
+    "emptyBody": "Standings appear here after the first tournament sanctioned by {org} this season finishes.",
+    "browseTournaments": "Browse tournaments",
+    "unavailableTitle": "Rankings are unavailable",
+    "unavailableBody": "We couldn't load the standings. Refresh the page to try again."
   }
 }

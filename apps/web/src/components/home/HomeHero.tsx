@@ -1,145 +1,221 @@
 'use client';
 
 import { useTranslations, useLocale } from 'next-intl';
-import { useRouter } from 'next/navigation';
-import { Button, Pill, TeamCrest, VsBlock } from '@beat-em-all/ui';
+import Link from 'next/link';
+import {
+  ArrowRight,
+  CalendarClock,
+  MapPin,
+  Navigation,
+  UserRoundCog,
+  UsersRound,
+} from 'lucide-react';
+import { MatchCard, Tag, TeamCrest, buttonClass } from '@beat-em-all/ui';
 import type { HomeHeroVariant } from '@beat-em-all/types';
 
 type Props = { hero: HomeHeroVariant };
 
-const HERO_GRADIENT = {
-  background:
-    'radial-gradient(120% 80% at 100% 0%, rgba(139,92,246,0.18), transparent 55%), radial-gradient(120% 80% at 0% 100%, rgba(251,113,133,0.14), transparent 55%), linear-gradient(180deg,#16131F,#0F1015)',
-  border: '1px solid rgba(167,139,250,0.18)',
-  boxShadow: '0 0 0 1px rgba(139,92,246,0.08), 0 30px 80px -30px rgba(139,92,246,0.45)',
+/** Seed labels may carry a leading pin emoji; the UI draws a Lucide pin instead. */
+function stripPictograph(label: string): string {
+  return label.replace(/^[\p{Extended_Pictographic}️\s]+/u, '');
+}
+
+type ShellProps = {
+  eyebrow: string;
+  meta?: React.ReactNode;
+  children: React.ReactNode;
 };
+
+/**
+ * The Home hero surface: the black band with a faint gold wash — WinnerHero's stage,
+ * calmer. Always dark, so text uses the on-band tokens.
+ */
+function HeroShell({ eyebrow, meta, children }: ShellProps) {
+  return (
+    <section className="bx-card grid gap-6 bg-band bg-[linear-gradient(120deg,var(--gold-soft),transparent_55%)] p-6 text-on-band md:p-8">
+      <div className="flex flex-wrap items-center gap-3">
+        <Tag tone="outline">{eyebrow}</Tag>
+        {meta}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+type PromptProps = {
+  eyebrow: string;
+  title: string;
+  body?: string;
+  icon: React.ReactNode;
+  actions: React.ReactNode;
+};
+
+/** Hero variant for the "nothing scheduled" states: title, one line, actions, icon art. */
+function PromptHero({ eyebrow, title, body, icon, actions }: PromptProps) {
+  return (
+    <HeroShell eyebrow={eyebrow}>
+      <div className="grid items-center gap-6 md:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="grid gap-3">
+          <h2 className="bx-display m-0 max-w-[20ch] text-on-band">{title}</h2>
+          {body ? (
+            <p className="m-0 max-w-[56ch] font-display text-[16px] leading-[22px] text-on-band-muted">
+              {body}
+            </p>
+          ) : null}
+          <div className="mt-2 flex flex-wrap gap-3">{actions}</div>
+        </div>
+        <span
+          aria-hidden
+          className="hidden size-40 place-items-center rounded-2xl bg-gold-soft text-gold-text md:grid"
+        >
+          {icon}
+        </span>
+      </div>
+    </HeroShell>
+  );
+}
+
+const ART = 'bx-icon size-20 stroke-[1.25]';
 
 export function HomeHero({ hero }: Props) {
   const t = useTranslations('home.hero');
+  const tTour = useTranslations('home.tournaments');
   const locale = useLocale();
-  const router = useRouter();
-  const goto = (path: string) => router.push(`/${locale}${path}`);
+  const href = (path: string) => `/${locale}${path}`;
+  const arrow = <ArrowRight className="bx-icon bx-flip" aria-hidden />;
 
   if (hero.kind === 'next_match') {
     const team = hero.team;
     const upcoming = team.upcomingMatch;
     if (!upcoming) return null; // typeguard, defensive
+    const venue = stripPictograph(upcoming.venueLabel);
     return (
-      <div className="rounded-[20px] p-6 md:p-7" style={HERO_GRADIENT}>
-        <p className="bx-eyebrow mb-2">
-          {t('nextMatchEyebrow')} · {upcoming.startsInLabel}
-        </p>
-        <p className="font-display font-medium text-[14px] text-[var(--t-2)] mb-4">
-          {upcoming.contextLabel}
-        </p>
-
-        <VsBlock
-          teamA={{
-            tag: team.tag,
+      <HeroShell
+        eyebrow={t('nextMatchEyebrow')}
+        meta={<span className="bx-label ms-auto text-gold-text">{upcoming.startsInLabel}</span>}
+      >
+        <MatchCard
+          home={{
             name: team.name,
-            country: team.country,
-            accentColor: team.accentColor,
+            sub: team.city,
+            crest: { tag: team.tag, color: team.accentColor },
           }}
-          teamB={upcoming.opponent}
-          status={upcoming.statusPill ? <Pill tone="amber">{upcoming.statusPill}</Pill> : undefined}
+          away={{
+            name: upcoming.opponent.name,
+            sub: upcoming.opponent.country,
+            crest: { tag: upcoming.opponent.tag, color: upcoming.opponent.accentColor },
+          }}
+          game={upcoming.contextLabel}
+          round={upcoming.statusPill}
+          venue={
+            <span className="inline-flex items-center gap-1">
+              <MapPin className="bx-icon size-3" aria-hidden />
+              {venue}
+            </span>
+          }
+          vsLabel={t('vs')}
         />
-
-        <p className="mt-5 px-3.5 py-3 rounded-xl bg-black/25 font-mono text-[12px] text-[var(--t-3)] tracking-[0.06em]">
-          {upcoming.venueLabel}
-        </p>
-
-        <div className="mt-5 flex flex-wrap gap-3">
-          <Button tone="primary" size="md" onClick={() => goto(`/teams/${team.slug}`)}>
-            {t('viewMatch')} →
-          </Button>
-          <Button tone="ghost" size="md" onClick={() => goto(`/teams/${team.slug}`)}>
+        <div className="flex flex-wrap gap-3">
+          <Link href={href(`/teams/${team.slug}`)} className={buttonClass('gold')}>
+            {t('viewMatch')}
+            {arrow}
+          </Link>
+          <Link href={href(`/teams/${team.slug}`)} className={buttonClass('ink')}>
+            <Navigation className="bx-icon" aria-hidden />
             {t('openDirections')}
-          </Button>
+          </Link>
         </div>
-      </div>
+      </HeroShell>
     );
   }
 
   if (hero.kind === 'upcoming_tournament') {
     const tour = hero.tournament;
     return (
-      <div className="rounded-[20px] p-6 md:p-7" style={HERO_GRADIENT}>
-        <p className="bx-eyebrow mb-2">
-          {t('tournamentEyebrow')} · {tour.startsInLabel}
-        </p>
-        <div className="flex items-start gap-4">
-          <TeamCrest tag={tour.name.slice(0, 3)} color={tour.organizerAccent} size={88} />
-          <div className="min-w-0">
-            <h2 className="font-display font-medium text-[24px] md:text-[28px] tracking-[-0.025em] mb-1 truncate">
+      <HeroShell
+        eyebrow={t('tournamentEyebrow')}
+        meta={<span className="bx-label ms-auto text-gold-text">{tour.startsInLabel}</span>}
+      >
+        <div className="flex items-center gap-5">
+          <TeamCrest tag={tour.name.slice(0, 3)} color={tour.organizerAccent} size={72} />
+          <div className="grid min-w-0 gap-2">
+            <h2 className="m-0 truncate font-display text-[30px] font-bold leading-[32px] text-on-band">
               {tour.name}
             </h2>
-            <p className="font-mono text-[12px] text-[var(--t-3)] tracking-[0.04em]">
-              {tour.organizer}
-              {tour.isSanctioned ? ' · ★ Sanctioned' : ''}
-            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-display text-[14px] font-medium text-on-band-muted">
+                {tour.organizer}
+              </span>
+              {tour.isSanctioned ? <Tag tone="soft">{tTour('sanctioned')}</Tag> : null}
+            </div>
           </div>
         </div>
-        <div className="mt-5">
-          <Button tone="primary" size="md" onClick={() => goto(`/tournaments/${tour.slug}`)}>
-            {t('openTournament')} →
-          </Button>
+        <div>
+          <Link href={href(`/tournaments/${tour.slug}`)} className={buttonClass('gold')}>
+            {t('openTournament')}
+            {arrow}
+          </Link>
         </div>
-      </div>
+      </HeroShell>
     );
   }
 
   if (hero.kind === 'solo_prompt') {
     return (
-      <div className="rounded-[20px] p-6 md:p-7" style={HERO_GRADIENT}>
-        <p className="bx-eyebrow mb-3">{t('soloEyebrow')}</p>
-        <h2 className="font-display font-medium text-[28px] md:text-[36px] tracking-[-0.02em] mb-5 max-w-xl leading-tight">
-          {t('soloTitle')}
-        </h2>
-        <div className="flex flex-wrap gap-3">
-          <Button tone="primary" size="md" onClick={() => goto('/discover/teams')}>
-            {t('soloPrimaryCta')} →
-          </Button>
-          <Button tone="ghost" size="md" onClick={() => goto('/tournaments')}>
-            {t('soloSecondaryCta')}
-          </Button>
-        </div>
-      </div>
+      <PromptHero
+        eyebrow={t('soloEyebrow')}
+        title={t('soloTitle')}
+        icon={<UsersRound className={ART} />}
+        actions={
+          <>
+            <Link href={href('/discover/teams')} className={buttonClass('gold')}>
+              {t('soloPrimaryCta')}
+              {arrow}
+            </Link>
+            <Link href={href('/tournaments')} className={buttonClass('ink')}>
+              {t('soloSecondaryCta')}
+            </Link>
+          </>
+        }
+      />
     );
   }
 
   if (hero.kind === 'incomplete_prompt') {
     return (
-      <div className="rounded-[20px] p-6 md:p-7" style={HERO_GRADIENT}>
-        <p className="bx-eyebrow mb-3">{t('incompleteEyebrow')}</p>
-        <h2 className="font-display font-medium text-[28px] md:text-[36px] tracking-[-0.02em] mb-3 max-w-xl leading-tight">
-          {t('incompleteTitle')}
-        </h2>
-        <p className="text-[var(--t-3)] max-w-xl text-base leading-relaxed mb-5">
-          {t('incompleteBody')}
-        </p>
-        <Button tone="primary" size="md" onClick={() => goto('/onboarding')}>
-          {t('incompleteCta')} →
-        </Button>
-      </div>
+      <PromptHero
+        eyebrow={t('incompleteEyebrow')}
+        title={t('incompleteTitle')}
+        body={t('incompleteBody')}
+        icon={<UserRoundCog className={ART} />}
+        actions={
+          <Link href={href('/onboarding')} className={buttonClass('gold')}>
+            {t('incompleteCta')}
+            {arrow}
+          </Link>
+        }
+      />
     );
   }
 
   // hero.kind === 'idle'
   return (
-    <div className="rounded-[20px] p-6 md:p-7" style={HERO_GRADIENT}>
-      <p className="bx-eyebrow mb-3">{t('idleEyebrow')}</p>
-      <h2 className="font-display font-medium text-[28px] md:text-[36px] tracking-[-0.02em] mb-3 max-w-xl leading-tight">
-        {t('idleTitle')}
-      </h2>
-      <p className="text-[var(--t-3)] max-w-xl text-base leading-relaxed mb-5">{t('idleBody')}</p>
-      <div className="flex flex-wrap gap-3">
-        <Button tone="primary" size="md" onClick={() => goto('/discover/teams')}>
-          {t('soloPrimaryCta')} →
-        </Button>
-        <Button tone="ghost" size="md" onClick={() => goto('/tournaments')}>
-          {t('soloSecondaryCta')}
-        </Button>
-      </div>
-    </div>
+    <PromptHero
+      eyebrow={t('idleEyebrow')}
+      title={t('idleTitle')}
+      body={t('idleBody')}
+      icon={<CalendarClock className={ART} />}
+      actions={
+        <>
+          <Link href={href('/discover/teams')} className={buttonClass('gold')}>
+            {t('soloPrimaryCta')}
+            {arrow}
+          </Link>
+          <Link href={href('/tournaments')} className={buttonClass('ink')}>
+            {t('soloSecondaryCta')}
+          </Link>
+        </>
+      }
+    />
   );
 }

@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { ArrowRight, ChevronDown } from 'lucide-react';
 import { Button, TextInput, Field } from '@beat-em-all/ui';
 import { signIn } from '@beat-em-all/api-client';
 import { COUNTRY_DIAL_CODES, DEFAULT_COUNTRY } from '@beat-em-all/mock-data';
@@ -44,21 +45,27 @@ export function SignInForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col">
-      <p className="bx-eyebrow mb-2.5">{t('eyebrow')}</p>
-      <h1 className="font-display font-medium text-[40px] leading-[1] tracking-[-0.035em] mb-2.5">
-        {t('title')}
-      </h1>
-      <p className="font-display text-[14px] text-[var(--t-3)] mb-7">{t('subtitle')}</p>
+    <form onSubmit={handleSubmit} className="grid gap-6">
+      <div className="grid gap-2.5">
+        <p className="bx-eyebrow">{t('eyebrow')}</p>
+        <h1 className="bx-display">{t('title')}</h1>
+        <p className="text-[15px] font-medium text-ink-muted">{t('subtitle')}</p>
+      </div>
 
       <Field label={t('phoneLabel')} error={error}>
         <div className="flex gap-2">
-          <CountryDialDropdown country={country} onChange={setCountry} locale={locale} />
-          <div className="flex-1">
+          <CountryDialDropdown
+            country={country}
+            onChange={setCountry}
+            locale={locale}
+            label={t('countryCodeLabel')}
+          />
+          <div className="min-w-0 flex-1">
             <TextInput
               type="tel"
               inputMode="tel"
               autoComplete="tel-national"
+              dir="ltr"
               placeholder={t('phonePlaceholder')}
               value={phone}
               invalid={!!error}
@@ -68,22 +75,20 @@ export function SignInForm() {
         </div>
       </Field>
 
-      <div className="mt-4">
-        <Button tone="primary" size="lg" full type="submit" disabled={pending}>
-          {t('continue')} →
-        </Button>
-      </div>
+      <Button variant="gold" size="lg" full type="submit" disabled={pending}>
+        {t('continue')}
+        <ArrowRight className="bx-icon bx-flip" aria-hidden />
+      </Button>
 
-      <div className="flex items-center gap-3 my-6">
-        <div className="flex-1 h-px bg-[var(--line)]" />
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1 bg-line" />
         <span className="bx-eyebrow">{t('or')}</span>
-        <div className="flex-1 h-px bg-[var(--line)]" />
+        <div className="h-px flex-1 bg-line" />
       </div>
 
-      <div className="flex flex-col gap-2.5">
+      <div className="grid gap-2.5">
         <Button
-          tone="soft"
-          size="md"
+          variant="ink"
           full
           type="button"
           onClick={() => router.push(`/${locale}/auth/callback`)}
@@ -91,8 +96,7 @@ export function SignInForm() {
           {t('appleCta')}
         </Button>
         <Button
-          tone="soft"
-          size="md"
+          variant="ink"
           full
           type="button"
           onClick={() => router.push(`/${locale}/auth/callback`)}
@@ -101,16 +105,11 @@ export function SignInForm() {
         </Button>
       </div>
 
-      <p className="mt-8 font-display text-[11px] text-[var(--t-4)] leading-[1.6] text-center">
+      <p className="text-center text-[12px] leading-[1.6] font-medium text-ink-muted">
         {t('termsPrefix')}{' '}
-        <span className="text-[var(--t-2)] underline decoration-dotted cursor-pointer">
-          {t('terms')}
-        </span>{' '}
+        <span className="cursor-pointer text-ink underline decoration-dotted">{t('terms')}</span>{' '}
         {t('and')}{' '}
-        <span className="text-[var(--t-2)] underline decoration-dotted cursor-pointer">
-          {t('privacy')}
-        </span>
-        .
+        <span className="cursor-pointer text-ink underline decoration-dotted">{t('privacy')}</span>.
       </p>
     </form>
   );
@@ -122,23 +121,23 @@ function CountryDialDropdown({
   country,
   onChange,
   locale,
+  label,
 }: {
   country: Country;
   onChange: (c: Country) => void;
   locale: 'en' | 'ar';
+  label: string;
 }) {
   return (
-    <label className="relative flex items-center gap-1.5 px-3.5 h-11 rounded-xl border border-[var(--line-2)] bg-[rgba(255,255,255,0.03)] cursor-pointer hover:bg-[rgba(255,255,255,0.05)] transition-colors">
-      <span className="text-base leading-none" aria-hidden>
-        {country.flag}
+    <div className="relative flex h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-line-strong bg-surface-200 px-3.5 transition-colors hover:bg-surface-300 focus-within:border-transparent focus-within:shadow-[var(--focus-ring)]">
+      <span className="bx-eyebrow">{country.country}</span>
+      <span className="bx-num text-[15px] text-ink" dir="ltr">
+        +{country.dial}
       </span>
-      <span className="font-display font-medium text-[14px] text-white">+{country.dial}</span>
-      <span aria-hidden className="text-[var(--t-3)]">
-        ▾
-      </span>
+      <ChevronDown className="bx-icon text-ink-muted" aria-hidden />
       <select
-        aria-label="Country code"
-        className="absolute inset-0 opacity-0 cursor-pointer"
+        aria-label={label}
+        className="absolute inset-0 cursor-pointer opacity-0"
         value={country.country}
         onChange={(e) => {
           const next = COUNTRY_DIAL_CODES.find((c) => c.country === e.target.value);
@@ -146,11 +145,11 @@ function CountryDialDropdown({
         }}
       >
         {COUNTRY_DIAL_CODES.map((c) => (
-          <option key={c.country} value={c.country} className="bg-[var(--bg-2)] text-white">
-            {c.flag} {c.label[locale]} (+{c.dial})
+          <option key={c.country} value={c.country} className="bg-surface-200 text-ink">
+            {c.label[locale]} (+{c.dial})
           </option>
         ))}
       </select>
-    </label>
+    </div>
   );
 }

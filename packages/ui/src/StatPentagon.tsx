@@ -67,12 +67,12 @@ export function StatPentagon({ axes, overall, caption, size = 240 }: StatPentago
       >
         <defs>
           <linearGradient id="bx-pentagon-fill" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#A78BFA" stopOpacity="0.55" />
-            <stop offset="100%" stopColor="#22D3EE" stopOpacity="0.4" />
+            <stop offset="0%" stopColor="#F2C575" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#987C4B" stopOpacity="0.35" />
           </linearGradient>
           <linearGradient id="bx-pentagon-stroke" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#A78BFA" />
-            <stop offset="100%" stopColor="#22D3EE" />
+            <stop offset="0%" stopColor="#F2C575" />
+            <stop offset="100%" stopColor="#BE9E59" />
           </linearGradient>
         </defs>
 
@@ -121,7 +121,7 @@ export function StatPentagon({ axes, overall, caption, size = 240 }: StatPentago
               cx={cx + Math.cos(a) * radius * f}
               cy={cy + Math.sin(a) * radius * f}
               r={3.5}
-              fill="#22D3EE"
+              fill="#F2C575"
             />
           );
         })}
@@ -135,8 +135,8 @@ export function StatPentagon({ axes, overall, caption, size = 240 }: StatPentago
               textAnchor="middle"
               dominantBaseline="central"
               style={{
-                font: '500 9px var(--f-mono)',
-                fill: 'rgba(255,255,255,0.55)',
+                font: '700 9px var(--font-display)',
+                fill: 'var(--ink-muted)',
                 letterSpacing: '0.18em',
               }}
             >
@@ -148,8 +148,8 @@ export function StatPentagon({ axes, overall, caption, size = 240 }: StatPentago
               textAnchor="middle"
               dominantBaseline="central"
               style={{
-                font: '500 11px var(--f-display)',
-                fill: 'rgba(255,255,255,0.78)',
+                font: '700 11px var(--font-display)',
+                fill: 'var(--ink)',
                 letterSpacing: '-0.01em',
               }}
             >
@@ -165,8 +165,8 @@ export function StatPentagon({ axes, overall, caption, size = 240 }: StatPentago
           textAnchor="middle"
           dominantBaseline="central"
           style={{
-            font: '500 36px var(--f-display)',
-            fill: '#FFFFFF',
+            font: '800 36px var(--font-display)',
+            fill: 'var(--gold-text-hi)',
             letterSpacing: '-0.04em',
           }}
         >
@@ -178,8 +178,8 @@ export function StatPentagon({ axes, overall, caption, size = 240 }: StatPentago
           textAnchor="middle"
           dominantBaseline="central"
           style={{
-            font: '500 8px var(--f-mono)',
-            fill: 'rgba(255,255,255,0.35)',
+            font: '700 8px var(--font-display)',
+            fill: 'var(--ink-muted)',
             letterSpacing: '0.22em',
           }}
         >
@@ -187,7 +187,7 @@ export function StatPentagon({ axes, overall, caption, size = 240 }: StatPentago
         </text>
       </svg>
       {caption && (
-        <figcaption className="text-[11px] font-display text-[var(--t-4)] text-center mt-2">
+        <figcaption className="text-[12px] font-medium text-ink-muted text-center mt-2">
           {caption}
         </figcaption>
       )}
