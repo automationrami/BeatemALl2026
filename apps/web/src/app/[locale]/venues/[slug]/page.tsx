@@ -1,13 +1,34 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, BadgeCheck, Gamepad2, MapPin, Monitor, Navigation } from 'lucide-react';
+import {
+  ArrowLeft,
+  BadgeCheck,
+  Clock,
+  Gamepad2,
+  MapPin,
+  Monitor,
+  Navigation,
+  Settings,
+} from 'lucide-react';
 import { ProfileHeader, SectionTitle, Tag, TeamCrest, buttonClass } from '@beat-em-all/ui';
 import { GAMES } from '@beat-em-all/mock-data';
 import type { GameId } from '@beat-em-all/types';
-import { listVenueSupportedGames, loadVenueBySlug } from '@beat-em-all/db/queries';
+import {
+  canManageVenue,
+  isVenueLive,
+  listVenueSupportedGames,
+  loadVenueRecordBySlug,
+  toVenueSummary,
+} from '@beat-em-all/db/queries';
+import { getCurrentUser } from '@/lib/current-user';
 import { BookingButton } from '@/components/booking/BookingButton';
 import { formatAmount, venueInitials } from '@/components/booking/format';
+import { VenueStatusBanner } from '@/components/venue-owner/VenueStatusBanner';
+import { openingHoursText } from '@/components/venue-owner/hours';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 type PageProps = { params: Promise<{ locale: string; slug: string }> };
 
@@ -15,11 +36,24 @@ export default async function VenueDetailPage({ params }: PageProps) {
   const { locale, slug } = await params;
   setRequestLocale(locale);
 
-  const venue = await loadVenueBySlug(slug);
-  if (!venue) notFound();
+  const record = await loadVenueRecordBySlug(slug);
+  if (!record) notFound();
+
+  // Only live venues are public (V-02). Pending, rejected or paused venues show to their
+  // managers only, with a status banner; everyone else gets the 404.
+  const live = isVenueLive(record);
+  const me = await getCurrentUser().catch(() => null);
+  const isManager = me ? await canManageVenue(me.userId, record.id) : false;
+  if (!live && !isManager) notFound();
 
   const supportedGames = await listVenueSupportedGames(slug);
+  const venue = toVenueSummary(
+    record,
+    supportedGames.map((g) => g.slug as GameId),
+  );
   const t = await getTranslations('venue');
+  const tvo = await getTranslations('venueOwner');
+  const hours = openingHoursText(tvo, record);
 
   const stations = supportedGames.reduce((sum, g) => sum + g.seatsCount, 0);
   const gameNames = supportedGames.map((g) => g.name);
@@ -70,15 +104,34 @@ export default async function VenueDetailPage({ params }: PageProps) {
                   },
                 ]
               : []),
+            {
+              icon: <Clock className="bx-icon" aria-hidden />,
+              text: `${hours} · ${tvo('hours.kuwaitTime')}`,
+            },
           ]}
           bio={t('bookHint')}
           actions={
-            <BookingButton
-              venueSlug={venue.slug}
-              venueName={venue.name}
-              venueHourlyRateKwd={venue.hourlyRateKWD}
-              supportedGames={supportedGames}
-            />
+            <>
+              {live ? (
+                <BookingButton
+                  venueSlug={venue.slug}
+                  venueName={venue.name}
+                  venueHourlyRateKwd={venue.hourlyRateKWD}
+                  supportedGames={supportedGames}
+                  openingHours={tvo('hours.bookingHint', { hours })}
+                />
+              ) : null}
+              {isManager ? (
+                <Link
+                  href={`/${locale}/manage/venues/${venue.slug}`}
+                  className={buttonClass('ink')}
+                  data-testid="venue-manage-link"
+                >
+                  <Settings className="bx-icon size-4" aria-hidden />
+                  {tvo('manage.manageCta')}
+                </Link>
+              ) : null}
+            </>
           }
           stats={[
             {
@@ -93,6 +146,14 @@ export default async function VenueDetailPage({ params }: PageProps) {
               : { label: t('statRating'), value: t('statRatingNone') },
           ]}
         />
+        {isManager && !live ? (
+          <VenueStatusBanner
+            verificationStatus={record.verificationStatus}
+            isActive={record.isActive}
+            reviewNotes={record.reviewNotes}
+            preview
+          />
+        ) : null}
       </div>
 
       <div className="bx-two">
@@ -147,6 +208,12 @@ export default async function VenueDetailPage({ params }: PageProps) {
                   {venue.country}
                 </p>
               </div>
+            </div>
+            <div className="bx-inset grid gap-1 px-4 py-3" data-testid="venue-hours">
+              <span className="bx-eyebrow">{tvo('hours.label')}</span>
+              <span className="bx-num text-[15px] font-bold text-ink">
+                {hours} · {tvo('hours.kuwaitTime')}
+              </span>
             </div>
             <div className="bx-inset grid gap-1 px-4 py-3">
               <span className="bx-eyebrow">{t('coordinates')}</span>

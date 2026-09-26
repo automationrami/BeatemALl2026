@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { Button, TextInput, Field } from '@beat-em-all/ui';
-import { signIn } from '@beat-em-all/api-client';
+import { useAuthDraft } from '@beat-em-all/api-client';
 import { COUNTRY_DIAL_CODES, DEFAULT_COUNTRY } from '@beat-em-all/mock-data';
 import { composeE164, phoneInputSchema } from '@beat-em-all/utils';
 
@@ -13,14 +13,15 @@ export function SignInForm() {
   const t = useTranslations('signIn');
   const locale = useLocale() as 'en' | 'ar';
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
 
   const [country, setCountry] = useState(DEFAULT_COUNTRY);
   const [phone, setPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (pending) return;
     setError(null);
 
     const inputCheck = phoneInputSchema.safeParse(phone);
@@ -29,19 +30,33 @@ export function SignInForm() {
       return;
     }
     const e164 = composeE164(country.dial, inputCheck.data);
-    const result = signIn(e164);
-    if (!result.ok) {
-      setError(
-        t(
-          `errors.${result.error}` as
-            | 'errors.invalid_phone'
-            | 'errors.rate_limited'
-            | 'errors.unknown',
-        ),
-      );
-      return;
+    setPending(true);
+    try {
+      const res = await fetch('/api/auth/otp', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ phone: e164 }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { error?: string; demoCode?: string };
+      if (!res.ok) {
+        const key = `errors.${body.error ?? 'unknown'}`;
+        setError(t.has(key) ? t(key) : t('errors.unknown'));
+        return;
+      }
+      useAuthDraft.getState().setPhone(e164);
+      // Pilot mode (no SMS provider yet): the code is shown on the next screen.
+      try {
+        if (body.demoCode) sessionStorage.setItem('bx-demo-code', body.demoCode);
+        else sessionStorage.removeItem('bx-demo-code');
+      } catch {
+        // Storage can be unavailable (private mode); the code is only a convenience.
+      }
+      router.push(`/${locale}/verify`);
+    } catch {
+      setError(t('errors.unknown'));
+    } finally {
+      setPending(false);
     }
-    startTransition(() => router.push(`/${locale}/verify`));
   }
 
   return (
@@ -79,31 +94,6 @@ export function SignInForm() {
         {t('continue')}
         <ArrowRight className="bx-icon bx-flip" aria-hidden />
       </Button>
-
-      <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-line" />
-        <span className="bx-eyebrow">{t('or')}</span>
-        <div className="h-px flex-1 bg-line" />
-      </div>
-
-      <div className="grid gap-2.5">
-        <Button
-          variant="ink"
-          full
-          type="button"
-          onClick={() => router.push(`/${locale}/auth/callback`)}
-        >
-          {t('appleCta')}
-        </Button>
-        <Button
-          variant="ink"
-          full
-          type="button"
-          onClick={() => router.push(`/${locale}/auth/callback`)}
-        >
-          {t('googleCta')}
-        </Button>
-      </div>
 
       <p className="text-center text-[12px] leading-[1.6] font-medium text-ink-muted">
         {t('termsPrefix')}{' '}

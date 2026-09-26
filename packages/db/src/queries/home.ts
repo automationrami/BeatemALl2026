@@ -11,7 +11,7 @@
  * session cookie instead of `personaId`. Same payload shape; same callers.
  */
 
-import { eq } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import type {
   ActivityMatch,
   GameId,
@@ -37,6 +37,13 @@ import { teamGames } from '../schema/team_games';
 import { games } from '../schema/games';
 import { listSurfaceableTournaments } from './tournament';
 import { listVenues } from './venue';
+import { users } from '../schema/users';
+import { players } from '../schema/players';
+import { playerGames } from '../schema/player_games';
+import { teamMembers } from '../schema/team_members';
+import { tournamentRegistrations } from '../schema/tournament_registrations';
+import { tournaments } from '../schema/tournaments';
+import { activeMembership } from './roles';
 
 const MAX_RECOMMENDED_TEAMS = 3;
 const MAX_TOURNAMENTS = 3;
@@ -54,8 +61,103 @@ export async function loadHomeFeed(
   personaId: string,
   now: Date = new Date(),
 ): Promise<HomeFeedData> {
-  const ctx = getPersonaContext(personaId);
-  const profile = getPlayerProfileByPersona(personaId);
+  return composeHomeFeed(
+    getPersonaContext(personaId),
+    getPlayerProfileByPersona(personaId).displayName,
+    now,
+  );
+}
+
+type HomeContext = ReturnType<typeof getPersonaContext>;
+
+/**
+ * Home Feed for a real account: the same sections, with the context (city, primary team,
+ * primary game, current entry) read from the database instead of the demo persona file.
+ */
+export async function loadHomeFeedForUser(
+  userId: string,
+  now: Date = new Date(),
+): Promise<HomeFeedData | null> {
+  const db = getDb();
+  const [row] = await db
+    .select({
+      displayName: users.displayName,
+      playerId: players.id,
+      countryCode: players.countryCode,
+      city: players.city,
+    })
+    .from(players)
+    .innerJoin(users, eq(users.id, players.userId))
+    .where(eq(players.userId, userId))
+    .limit(1);
+  if (!row) return null;
+
+  const [firstGame] = await db
+    .select({ slug: games.slug })
+    .from(playerGames)
+    .innerJoin(games, eq(games.id, playerGames.gameId))
+    .where(eq(playerGames.playerId, row.playerId))
+    .orderBy(asc(playerGames.createdAt))
+    .limit(1);
+
+  const myTeams = await db
+    .select({ id: teams.id, slug: teams.slug })
+    .from(teamMembers)
+    .innerJoin(teams, eq(teams.id, teamMembers.teamId))
+    .where(
+      and(eq(teamMembers.playerId, row.playerId), activeMembership(), isNull(teams.disbandedAt)),
+    )
+    .orderBy(asc(teams.slug));
+
+  let registeredTournamentSlug: string | null = null;
+  if (myTeams.length > 0) {
+    const [reg] = await db
+      .select({ slug: tournaments.slug })
+      .from(tournamentRegistrations)
+      .innerJoin(tournaments, eq(tournaments.id, tournamentRegistrations.tournamentId))
+      .where(
+        and(
+          inArray(
+            tournamentRegistrations.teamId,
+            myTeams.map((t) => t.id),
+          ),
+          inArray(tournamentRegistrations.status, ['pending_payment', 'confirmed', 'checked_in']),
+          inArray(tournaments.status, ['registration_open', 'registration_closed', 'in_progress']),
+        ),
+      )
+      .limit(1);
+    registeredTournamentSlug = reg?.slug ?? null;
+  }
+
+  const country = (
+    ['KW', 'KSA', 'AE', 'BH', 'QA', 'OM'].includes(row.countryCode)
+      ? row.countryCode
+      : row.countryCode === 'SA'
+        ? 'KSA'
+        : 'KW'
+  ) as HomeContext['country'];
+  const city = row.city ?? '';
+  const primaryGame = (firstGame?.slug as GameId | undefined) ?? null;
+  const ctx: HomeContext = {
+    personaId: 'account',
+    country,
+    city,
+    geo: geoForCity(country, city) ?? getPersonaContext('khaled').geo,
+    primaryTeamSlug: myTeams[0]?.slug ?? null,
+    otherTeamSlugs: myTeams.slice(1).map((t) => t.slug),
+    primaryGame,
+    registeredTournamentSlug,
+    mode: !primaryGame ? 'incomplete' : myTeams.length > 0 ? 'active' : 'solo',
+  };
+  return composeHomeFeed(ctx, row.displayName, now);
+}
+
+async function composeHomeFeed(
+  ctx: HomeContext,
+  displayName: string,
+  now: Date,
+): Promise<HomeFeedData> {
+  const profile = { displayName };
   const greetingBucket = pickGreetingBucket(now);
 
   const [recommendedTeams, tournaments, nearbyVenues] = await Promise.all([

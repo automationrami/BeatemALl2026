@@ -41,7 +41,7 @@ export function HomeFeed() {
     setError(null);
     setData(null);
 
-    fetch(`/api/home?personaId=${encodeURIComponent(personaId)}`, { cache: 'no-store' })
+    fetch('/api/home', { cache: 'no-store' })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json() as Promise<{ data: HomeFeedData }>;

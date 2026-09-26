@@ -18,7 +18,7 @@ import type { GameRow } from '../schema/games';
 import { matches } from '../schema/matches';
 import { teamMembers } from '../schema/team_members';
 import type { GameId } from '@beat-em-all/types';
-import { isTeamLeaderRole, loadTeamRole } from './roles';
+import { activeMembership, isTeamLeaderRole, loadTeamRole } from './roles';
 import { isUuid } from './ids';
 
 /** US-E6.1 anti-spam: open challenges a team may have at once, and sends per rolling day. */
@@ -191,7 +191,7 @@ export async function listChallengesForPlayer(
   const myTeams = await db
     .select({ teamId: teamMembers.teamId })
     .from(teamMembers)
-    .where(eq(teamMembers.playerId, playerId));
+    .where(and(eq(teamMembers.playerId, playerId), activeMembership()));
   const myTeamIds = myTeams.map((m) => m.teamId);
   if (myTeamIds.length === 0) return [];
 
@@ -295,6 +295,7 @@ export async function canViewChallenge(
       and(
         eq(teamMembers.playerId, playerId),
         inArray(teamMembers.teamId, [challenge.challengerTeamId, challenge.challengedTeamId]),
+        activeMembership(),
       ),
     )
     .limit(1);

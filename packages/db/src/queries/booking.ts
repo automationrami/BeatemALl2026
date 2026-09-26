@@ -23,9 +23,11 @@ import { teams } from '../schema/teams';
 import type { TeamRow } from '../schema/teams';
 import { teamMembers } from '../schema/team_members';
 import { users } from '../schema/users';
-import { isTeamLeaderRole, loadTeamRole } from './roles';
+import { activeMembership, isTeamLeaderRole, loadTeamRole } from './roles';
 import { redeemVoucherInTx } from './voucher';
 import { isUuid } from './ids';
+import { notify, organizationManagerUserIds } from './notifications';
+import { fitsOpeningHours, formatVenueTime, isVenueLive } from './venue';
 
 export type BookingWithRelations = {
   booking: VenueBookingRow;
@@ -76,8 +78,15 @@ export async function createBooking(input: {
   // Resolve venue + verify active/verified.
   const [venue] = await db.select().from(venues).where(eq(venues.slug, input.venueSlug)).limit(1);
   if (!venue) throw new BookingError('venue_not_found', 'Venue not found.');
-  if (!venue.isActive || venue.verificationStatus !== 'verified') {
+  if (!isVenueLive(venue)) {
     throw new BookingError('venue_unavailable', 'This venue is not currently accepting bookings.');
+  }
+  // T-07: the whole slot must sit inside the venue's opening hours (Kuwait local time).
+  if (!fitsOpeningHours(venue, input.startAt, input.endAt)) {
+    throw new BookingError(
+      'outside_opening_hours',
+      `${venue.name} is open ${formatVenueTime(venue.opensAtTime)}–${formatVenueTime(venue.closesAtTime)} (Kuwait time). Pick a slot inside those hours.`,
+    );
   }
 
   // Resolve game.
@@ -187,6 +196,16 @@ export async function createBooking(input: {
 
   const detail = await loadBookingById(row.id);
   if (!detail) throw new BookingError('insert_failed', 'Booking inserted but could not be loaded.');
+
+  // V-04: the venue's owners and admins hear about every new booking.
+  if (venue.organizationId) {
+    await notify({
+      recipientUserIds: await organizationManagerUserIds(venue.organizationId),
+      type: 'booking_created',
+      title: `${detail.team.name} booked ${venue.name}`,
+      data: { href: `/bookings/${row.id}`, team: detail.team.name, venue: venue.name },
+    });
+  }
   return detail;
 }
 
@@ -248,7 +267,7 @@ export async function listBookingsForPlayer(
   const myTeamRows = await db
     .select({ teamId: teamMembers.teamId })
     .from(teamMembers)
-    .where(eq(teamMembers.playerId, playerId));
+    .where(and(eq(teamMembers.playerId, playerId), activeMembership()));
   const myTeamIds = myTeamRows.map((r) => r.teamId);
 
   const where =
@@ -270,7 +289,7 @@ export async function listBookingsForPlayer(
   return hydrateBookings(rows);
 }
 
-async function hydrateBookings(rows: VenueBookingRow[]): Promise<BookingWithRelations[]> {
+export async function hydrateBookings(rows: VenueBookingRow[]): Promise<BookingWithRelations[]> {
   if (rows.length === 0) return [];
   const db = getDb();
   const venueIds = new Set(rows.map((r) => r.venueId));
@@ -359,6 +378,7 @@ export class BookingError extends Error {
       | 'invalid_date_range'
       | 'over_capacity'
       | 'slot_unavailable'
+      | 'outside_opening_hours'
       | 'insert_failed',
     message: string,
   ) {

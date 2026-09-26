@@ -23,6 +23,7 @@ import {
   SectionTitle,
   StatPentagon,
   Tag,
+  buttonClass,
   useHasMounted,
 } from '@beat-em-all/ui';
 import { useActAsPersona, getPlayerProfileForPersona } from '@beat-em-all/api-client';
@@ -154,10 +155,10 @@ function Header({ profile, self }: { profile: PlayerProfile; self: boolean }) {
 
   const actions = self ? (
     <>
-      <Button variant="ink">
+      <Link href={`/${locale}/me/edit`} className={buttonClass('ink')} data-testid="edit-profile">
         <PencilLine className="bx-icon" aria-hidden />
         {t('editProfile')}
-      </Button>
+      </Link>
       {share}
     </>
   ) : (

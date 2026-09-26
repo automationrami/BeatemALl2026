@@ -12,9 +12,17 @@ type Props = {
   venueHourlyRateKwd: number;
   /** Games the venue supports + capacity per game. */
   supportedGames: { slug: string; name: string; seatsCount: number }[];
+  /** Pre-formatted opening-hours hint shown under the start time (T-07). */
+  openingHours?: string;
 };
 
-export function BookingButton({ venueSlug, venueName, venueHourlyRateKwd, supportedGames }: Props) {
+export function BookingButton({
+  venueSlug,
+  venueName,
+  venueHourlyRateKwd,
+  supportedGames,
+  openingHours,
+}: Props) {
   const [open, setOpen] = useState(false);
   const t = useTranslations('booking');
   return (
@@ -34,6 +42,7 @@ export function BookingButton({ venueSlug, venueName, venueHourlyRateKwd, suppor
           venueName={venueName}
           venueHourlyRateKwd={venueHourlyRateKwd}
           supportedGames={supportedGames}
+          openingHours={openingHours}
           onClose={() => setOpen(false)}
         />
       ) : null}

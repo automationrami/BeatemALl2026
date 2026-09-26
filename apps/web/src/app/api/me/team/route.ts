@@ -17,7 +17,10 @@ export async function GET() {
     const me = await getCurrentUser();
     const primary = me.teamMemberships[0];
     if (!primary) {
-      return NextResponse.json({ team: null }, { headers: { 'cache-control': 'no-store' } });
+      return NextResponse.json(
+        { team: null, viewerName: me.displayName },
+        { headers: { 'cache-control': 'no-store' } },
+      );
     }
     const db = getDb();
     const gameRows = await db
@@ -33,6 +36,7 @@ export async function GET() {
           teamName: primary.teamName,
           games: gameRows.map((g) => g.slug),
         },
+        viewerName: me.displayName,
       },
       { headers: { 'cache-control': 'no-store' } },
     );

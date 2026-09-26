@@ -24,6 +24,8 @@ type Props = {
   venueName: string;
   venueHourlyRateKwd: number;
   supportedGames: { slug: string; name: string; seatsCount: number }[];
+  /** Pre-formatted opening-hours hint shown under the start time (T-07). */
+  openingHours?: string;
   onClose: () => void;
 };
 
@@ -47,6 +49,7 @@ export function BookingModal({
   venueName,
   venueHourlyRateKwd,
   supportedGames,
+  openingHours,
   onClose,
 }: Props) {
   const t = useTranslations('booking');
@@ -54,6 +57,8 @@ export function BookingModal({
   const locale = useLocale();
   const router = useRouter();
   const personaId = useActAsPersona((s) => s.activePersonaId);
+  // The server's view of who is acting (a real account or the demo persona).
+  const [viewerName, setViewerName] = useState<string | null>(null);
 
   // Three-state self-team status: loading | error | loaded(team|null). Collapsing the
   // error and the no-team cases hides real failures (the silent-failure-hunter caught
@@ -98,11 +103,12 @@ export function BookingModal({
     fetch('/api/me/team', { cache: 'no-store' })
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return (await res.json()) as { team: SelfTeam | null };
+        return (await res.json()) as { team: SelfTeam | null; viewerName?: string };
       })
       .then((json) => {
         if (cancelled) return;
         setSelfTeamStatus({ kind: 'loaded', team: json.team ?? null });
+        setViewerName(json.viewerName ?? null);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -221,7 +227,10 @@ export function BookingModal({
 
   const persona = PERSONAS[personaId];
   const personaName =
-    (locale === 'ar' ? persona?.arabicName : persona?.displayName) ?? persona?.slug ?? '';
+    viewerName ??
+    (locale === 'ar' ? persona?.arabicName : persona?.displayName) ??
+    persona?.slug ??
+    '';
 
   return (
     <div
@@ -359,6 +368,14 @@ export function BookingModal({
                     className="bx-field [color-scheme:dark]"
                     required
                   />
+                  {openingHours ? (
+                    <p
+                      className="mt-1.5 text-[12px] text-ink-muted"
+                      data-testid="booking-hours-hint"
+                    >
+                      {openingHours}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="grid gap-5 sm:grid-cols-2">

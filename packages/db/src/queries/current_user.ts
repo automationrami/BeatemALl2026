@@ -7,7 +7,8 @@
  * `packages/db` preserves the package boundary — the DB layer is framework-agnostic.
  */
 
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq, isNull } from 'drizzle-orm';
+import { activeMembership } from './roles';
 import { getDb } from '../client';
 import { players } from '../schema/players';
 import { users } from '../schema/users';
@@ -91,7 +92,9 @@ export async function loadUserByPersonaSlug(slug: PersonaSlug): Promise<CurrentU
     })
     .from(teamMembers)
     .innerJoin(teams, eq(teams.id, teamMembers.teamId))
-    .where(eq(teamMembers.playerId, row.playerId))
+    .where(
+      and(eq(teamMembers.playerId, row.playerId), activeMembership(), isNull(teams.disbandedAt)),
+    )
     .orderBy(asc(teams.slug));
 
   return {

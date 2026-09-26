@@ -7,7 +7,7 @@
  * balance twice.
  */
 
-import { desc, eq, inArray, or, sql, type SQL } from 'drizzle-orm';
+import { and, desc, eq, inArray, or, sql, type SQL } from 'drizzle-orm';
 import {
   evaluateVoucher,
   generateVoucherCode,
@@ -26,7 +26,12 @@ import { tournamentRegistrations } from '../schema/tournament_registrations';
 import { tournaments } from '../schema/tournaments';
 import { users } from '../schema/users';
 import { teamMembers } from '../schema/team_members';
-import { isTeamLeaderRole, listManagedOrganizations, loadTeamRole } from './roles';
+import {
+  activeMembership,
+  isTeamLeaderRole,
+  listManagedOrganizations,
+  loadTeamRole,
+} from './roles';
 
 type Db = ReturnType<typeof getDb>;
 export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
@@ -602,7 +607,7 @@ export async function loadVoucherWallet(viewer: {
   const myTeams = await db
     .select({ teamId: teamMembers.teamId })
     .from(teamMembers)
-    .where(eq(teamMembers.playerId, viewer.playerId));
+    .where(and(eq(teamMembers.playerId, viewer.playerId), activeMembership()));
   const teamIds = myTeams.map((t) => t.teamId);
 
   let wallet: VoucherSummary[] = [];

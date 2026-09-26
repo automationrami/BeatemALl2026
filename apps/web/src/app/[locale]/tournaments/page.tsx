@@ -4,7 +4,13 @@ import { ChevronRight, ShieldCheck } from 'lucide-react';
 import { EmptyState, PageHead, StatStrip, Tag } from '@beat-em-all/ui';
 import { ButtonLink } from '@/components/tournament/ButtonLink';
 import { listSurfaceableTournaments } from '@beat-em-all/db/queries';
-import { formatAmount, gameTitle, tournamentStatusTone } from '@/components/tournament/display';
+import {
+  formatAmount,
+  gameTitle,
+  tournamentLifecycleKey,
+  tournamentStatusTone,
+} from '@/components/tournament/display';
+import { formatKuwaitDateTime } from '@/components/tournament-admin/time';
 
 // Live data: new tournaments and venues appear without a redeploy.
 export const dynamic = 'force-dynamic';
@@ -20,16 +26,11 @@ export default async function TournamentsIndexPage({ params }: PageProps) {
   const t = await getTranslations('tournament');
 
   const prizeTotal = tournaments.reduce((sum, tour) => sum + tour.prizePoolKWD, 0);
-  const openCount = tournaments.filter((tour) => tour.status === 'registration_open').length;
-  const liveCount = tournaments.filter((tour) => tour.status === 'in_progress').length;
+  const openCount = tournaments.filter((tour) => tour.lifecycle === 'registration_open').length;
+  const liveCount = tournaments.filter((tour) => tour.lifecycle === 'in_progress').length;
   const sanctionedCount = tournaments.filter((tour) => tour.isSanctioned).length;
 
-  const statusLabel = (status: string) =>
-    status === 'in_progress'
-      ? t('inProgress')
-      : status === 'registration_open'
-        ? t('registrationOpen')
-        : t('upcoming');
+  const statusLabel = (status: string) => t(tournamentLifecycleKey(status));
 
   return (
     <main className="bx-page">
@@ -62,7 +63,12 @@ export default async function TournamentsIndexPage({ params }: PageProps) {
         <section className="grid gap-4" aria-label={t('indexTitle')}>
           {tournaments.map((tour) => {
             const href = `/${locale}/tournaments/${tour.slug}`;
-            const isOpen = tour.status === 'registration_open';
+            const isOpen = tour.lifecycle === 'registration_open';
+            const when =
+              tour.startsInLabel ||
+              (tour.startsAt
+                ? t('startsOn', { date: formatKuwaitDateTime(tour.startsAt, locale) })
+                : '');
             return (
               <article
                 key={tour.id}
@@ -90,7 +96,9 @@ export default async function TournamentsIndexPage({ params }: PageProps) {
                     ) : (
                       <Tag>{tour.organizer}</Tag>
                     )}
-                    <Tag tone={tournamentStatusTone(tour.status)}>{statusLabel(tour.status)}</Tag>
+                    <Tag tone={tournamentStatusTone(tour.lifecycle)}>
+                      {statusLabel(tour.lifecycle)}
+                    </Tag>
                   </div>
                   <h2 className="m-0 font-display text-[22px] font-bold leading-[26px] text-ink">
                     <Link
@@ -100,9 +108,9 @@ export default async function TournamentsIndexPage({ params }: PageProps) {
                       {tour.name}
                     </Link>
                   </h2>
-                  {tour.startsInLabel ? (
+                  {when ? (
                     <p className="m-0 text-[13px] font-medium leading-[18px] text-ink-muted">
-                      {tour.startsInLabel}
+                      {when}
                     </p>
                   ) : null}
                 </div>

@@ -3,9 +3,9 @@
 import { useEffect, useState, useTransition } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, ChevronLeft, ShieldAlert } from 'lucide-react';
+import { ArrowRight, ChevronLeft, KeyRound, ShieldAlert } from 'lucide-react';
 import { Button, Notice, OtpInput, buttonClass, useHasMounted } from '@beat-em-all/ui';
-import { useAuthDraft, verifyOtp } from '@beat-em-all/api-client';
+import { useAuthDraft } from '@beat-em-all/api-client';
 
 const RESEND_SECONDS = 30;
 
@@ -19,7 +19,18 @@ export function VerifyForm() {
   const phone = useAuthDraft((s) => s.phone);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [attemptsLeft, setAttemptsLeft] = useState(3);
+  const [attemptsLeft, setAttemptsLeft] = useState(5);
+  const [demoCode, setDemoCode] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDemoCode(sessionStorage.getItem('bx-demo-code'));
+    } catch {
+      // No storage: the pilot code simply isn't shown.
+    }
+  }, []);
   const [secondsUntilResend, setSecondsUntilResend] = useState(RESEND_SECONDS);
 
   // Only redirect AFTER the persisted store has hydrated. Otherwise we'd race against
@@ -35,23 +46,57 @@ export function VerifyForm() {
     return () => clearTimeout(t);
   }, [secondsUntilResend]);
 
-  function handleVerify(maybeCode?: string) {
+  async function handleVerify(maybeCode?: string) {
     const c = maybeCode ?? code;
+    if (busy || c.length !== 6 || !phone) return;
     setError(null);
-    const result = verifyOtp(c);
-    if (!result.ok) {
-      setAttemptsLeft((n) => Math.max(0, n - 1));
-      setError(
-        t(
-          `errors.${result.error}` as
-            | 'errors.invalid_code'
-            | 'errors.expired_code'
-            | 'errors.rate_limited',
-        ),
-      );
+    setBusy(true);
+    try {
+      const res = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ phone, code: c }),
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        needsProfile?: boolean;
+      };
+      if (!res.ok) {
+        if (body.error === 'invalid_code') setAttemptsLeft((n) => Math.max(0, n - 1));
+        const key = `errors.${body.error ?? 'invalid_code'}`;
+        setError(t.has(key) ? t(key) : t('errors.invalid_code'));
+        return;
+      }
+      try {
+        sessionStorage.removeItem('bx-demo-code');
+      } catch {
+        // ignore
+      }
+      startTransition(() => {
+        router.push(body.needsProfile ? `/${locale}/onboarding` : `/${locale}`);
+        router.refresh();
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resend() {
+    if (!phone) return;
+    setSecondsUntilResend(RESEND_SECONDS);
+    const res = await fetch('/api/auth/otp', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ phone }),
+    });
+    const body = (await res.json().catch(() => ({}))) as { error?: string; demoCode?: string };
+    if (!res.ok) {
+      const key = `errors.${body.error ?? 'rate_limited'}`;
+      setError(t.has(key) ? t(key) : t('errors.rate_limited'));
       return;
     }
-    startTransition(() => router.push(`/${locale}/onboarding`));
+    setAttemptsLeft(5);
+    setDemoCode(body.demoCode ?? null);
   }
 
   // Render a stable placeholder until hydration finishes; prevents layout flicker.
@@ -91,6 +136,17 @@ export function VerifyForm() {
         </p>
       </div>
 
+      {demoCode ? (
+        <div data-testid="demo-code">
+          <Notice icon={<KeyRound className="bx-icon" aria-hidden />}>
+            {t('pilotCode')}{' '}
+            <b className="bx-num text-ink" dir="ltr">
+              {demoCode}
+            </b>
+          </Notice>
+        </div>
+      ) : null}
+
       <div className="grid gap-3">
         <OtpInput
           value={code}
@@ -106,7 +162,13 @@ export function VerifyForm() {
         )}
       </div>
 
-      <Button variant="gold" size="lg" full type="submit" disabled={pending || code.length !== 6}>
+      <Button
+        variant="gold"
+        size="lg"
+        full
+        type="submit"
+        disabled={pending || busy || code.length !== 6}
+      >
         {t('verifyCta')}
         <ArrowRight className="bx-icon bx-flip" aria-hidden />
       </Button>
@@ -117,7 +179,7 @@ export function VerifyForm() {
         ) : (
           <button
             type="button"
-            onClick={() => setSecondsUntilResend(RESEND_SECONDS)}
+            onClick={resend}
             className="font-bold text-gold-text underline hover:text-gold-text-hi"
           >
             {t('resendNow')}

@@ -24,9 +24,11 @@ import { teamMembers } from '../schema/team_members';
 import { games } from '../schema/games';
 import type { GameRow } from '../schema/games';
 import { users } from '../schema/users';
-import { isTeamLeaderRole, loadTeamRole } from './roles';
+import { activeMembership, isTeamLeaderRole, loadTeamRole } from './roles';
 import { refundRegistrationRedemptionsInTx } from './voucher';
 import { isUuid } from './ids';
+import { notify } from './notifications';
+import { tournamentManagerUserIds } from './tournament_admin';
 
 /** Statuses that count toward the tournament's capacity (the slot is taken). */
 const ACTIVE_STATUSES = ['pending_payment', 'confirmed', 'checked_in'] as const;
@@ -222,6 +224,18 @@ export async function registerTeamForTournament(input: {
       'Registration created but could not be loaded.',
     );
   }
+
+  // M-04: the organisers see new entries arrive.
+  await notify({
+    recipientUserIds: await tournamentManagerUserIds(tournament.organizationId),
+    type: 'registration_received',
+    title: `${team.name} registered for ${tournament.name}`,
+    data: {
+      href: `/manage/tournaments/${tournament.slug}`,
+      team: team.name,
+      tournament: tournament.name,
+    },
+  });
   return detail;
 }
 
@@ -264,6 +278,19 @@ export async function withdrawRegistration(input: {
   }
 
   if (reg.status === 'withdrawn') return reg;
+
+  // Once the bracket exists the entry is part of it; the organiser handles changes.
+  const [tour] = await db
+    .select({ status: tournaments.status })
+    .from(tournaments)
+    .where(eq(tournaments.id, reg.tournamentId))
+    .limit(1);
+  if (tour && ['in_progress', 'completed', 'cancelled'].includes(tour.status)) {
+    throw new TournamentRegistrationError(
+      'tournament_started',
+      'The tournament has already started; entries can no longer be withdrawn.',
+    );
+  }
 
   if (reg.status === 'checked_in' || reg.status === 'disqualified') {
     throw new TournamentRegistrationError(
@@ -427,7 +454,7 @@ export async function listRegistrationsForPlayer(
   const myTeamRows = await db
     .select({ teamId: teamMembers.teamId })
     .from(teamMembers)
-    .where(eq(teamMembers.playerId, playerId));
+    .where(and(eq(teamMembers.playerId, playerId), activeMembership()));
   const myTeamIds = myTeamRows.map((r) => r.teamId);
 
   const where =
@@ -516,6 +543,7 @@ export class TournamentRegistrationError extends Error {
       | 'tournament_full'
       | 'already_registered'
       | 'invalid_state'
+      | 'tournament_started'
       | 'insert_failed'
       | 'update_failed',
     message: string,

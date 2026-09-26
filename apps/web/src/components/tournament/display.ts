@@ -53,3 +53,32 @@ export function registrationStatusTone(status: string): 'soft' | 'info' | 'neutr
   if (status === 'confirmed' || status === 'checked_in') return 'info';
   return 'neutral';
 }
+
+export type TournamentLifecycleKey =
+  | 'statusDraft'
+  | 'upcoming'
+  | 'registrationOpen'
+  | 'registrationClosed'
+  | 'inProgress'
+  | 'completed'
+  | 'cancelled';
+
+/** `tournament.*` label key for any lifecycle status (draft … cancelled). */
+export function tournamentLifecycleKey(status: string): TournamentLifecycleKey {
+  switch (status) {
+    case 'draft':
+      return 'statusDraft';
+    case 'registration_open':
+      return 'registrationOpen';
+    case 'registration_closed':
+      return 'registrationClosed';
+    case 'in_progress':
+      return 'inProgress';
+    case 'completed':
+      return 'completed';
+    case 'cancelled':
+      return 'cancelled';
+    default:
+      return 'upcoming';
+  }
+}

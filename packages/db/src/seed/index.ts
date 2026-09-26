@@ -445,6 +445,46 @@ async function main() {
         });
     }
 
+    // ---- 7b. Beat'Em All operations account (platform admin: reviews venue and
+    //          organiser applications). Signs in with phone OTP like everyone else.
+    {
+      const OPS_PHONE = '+96550000000';
+      const [opsUser] = await db
+        .insert(users)
+        .values({
+          phoneNumber: OPS_PHONE,
+          displayName: "Beat'Em All Ops",
+          locale: 'en',
+          phoneVerifiedAt: new Date(),
+        })
+        .onConflictDoUpdate({ target: users.phoneNumber, set: { displayName: "Beat'Em All Ops" } })
+        .returning({ id: users.id });
+      const platformOrgId = orgIdBySlug.get('beat-em-all-admin');
+      if (opsUser && platformOrgId) {
+        await db
+          .insert(players)
+          .values({
+            userId: opsUser.id,
+            slug: 'beatemall-ops',
+            countryCode: 'KW',
+            city: 'Kuwait City',
+          })
+          .onConflictDoNothing({ target: players.userId });
+        await db
+          .insert(memberships)
+          .values({
+            userId: opsUser.id,
+            organizationId: platformOrgId,
+            role: 'owner',
+            acceptedAt: new Date(),
+          })
+          .onConflictDoUpdate({
+            target: [memberships.userId, memberships.organizationId],
+            set: { role: 'owner', revokedAt: null },
+          });
+      }
+    }
+
     // ---- 8. Demo vouchers (insert once; balances are live data after that) ----
     const teamIdRows = await db.select({ id: teams.id, slug: teams.slug }).from(teams);
     const teamIdBySlug = new Map(teamIdRows.map((t) => [t.slug, t.id]));

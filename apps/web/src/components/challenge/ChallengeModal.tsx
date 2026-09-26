@@ -53,6 +53,8 @@ export function ChallengeModal({
   const locale = useLocale();
   const router = useRouter();
   const personaId = useActAsPersona((s) => s.activePersonaId);
+  // The server's view of who is acting (a real account or the demo persona).
+  const [viewerName, setViewerName] = useState<string | null>(null);
 
   const [selfTeam, setSelfTeam] = useState<SelfTeam | null>(null);
   const [selfTeamError, setSelfTeamError] = useState<string | null>(null);
@@ -91,11 +93,12 @@ export function ChallengeModal({
           if (res.status === 404 || res.status === 403) return { team: null as SelfTeam | null };
           throw new Error(`HTTP ${res.status}`);
         }
-        return (await res.json()) as { team: SelfTeam | null };
+        return (await res.json()) as { team: SelfTeam | null; viewerName?: string };
       })
       .then((json) => {
         if (cancelled) return;
         setSelfTeam(json.team ?? null);
+        setViewerName(json.viewerName ?? null);
         setSelfTeamError(null);
         setLoadingSelf(false);
       })
@@ -172,7 +175,10 @@ export function ChallengeModal({
 
   const persona = PERSONAS[personaId];
   const personaName =
-    (locale === 'ar' ? persona?.arabicName : persona?.displayName) ?? persona?.slug ?? '';
+    viewerName ??
+    (locale === 'ar' ? persona?.arabicName : persona?.displayName) ??
+    persona?.slug ??
+    '';
 
   return (
     <div

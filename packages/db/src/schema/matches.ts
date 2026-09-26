@@ -7,10 +7,11 @@
  */
 
 import { sql } from 'drizzle-orm';
-import { boolean, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, integer, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { teams } from './teams';
 import { games } from './games';
 import { challenges } from './challenges';
+import { tournaments } from './tournaments';
 
 export const matchTypeEnum = pgEnum('match_type', ['challenge', 'tournament_match', 'friendly']);
 
@@ -29,6 +30,10 @@ export const matches = pgTable('matches', {
 
   matchType: matchTypeEnum('match_type').notNull().default('challenge'),
   challengeId: uuid('challenge_id').references(() => challenges.id, { onDelete: 'set null' }),
+  /** Tournament matches (§7.3): the event, its round, and the pairing index within the round. */
+  tournamentId: uuid('tournament_id').references(() => tournaments.id, { onDelete: 'cascade' }),
+  tournamentRoundId: uuid('tournament_round_id'),
+  bracketSlot: integer('bracket_slot'),
 
   homeTeamId: uuid('home_team_id')
     .notNull()

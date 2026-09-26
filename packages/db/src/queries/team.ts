@@ -1,18 +1,15 @@
 /**
- * Team queries — DB-backed reads with mock-data overlay for not-yet-modelled fields.
+ * Team queries — DB-backed reads with a mock-data overlay for not-yet-modelled fields.
  *
- * Phase-1 hybrid (same pattern as `loadPlayerProfileBySlug`):
- *   - DB provides: team identity, real persona memberships, supported games
- *   - Mock-data provides: stats (rating, winRate, trophies), upcomingMatch, full mock roster
- *     for teams whose mock has more members than the DB has personas
- *
- * As subsequent epics ship `match_results`, `team_stats_cache`, etc., the mock fallback
- * for those fields gets replaced one at a time.
+ *   - DB provides: team identity, status (disbanded), the real roster, supported games
+ *   - Mock-data provides: stats (rating, winRate, trophies), badges and upcomingMatch for
+ *     seeded teams, until match history is modelled. The roster is never taken from mock.
  */
 
-import { eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { GameId, Team, TeamMember, TeamRole } from '@beat-em-all/types';
 import { getTeamBySlug as getMockTeamBySlug, GAMES } from '@beat-em-all/mock-data';
+import { activeMembership } from './roles';
 import { getDb } from '../client';
 import { teams } from '../schema/teams';
 import type { TeamRow } from '../schema/teams';
@@ -22,7 +19,10 @@ import { games } from '../schema/games';
 import { players } from '../schema/players';
 import { users } from '../schema/users';
 
-export async function loadTeamBySlug(slug: string): Promise<Team | null> {
+/** `Team` plus its lifecycle status (a disbanded team keeps its page but has no actions). */
+export type TeamDetail = Team & { disbandedAt: string | null };
+
+export async function loadTeamBySlug(slug: string): Promise<TeamDetail | null> {
   const db = getDb();
 
   const teamRows = await db.select().from(teams).where(eq(teams.slug, slug)).limit(1);
@@ -36,7 +36,9 @@ export async function loadTeamBySlug(slug: string): Promise<Team | null> {
     .innerJoin(games, eq(games.id, teamGames.gameId))
     .where(eq(teamGames.teamId, teamRow.id));
 
-  const gameSlugs = gameRows.map((g) => g.slug as GameId);
+  const gameSlugs = [...gameRows]
+    .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
+    .map((g) => g.slug as GameId);
 
   const memberRows = await db
     .select({
@@ -49,43 +51,42 @@ export async function loadTeamBySlug(slug: string): Promise<Team | null> {
     .from(teamMembers)
     .innerJoin(players, eq(players.id, teamMembers.playerId))
     .innerJoin(users, eq(users.id, players.userId))
-    .where(eq(teamMembers.teamId, teamRow.id));
+    .where(and(eq(teamMembers.teamId, teamRow.id), activeMembership()));
 
-  // Hybrid: pull mock to fill in stats/upcomingMatch/mock roster.
+  // Hybrid: mock fills in stats / badges / upcomingMatch only. The roster is DB-only.
   const mock = getMockTeamBySlug(slug);
 
-  // Real DB members override the same-slug mock entries; rest of the mock roster fills in.
-  const dbMembers: TeamMember[] = memberRows.map((m) => {
-    const mockMember = mock?.members.find((mm) => mm.playerSlug === m.playerSlug);
-    return {
-      playerSlug: m.playerSlug,
-      displayName: m.displayName,
-      role: dbRoleToType(m.role),
-      inGameRole: m.inGameRole ?? mockMember?.inGameRole ?? '',
-      rating: mockMember?.rating ?? 1500,
-      avatarColor: mockMember?.avatarColor ?? '#8B5CF6',
-    };
-  });
-  const dbMemberSlugSet = new Set(dbMembers.map((m) => m.playerSlug));
-  const mockOnlyMembers: TeamMember[] =
-    mock?.members.filter((m) => !dbMemberSlugSet.has(m.playerSlug)) ?? [];
+  const members: TeamMember[] = memberRows
+    .map((m) => {
+      const mockMember = mock?.members.find((mm) => mm.playerSlug === m.playerSlug);
+      return {
+        playerSlug: m.playerSlug,
+        displayName: m.displayName,
+        role: dbRoleToType(m.role),
+        inGameRole: m.inGameRole ?? '',
+        rating: mockMember?.rating ?? 0,
+        avatarColor: mockMember?.avatarColor ?? '#8B5CF6',
+      };
+    })
+    .sort((a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role]);
 
-  const team: Team = {
+  const team: TeamDetail = {
     id: teamRow.id,
     slug: teamRow.slug,
     tag: teamRow.tag,
     name: teamRow.name,
     country: teamRow.countryCode,
     city: teamRow.city ?? '',
-    accentColor: mock?.accentColor ?? brandColorFor(gameSlugs),
+    accentColor: teamAccentColor(slug, gameSlugs),
     games: gameSlugs,
     recruiting: teamRow.isRecruiting,
     bio: teamRow.bio ?? '',
     joinedLabel: formatFoundedLabel(teamRow.foundedAt),
     badges: mock?.badges ?? [],
-    members: [...dbMembers, ...mockOnlyMembers],
+    members,
     stats: mock?.stats ?? defaultStats(),
-    upcomingMatch: mock?.upcomingMatch ?? null,
+    upcomingMatch: teamRow.disbandedAt ? null : (mock?.upcomingMatch ?? null),
+    disbandedAt: teamRow.disbandedAt ? teamRow.disbandedAt.toISOString() : null,
   };
 
   return team;
@@ -101,8 +102,19 @@ function dbRoleToType(
   return role as TeamRole;
 }
 
-function brandColorFor(gameSlugs: GameId[]): string {
-  const primary = gameSlugs[0];
+const ROLE_ORDER: Record<TeamRole, number> = {
+  captain: 0,
+  co_captain: 1,
+  starter: 2,
+  sub: 3,
+  coach: 4,
+};
+
+/** Crest colour: the seeded team's colour, else the brand colour of its primary game. */
+export function teamAccentColor(slug: string, gameSlugs: readonly string[]): string {
+  const mock = getMockTeamBySlug(slug);
+  if (mock?.accentColor) return mock.accentColor;
+  const primary = gameSlugs[0] as GameId | undefined;
   if (primary && GAMES[primary]) return GAMES[primary].brandColor;
   return '#8B5CF6';
 }

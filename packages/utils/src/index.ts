@@ -1,6 +1,7 @@
 // @beat-em-all/utils — Shared Zod schemas, validators, formatters, and helpers.
 
 export * from './auth-schemas';
+export * from './bracket';
 export * from './geo';
 export * from './vouchers';
 

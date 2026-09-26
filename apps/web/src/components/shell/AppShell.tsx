@@ -4,11 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import {
+  Briefcase,
   Building2,
   CalendarCheck,
   CircleUser,
   House,
   ListOrdered,
+  ShieldCheck,
   Swords,
   Ticket,
   TicketPercent,
@@ -17,7 +19,8 @@ import {
 } from 'lucide-react';
 import { Wordmark } from '@beat-em-all/ui';
 import { LanguageToggle } from '@/components/LanguageToggle';
-import { PersonaSwitcher } from '@/components/PersonaSwitcher';
+import { AccountMenu, type ShellViewer } from './AccountMenu';
+import { NotificationBell } from './NotificationBell';
 
 type NavKey =
   | 'home'
@@ -28,6 +31,8 @@ type NavKey =
   | 'bookings'
   | 'entries'
   | 'vouchers'
+  | 'manage'
+  | 'admin'
   | 'profile';
 type NavItem = { key: NavKey; href: string; icon: LucideIcon; match: RegExp };
 
@@ -40,7 +45,14 @@ const ITEMS: NavItem[] = [
   { key: 'bookings', href: '/bookings', icon: CalendarCheck, match: /^\/bookings/ },
   { key: 'entries', href: '/registrations', icon: Ticket, match: /^\/registrations/ },
   { key: 'vouchers', href: '/vouchers', icon: TicketPercent, match: /^\/vouchers/ },
+  {
+    key: 'manage',
+    href: '/manage',
+    icon: Briefcase,
+    match: /^\/(manage|organizers|venues\/register)/,
+  },
 ];
+const ADMIN: NavItem = { key: 'admin', href: '/admin', icon: ShieldCheck, match: /^\/admin/ };
 const PROFILE: NavItem = {
   key: 'profile',
   href: '/me',
@@ -57,7 +69,17 @@ const BARE = /^\/(sign-in|verify|onboarding|auth)(\/|$)/;
  * top bar holding the language toggle and the Phase-1 persona switcher. Pages render
  * their own <main className="bx-page"> inside it.
  */
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  viewer,
+  isAdmin = false,
+  unread = 0,
+}: {
+  children: React.ReactNode;
+  viewer?: ShellViewer | null;
+  isAdmin?: boolean;
+  unread?: number;
+}) {
   const locale = useLocale();
   const t = useTranslations('nav');
   const pathname = usePathname() ?? '/';
@@ -67,6 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const href = (it: NavItem) => `/${locale}${it.href}`;
   const current = (it: NavItem) => it.match.test(local);
+  const railItems = isAdmin ? [...ITEMS, ADMIN] : ITEMS;
 
   return (
     <div className="bx-app">
@@ -82,7 +105,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Wordmark size={28} showLabel={false} />
           </Link>
           <div className="bx-rail__nav">
-            {ITEMS.map((it) => (
+            {railItems.map((it) => (
               <Link
                 key={it.key}
                 href={href(it)}
@@ -113,7 +136,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Wordmark size={28} />
           </Link>
           <LanguageToggle />
-          <PersonaSwitcher />
+          <NotificationBell initialUnread={unread} />
+          <AccountMenu viewer={viewer ?? null} />
         </header>
         <div id="content">{children}</div>
       </div>

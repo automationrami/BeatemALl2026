@@ -5,23 +5,32 @@ import {
   ArrowLeft,
   CalendarDays,
   CircleCheck,
+  CircleX,
   Clock,
+  Flag,
+  LogIn,
   MapPin,
   StickyNote,
   TicketPercent,
+  UserX,
 } from 'lucide-react';
 import { Avatar, Notice, StatStrip, TeamCrest, buttonClass } from '@beat-em-all/ui';
 import {
+  canManageVenue,
   isTeamLeaderRole,
-  listManagedVenueIds,
   loadBookingById,
   loadBookingVoucherPayment,
+  loadVenueCancellationWindow,
+  teamCancelStatus,
+  venueActionsFor,
 } from '@beat-em-all/db/queries';
 import { getCurrentUser } from '@/lib/current-user';
 import { BookingStatusTag, bookingStatusKey } from '@/components/booking/BookingStatusTag';
 import { dateLocale, formatAmount } from '@/components/booking/format';
 import { teamCrestColor } from '@/components/tournament/display';
 import { PayWithVoucher } from '@/components/voucher/PayWithVoucher';
+import { TeamCancelBooking } from '@/components/venue-owner/TeamCancelBooking';
+import { VenueBookingActions } from '@/components/venue-owner/VenueBookingActions';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -42,18 +51,32 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const me = await getCurrentUser();
   const isBooker = data.booking.bookedByUserId === me.userId;
   const membership = me.teamMemberships.find((m) => m.teamId === data.booking.bookedByTeamId);
-  const isVenueManager =
-    !isBooker && !membership && (await listManagedVenueIds(me.userId)).includes(data.venue.id);
+  const isVenueManager = await canManageVenue(me.userId, data.venue.id);
   if (!isBooker && !membership && !isVenueManager) notFound();
   const canPay = isTeamLeaderRole(membership?.role);
 
   const t = await getTranslations('booking');
   const tv = await getTranslations('vouchers');
+  const tvo = await getTranslations('venueOwner');
   const payment = await loadBookingVoucherPayment(id);
+
+  // T-08: captains cancel pending/confirmed bookings until the venue's cancellation window.
+  const cancellable =
+    canPay && (data.booking.status === 'pending_payment' || data.booking.status === 'confirmed');
+  const cancelStatus = cancellable
+    ? teamCancelStatus(data.booking.startAt, await loadVenueCancellationWindow(data.venue.id))
+    : null;
+  const venueActions = isVenueManager ? venueActionsFor(data.booking.status) : [];
 
   const tz = 'Asia/Kuwait';
   const loc = dateLocale(locale);
   const fullDate = new Intl.DateTimeFormat(loc, { dateStyle: 'full', timeZone: tz });
+  const dateTime = new Intl.DateTimeFormat(loc, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    hour12: false,
+    timeZone: tz,
+  });
   const shortDate = new Intl.DateTimeFormat(loc, { day: 'numeric', month: 'short', timeZone: tz });
   const timeFormat = new Intl.DateTimeFormat(loc, {
     hour: '2-digit',
@@ -172,6 +195,68 @@ export default async function BookingDetailPage({ params }: PageProps) {
               {t('confirmedNotice')}
             </Notice>
           </div>
+        ) : null}
+        {booking.status === 'cancelled' ? (
+          <div data-testid="cancelled-notice">
+            <Notice tone="neutral" icon={<CircleX className="bx-icon text-negative" aria-hidden />}>
+              {tvo('teamCancel.cancelledNotice', {
+                date: dateTime.format(booking.cancelledAt ?? booking.updatedAt),
+              })}
+              {booking.cancellationReason
+                ? ` ${tvo('teamCancel.cancelledReason', { reason: booking.cancellationReason })}`
+                : null}
+            </Notice>
+          </div>
+        ) : null}
+        {booking.status === 'checked_in' ||
+        booking.status === 'completed' ||
+        booking.status === 'no_show' ? (
+          <div data-testid="status-notice" data-status={booking.status}>
+            <Notice
+              tone="neutral"
+              icon={
+                booking.status === 'checked_in' ? (
+                  <LogIn className="bx-icon text-positive" aria-hidden />
+                ) : booking.status === 'completed' ? (
+                  <Flag className="bx-icon" aria-hidden />
+                ) : (
+                  <UserX className="bx-icon text-negative" aria-hidden />
+                )
+              }
+            >
+              {tvo(
+                booking.status === 'checked_in'
+                  ? 'teamCancel.checkedInNotice'
+                  : booking.status === 'completed'
+                    ? 'teamCancel.completedNotice'
+                    : 'teamCancel.noShowNotice',
+              )}
+            </Notice>
+          </div>
+        ) : null}
+        {cancelStatus?.open ? (
+          <TeamCancelBooking
+            bookingId={booking.id}
+            venueName={venue.name}
+            deadlineLabel={tvo('teamCancel.deadline', {
+              date: dateTime.format(cancelStatus.deadline),
+            })}
+          />
+        ) : null}
+        {cancelStatus && !cancelStatus.open ? (
+          <p className="m-0 text-[13px] text-ink-muted" data-testid="cancel-window-passed">
+            {tvo('teamCancel.windowPassed', { date: dateTime.format(cancelStatus.deadline) })}
+          </p>
+        ) : null}
+        {venueActions.length > 0 ? (
+          <section
+            className="bx-card bx-card--flat grid gap-3 p-5"
+            aria-label={tvo('actions.venueTitle')}
+            data-testid="venue-booking-actions"
+          >
+            <p className="bx-eyebrow m-0">{tvo('actions.venueTitle')}</p>
+            <VenueBookingActions bookingId={booking.id} actions={venueActions} size="md" />
+          </section>
         ) : null}
       </div>
 

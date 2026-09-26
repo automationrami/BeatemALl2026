@@ -102,6 +102,7 @@ export async function POST(request: Request, { params }: Params) {
         invalid_date_range: 400,
         over_capacity: 409,
         slot_unavailable: 409,
+        outside_opening_hours: 400,
         insert_failed: 500,
       } as const;
       const status = STATUS_BY_CODE[err.code] ?? 400;

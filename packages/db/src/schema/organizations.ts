@@ -55,6 +55,8 @@ export const organizations = pgTable(
     }),
 
     isPublic: boolean('is_public').notNull().default(true),
+    /** Reason given by Beat'Em All when an application is rejected or suspended. */
+    reviewNotes: text('review_notes'),
 
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().default(sql`now()`),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().default(sql`now()`),

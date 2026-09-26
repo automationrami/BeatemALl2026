@@ -1,20 +1,34 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-import { Gamepad2, MapPin, ShieldCheck, UserPlus, Users } from 'lucide-react';
+import Link from 'next/link';
+import { Ban, Gamepad2, MapPin, PencilLine, ShieldCheck, UserPlus, Users } from 'lucide-react';
 import {
   Button,
   EmptyState,
   MatchCard,
+  Notice,
   ProfileHeader,
-  RosterList,
   SectionTitle,
   Tag,
   TeamCrest,
+  buttonClass,
 } from '@beat-em-all/ui';
-import { loadTeamBySlug } from '@beat-em-all/db/queries';
+import {
+  isTeamLeaderRole,
+  listPendingTeamInvites,
+  listTeamRoster,
+  loadTeamBySlug,
+} from '@beat-em-all/db/queries';
 import { GAMES } from '@beat-em-all/mock-data';
-import type { TeamMember, TeamRole } from '@beat-em-all/types';
 import { ChallengeButton } from '@/components/challenge/ChallengeButton';
+import { InvitePanel } from '@/components/team/InvitePanel';
+import { LeaveTeamButton } from '@/components/team/LeaveTeamButton';
+import { TeamRosterPanel } from '@/components/team/TeamRosterPanel';
+import { dateLocale } from '@/components/booking/format';
+import { getCurrentUser } from '@/lib/current-user';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 type PageProps = {
   params: Promise<{ locale: string; slug: string }>;
@@ -25,44 +39,37 @@ function stripPictographs(s: string): string {
   return s.replace(/\p{Extended_Pictographic}️?\s*/gu, '').trim();
 }
 
-const ROLE_ORDER: Record<TeamRole, number> = {
-  captain: 0,
-  co_captain: 1,
-  starter: 2,
-  sub: 3,
-  coach: 4,
-};
-
 export default async function TeamPage({ params }: PageProps) {
   const { locale, slug } = await params;
   setRequestLocale(locale);
 
-  // DB-backed team profile (Phase 1 hybrid: real identity + members + games from
-  // Postgres, mock-data overlay for stats / upcomingMatch / mock-only roster members).
+  // Identity, games, status and roster come from Postgres; stats / badges / upcoming match
+  // are a mock overlay for seeded teams until match history is modelled.
   const team = await loadTeamBySlug(slug);
   if (!team) notFound();
 
-  const t = await getTranslations('team');
+  const [t, tr, me, roster] = await Promise.all([
+    getTranslations('team'),
+    getTranslations('roster'),
+    getCurrentUser().catch(() => null),
+    listTeamRoster(team.id),
+  ]);
+
+  const disbanded = team.disbandedAt !== null;
+  const myRow = me ? roster.find((m) => m.playerId === me.playerId) : undefined;
+  const myRole = !disbanded && myRow ? myRow.role : null;
+  const isLeader = isTeamLeaderRole(myRole);
+  const invites = isLeader ? await listPendingTeamInvites(team.id) : [];
+
+  const date = new Intl.DateTimeFormat(dateLocale(locale), {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'Asia/Kuwait',
+  });
 
   const ratingDeltaSign = team.stats.ratingDelta30d >= 0 ? '+' : '';
   const ratingDelta = `${ratingDeltaSign}${team.stats.ratingDelta30d}`;
-
-  const roleLabel: Record<TeamRole, string> = {
-    captain: t('captain'),
-    co_captain: t('coCaptain'),
-    starter: t('starter'),
-    sub: t('subRole'),
-    coach: t('coach'),
-  };
-
-  const roleTag = (m: TeamMember) => {
-    if (m.role === 'captain') return { text: roleLabel.captain, tone: 'gold' as const };
-    if (m.role === 'co_captain') return { text: roleLabel.co_captain, tone: 'ink' as const };
-    if (m.role === 'sub' || m.role === 'coach') return { text: roleLabel[m.role] };
-    return undefined;
-  };
-
-  const members = [...team.members].sort((a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role]);
 
   // Status tags: verification, streak and recruiting come from structured data; any other
   // free-form badge from the overlay is shown as a neutral tag.
@@ -72,7 +79,11 @@ export default async function TeamPage({ params }: PageProps) {
   );
   const streak = team.stats.streak;
 
-  const tags = (
+  const tags = disbanded ? (
+    <Tag tone="outline" icon={<Ban className="bx-icon" aria-hidden />}>
+      {tr('disbandedTag')}
+    </Tag>
+  ) : (
     <>
       {isVerified && (
         <Tag tone="org" icon={<ShieldCheck className="bx-icon" aria-hidden />}>
@@ -108,36 +119,58 @@ export default async function TeamPage({ params }: PageProps) {
     ...(gameNames ? [{ icon: <Gamepad2 className="bx-icon" aria-hidden />, text: gameNames }] : []),
     {
       icon: <Users className="bx-icon" aria-hidden />,
-      text: t('membersCount', { count: team.members.length }),
+      text: t('membersCount', { count: roster.length }),
     },
   ];
+
+  const actions = disbanded ? undefined : (
+    <>
+      {!myRole && (
+        <ChallengeButton
+          targetTeamSlug={team.slug}
+          targetTeamName={team.name}
+          targetTeamGames={team.games}
+          gameLabels={Object.fromEntries(team.games.map((g) => [g, GAMES[g]?.shortName ?? g]))}
+        />
+      )}
+      {!myRole && team.recruiting && (
+        <Button variant="ink">
+          <UserPlus className="bx-icon" aria-hidden />
+          {t('applyToJoin')}
+        </Button>
+      )}
+      {isLeader && (
+        <Link
+          href={`/${locale}/teams/${team.slug}/edit`}
+          className={buttonClass('ink')}
+          data-testid="edit-team"
+        >
+          <PencilLine className="bx-icon" aria-hidden />
+          {tr('editTeamCta')}
+        </Link>
+      )}
+    </>
+  );
 
   const upcoming = team.upcomingMatch;
 
   return (
     <main className="bx-page">
+      {disbanded && team.disbandedAt ? (
+        <div data-testid="disbanded-notice">
+          <Notice tone="neutral" icon={<Ban className="bx-icon" aria-hidden />}>
+            {tr('disbandedNotice', { date: date.format(new Date(team.disbandedAt)) })}
+          </Notice>
+        </div>
+      ) : null}
+
       <ProfileHeader
         mark={<TeamCrest tag={team.tag} color={team.accentColor} size={120} />}
         name={team.name}
         tags={tags}
         meta={meta}
-        bio={team.bio || undefined}
-        actions={
-          <>
-            <ChallengeButton
-              targetTeamSlug={team.slug}
-              targetTeamName={team.name}
-              targetTeamGames={team.games}
-              gameLabels={Object.fromEntries(team.games.map((g) => [g, GAMES[g]?.shortName ?? g]))}
-            />
-            {team.recruiting && (
-              <Button variant="ink">
-                <UserPlus className="bx-icon" aria-hidden />
-                {t('applyToJoin')}
-              </Button>
-            )}
-          </>
-        }
+        bio={team.bio ? <span dir="auto">{team.bio}</span> : undefined}
+        actions={actions}
         stats={[
           { label: t('statTrophies'), value: team.stats.trophies.toLocaleString('en-US') },
           { label: t('statMatches'), value: team.stats.totalMatches.toLocaleString('en-US') },
@@ -183,20 +216,41 @@ export default async function TeamPage({ params }: PageProps) {
           <SectionTitle
             id="team-roster"
             title={t('rosterTitle')}
-            eyebrow={t('rosterCount', { count: team.members.length })}
+            eyebrow={t('rosterCount', { count: roster.length })}
           />
-          <RosterList
-            members={members.map((m) => ({
-              id: m.playerSlug,
-              name: m.displayName,
-              role: m.inGameRole || roleLabel[m.role],
-              rating: m.rating.toLocaleString('en-US'),
-              tag: roleTag(m),
-              href: `/${locale}/players/${m.playerSlug}`,
+          {disbanded ? (
+            <EmptyState title={tr('disbandedRosterTitle')} body={tr('disbandedRosterBody')} />
+          ) : (
+            <TeamRosterPanel
+              locale={locale}
+              teamSlug={team.slug}
+              members={roster.map((m) => ({
+                playerSlug: m.playerSlug,
+                displayName: m.displayName,
+                role: m.role,
+                inGameRole: m.inGameRole,
+              }))}
+              viewerRole={myRole}
+              viewerSlug={me?.playerSlug ?? null}
+            />
+          )}
+          {myRole ? <LeaveTeamButton teamSlug={team.slug} teamName={team.name} /> : null}
+        </section>
+      </div>
+
+      {isLeader ? (
+        <section className="bx-stack" aria-labelledby="team-invites">
+          <SectionTitle id="team-invites" title={tr('invitesTitle')} />
+          <InvitePanel
+            teamSlug={team.slug}
+            invites={invites.map((i) => ({
+              playerSlug: i.playerSlug,
+              displayName: i.displayName,
+              expiresLabel: date.format(i.expiresAt),
             }))}
           />
         </section>
-      </div>
+      ) : null}
     </main>
   );
 }

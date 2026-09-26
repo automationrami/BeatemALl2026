@@ -72,9 +72,10 @@ export async function loadPlayerProfileBySlug(slug: string): Promise<PlayerProfi
     personaId: mock?.personaId ?? slug,
     displayName: row.displayName,
     slug: row.slug,
-    bio: row.bio ?? mock?.bio ?? '',
+    // Bio and city are the player's own (P-04): never fall back to mock copy.
+    bio: row.bio ?? '',
     country: row.countryCode,
-    city: row.city ?? mock?.city ?? '',
+    city: row.city ?? '',
     joinedLabel: formatJoinedLabel(row.userCreatedAt),
     handle: mock?.handle ?? `@${slug.replace(/-/g, '_')}`,
     civilIdVerified: row.civilIdVerifiedAt !== null,
@@ -87,7 +88,9 @@ export async function loadPlayerProfileBySlug(slug: string): Promise<PlayerProfi
     recentMatches: mock?.recentMatches ?? [],
     achievements: mock?.achievements ?? [],
     linkedAccounts: mock?.linkedAccounts ?? [],
-    badges: mock?.badges ?? [],
+    // Team badges ("Captain · Sandstorm") would contradict the real roster; teams are
+    // listed from `team_members` instead (`listPlayerTeams`).
+    badges: (mock?.badges ?? []).filter((b) => !b.href?.startsWith('/teams/')),
   };
 
   return profile;

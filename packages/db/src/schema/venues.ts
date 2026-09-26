@@ -14,6 +14,7 @@ import {
   pgEnum,
   pgTable,
   text,
+  time,
   timestamp,
   uniqueIndex,
   uuid,
@@ -68,6 +69,14 @@ export const venues = pgTable(
     defaultHourlyRateKwd: doublePrecision('default_hourly_rate_kwd').notNull().default(0),
     cancellationPolicy: cancellationPolicyEnum('cancellation_policy').notNull().default('moderate'),
     cancellationWindowHours: integer('cancellation_window_hours').notNull().default(24),
+
+    /** Daily hours in Asia/Kuwait local time (§6.1). A close before the open runs past midnight. */
+    opensAtTime: time('opens_at_time').notNull().default('12:00'),
+    closesAtTime: time('closes_at_time').notNull().default('02:00'),
+    isOpen24h: boolean('is_open_24h').notNull().default(false),
+    acceptsWalkIns: boolean('accepts_walk_ins').notNull().default(true),
+    /** Reason given by Beat'Em All when an application is rejected or suspended. */
+    reviewNotes: text('review_notes'),
 
     /** Average rating 0-5, one decimal. Null until reviews ship. Computed by an aggregate job post-MVP. */
     rating: doublePrecision('rating'),

@@ -18,6 +18,14 @@ export type TeamRole = TeamMemberRow['role'];
 export const TEAM_LEADER_ROLES: readonly TeamRole[] = ['captain', 'co_captain'];
 export const ORG_MANAGER_ROLES: readonly MembershipRow['role'][] = ['owner', 'admin'];
 
+/**
+ * Rows that count as team membership: invitation accepted and not left. Pending invites
+ * (E2 US-2.2) and former members live in the same table and must never grant access.
+ */
+export function activeMembership() {
+  return and(isNull(teamMembers.leftAt), eq(teamMembers.invitationStatus, 'accepted'));
+}
+
 export function isTeamLeaderRole(role: TeamRole | null | undefined): boolean {
   return !!role && TEAM_LEADER_ROLES.includes(role);
 }
@@ -29,11 +37,7 @@ export async function loadTeamRole(playerId: string, teamId: string): Promise<Te
     .select({ role: teamMembers.role })
     .from(teamMembers)
     .where(
-      and(
-        eq(teamMembers.playerId, playerId),
-        eq(teamMembers.teamId, teamId),
-        isNull(teamMembers.leftAt),
-      ),
+      and(eq(teamMembers.playerId, playerId), eq(teamMembers.teamId, teamId), activeMembership()),
     )
     .limit(1);
   return row?.role ?? null;
@@ -85,4 +89,13 @@ export async function listManagedVenueIds(userId: string): Promise<string[]> {
       ),
     );
   return rows.map((r) => r.id);
+}
+
+/** Slug of Beat'Em All's own organisation; its owners and admins run platform review. */
+export const PLATFORM_ORGANIZATION_SLUG = 'beat-em-all-admin';
+
+/** Beat'Em All staff: owner or admin of the platform organisation. */
+export async function isPlatformAdmin(userId: string): Promise<boolean> {
+  const orgs = await listManagedOrganizations(userId);
+  return orgs.some((o) => o.slug === PLATFORM_ORGANIZATION_SLUG);
 }

@@ -121,6 +121,7 @@ export async function POST(request: Request, { params }: Params) {
         tournament_full: 409,
         already_registered: 409,
         invalid_state: 409,
+        tournament_started: 409,
         insert_failed: 500,
         update_failed: 500,
       } as const;
