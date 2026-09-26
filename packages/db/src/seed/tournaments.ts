@@ -1,7 +1,7 @@
 /**
  * Tournament seeds — mirrors `packages/mock-data/src/tournaments.ts`.
  *
- * 6 tournaments across `published`, `registration_open`, `in_progress` states. 4 owned by
+ * 8 tournaments across `published`, `registration_open`, `in_progress` and `completed` states. 4 owned by
  * KEC (sanctioned), 1 by Zain Kuwait (brand-funded), 1 by Hawally Hornets (community).
  */
 
@@ -121,5 +121,45 @@ export const TOURNAMENT_SEEDS: TournamentSeed[] = [
     startsInLabel: 'Starts in 21d',
     registrationLabel: 'Registration opens in 3d',
     status: 'published',
+  },
+  {
+    slug: 'kec-spring-opener-26',
+    name: 'KEC Spring Opener ’26',
+    organizationSlug: 'kec',
+    gameSlug: 'valorant',
+    format: 'single_elimination',
+    matchFormat: 'bo3',
+    teamSize: 5,
+    minTeams: 8,
+    maxTeams: 16,
+    isOfficialSanctioned: true,
+    awardsRankingPoints: true,
+    prizePoolKwd: 8000,
+    startsInLabel: 'Completed · 5–8 Mar',
+    registrationLabel: 'Registration closed',
+    startsAt: new Date('2026-03-05T15:00:00+03:00'),
+    endsAt: new Date('2026-03-08T23:00:00+03:00'),
+    status: 'completed',
+    description: 'The first KEC-sanctioned Valorant event of the spring 2026 season.',
+  },
+  {
+    slug: 'kec-eafc-open-26',
+    name: 'KEC EA FC Open ’26',
+    organizationSlug: 'kec',
+    gameSlug: 'eafc',
+    format: 'single_elimination',
+    matchFormat: 'bo1',
+    teamSize: 1,
+    minTeams: 8,
+    maxTeams: 32,
+    isOfficialSanctioned: true,
+    awardsRankingPoints: true,
+    prizePoolKwd: 3000,
+    startsInLabel: 'Completed · 10–12 Apr',
+    registrationLabel: 'Registration closed',
+    startsAt: new Date('2026-04-10T15:00:00+03:00'),
+    endsAt: new Date('2026-04-12T23:00:00+03:00'),
+    status: 'completed',
+    description: 'KEC-sanctioned EA FC open for clubs and solo players, spring 2026 season.',
   },
 ];

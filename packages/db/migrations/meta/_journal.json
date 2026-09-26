@@ -50,6 +50,13 @@
       "when": 1777746130946,
       "tag": "0006_windy_sunfire",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790431802212,
+      "tag": "0007_steady_the_professor",
+      "breakpoints": true
     }
   ]
 }

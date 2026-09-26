@@ -13,6 +13,7 @@ export * from './current_user';
 export * from './home';
 export * from './organization';
 export * from './player';
+export * from './ranking';
 export * from './registration';
 export * from './team';
 export * from './tournament';

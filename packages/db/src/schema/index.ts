@@ -13,6 +13,7 @@ export * from './matches';
 export * from './memberships';
 export * from './organizations';
 export * from './players';
+export * from './ranking_points';
 export * from './player_games';
 export * from './teams';
 export * from './team_games';

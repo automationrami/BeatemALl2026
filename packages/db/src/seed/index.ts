@@ -25,12 +25,14 @@ import { organizations } from '../schema/organizations';
 import { venues } from '../schema/venues';
 import { venueGames } from '../schema/venue_games';
 import { tournaments } from '../schema/tournaments';
+import { rankingPoints } from '../schema/ranking_points';
 import { GAME_SEEDS } from './games';
 import { PERSONA_SEEDS } from './personas';
 import { TEAM_SEEDS } from './teams';
 import { ORGANIZATION_SEEDS } from './organizations';
 import { VENUE_SEEDS } from './venues';
 import { TOURNAMENT_SEEDS } from './tournaments';
+import { RANKING_POINT_SEEDS } from './ranking_points';
 
 async function main() {
   const url = process.env.POSTGRES_URL_NON_POOLING ?? process.env.POSTGRES_URL;
@@ -344,6 +346,78 @@ async function main() {
             status: fields.status ?? 'draft',
             updatedAt: drizzleSql`now()`,
           },
+        });
+    }
+
+    // ---- 6. Ranking points (FED-1) ----
+    // eslint-disable-next-line no-console
+    console.log(`[seed] Upserting ${RANKING_POINT_SEEDS.length} ranking points`);
+    for (const rp of RANKING_POINT_SEEDS) {
+      const [tour] = await db
+        .select({
+          id: tournaments.id,
+          gameId: tournaments.gameId,
+          organizationId: tournaments.organizationId,
+          tier: organizations.tier,
+        })
+        .from(tournaments)
+        .innerJoin(organizations, eq(organizations.id, tournaments.organizationId))
+        .where(eq(tournaments.slug, rp.tournamentSlug))
+        .limit(1);
+      if (!tour) {
+        // eslint-disable-next-line no-console
+        console.warn(`[seed] No tournament "${rp.tournamentSlug}" — skipping ranking point`);
+        continue;
+      }
+      if (tour.tier !== 'federation') {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[seed] ${rp.tournamentSlug} is not run by a federation — ranking points skipped`,
+        );
+        continue;
+      }
+      const recipient =
+        rp.recipientType === 'team'
+          ? (
+              await db
+                .select({ id: teams.id })
+                .from(teams)
+                .where(eq(teams.slug, rp.recipientSlug))
+                .limit(1)
+            )[0]
+          : (
+              await db
+                .select({ id: players.id })
+                .from(players)
+                .where(eq(players.slug, rp.recipientSlug))
+                .limit(1)
+            )[0];
+      if (!recipient) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[seed] No ${rp.recipientType} "${rp.recipientSlug}" — skipping ranking point`,
+        );
+        continue;
+      }
+      await db
+        .insert(rankingPoints)
+        .values({
+          awardedByOrganizationId: tour.organizationId,
+          recipientType: rp.recipientType,
+          recipientId: recipient.id,
+          tournamentId: tour.id,
+          gameId: tour.gameId,
+          points: rp.points,
+          placement: rp.placement,
+          season: rp.season,
+        })
+        .onConflictDoUpdate({
+          target: [
+            rankingPoints.tournamentId,
+            rankingPoints.recipientType,
+            rankingPoints.recipientId,
+          ],
+          set: { points: rp.points, placement: rp.placement, season: rp.season },
         });
     }
 
