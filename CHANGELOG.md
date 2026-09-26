@@ -12,6 +12,12 @@ deployment URL and are dated.
 
 Build queue priority pivot 2026-05-02: skip Phone OTP, populate DB with demo data so every model can be tested without auth.
 
+### QA — Production UAT across all roles (2026-09-26)
+
+- 80 API scenarios + 11 browser journeys + a 156-load render sweep (every screen, EN/AR, desktop/phone) against https://beat-em-all-v2.vercel.app, as Khaled, Sara, Ahmad, Omar and Fatima.
+- Result: 67 pass, 6 fail, 19 blocked (18 stories not built). Render sweep 156/156 clean. Report: https://claude.ai/artifact/WA3konxGqosiGVQ3JS3ssL. Defects logged as UAT-1…14 in `BACKLOG.md`.
+- All UAT-created data (4 teams, 8 challenges, 2 matches, 6 bookings, 3 registrations) deleted from the v2 database afterwards.
+
 ### Design — Championship Gold redesign of the whole app (2026-09-26)
 
 The violet glass-bento look is replaced app-wide by **Championship Gold** (picked by the founder from a 10-direction scouting board; system at https://claude.ai/artifact/9WK7AwJXHSHRBCsBFCy83x).
