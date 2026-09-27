@@ -23,6 +23,7 @@ export * from './ranking';
 export * from './registration';
 export * from './roles';
 export * from './team';
+export * from './team_results';
 export * from './tournament';
 export * from './tournament_admin';
 export * from './organization_apply';

@@ -8,7 +8,11 @@ import {
   listRegistrationsForTournament,
   loadBracketView,
   loadTournamentBySlug,
+  type BracketViewMatch,
+  type BracketViewSide,
 } from '@beat-em-all/db/queries';
+import { ResultsCard, type ResultsCardGroup } from '@/components/cards/ResultsCard';
+import { ScoreboardCard } from '@/components/cards/ScoreboardCard';
 import { BracketBoard } from '@/components/tournament/BracketBoard';
 import { ButtonLink } from '@/components/tournament/ButtonLink';
 import { FinalStandings } from '@/components/tournament/FinalStandings';
@@ -55,6 +59,7 @@ export default async function TournamentDetailPage({ params }: PageProps) {
   const t = await getTranslations('tournament');
   const tReg = await getTranslations('registration');
   const tBracket = await getTranslations('bracket');
+  const tCards = await getTranslations('cards');
 
   const statusLabel = t(tournamentLifecycleKey(tour.lifecycle));
   const isOpen = tour.lifecycle === 'registration_open';
@@ -87,6 +92,37 @@ export default async function TournamentDetailPage({ params }: PageProps) {
   ];
 
   const showBracket = !!bracket && tour.lifecycle !== 'cancelled';
+
+  // Played matches (both teams and scores in, not a bye), newest round first.
+  const teamHref = (s: string) => `/${locale}/teams/${s}`;
+  const side = (s: BracketViewSide) =>
+    s.team && s.score !== null
+      ? {
+          name: s.team.name,
+          tag: s.team.tag,
+          color: teamCrestColor(s.team.slug) ?? '#987C4B',
+          score: s.score,
+          href: teamHref(s.team.slug),
+        }
+      : null;
+  const playedSides = (m: BracketViewMatch) => {
+    const home = m.isBye ? null : side(m.home);
+    const away = m.isBye ? null : side(m.away);
+    return home && away ? { home, away } : null;
+  };
+  const resultGroups: ResultsCardGroup[] = (bracket?.rounds ?? [])
+    .map((round) => ({
+      title: tBracket(`round.${round.label}`, { number: round.index + 1 }),
+      events: round.matches.flatMap((m) => {
+        const sides = playedSides(m);
+        return sides ? [{ id: m.matchId ?? `${round.index}-${m.index}`, ...sides }] : [];
+      }),
+    }))
+    .filter((g) => g.events.length > 0)
+    .reverse();
+  const playedCount = resultGroups.reduce((n, g) => n + g.events.length, 0);
+  const finalMatch = bracket?.rounds.at(-1)?.matches[0];
+  const finalPlayed = finalMatch ? playedSides(finalMatch) : null;
 
   return (
     <main className="bx-page">
@@ -181,10 +217,28 @@ export default async function TournamentDetailPage({ params }: PageProps) {
       ) : null}
 
       {bracket?.finalDecided && tour.lifecycle === 'completed' ? (
-        <section className="grid gap-4" aria-labelledby="standings-title">
-          <SectionTitle id="standings-title" title={tBracket('standingsTitle')} />
-          <FinalStandings standings={bracket.standings} locale={locale} />
-        </section>
+        <div className="bx-two">
+          <section className="grid min-w-0 content-start gap-4" aria-labelledby="standings-title">
+            <SectionTitle id="standings-title" title={tBracket('standingsTitle')} />
+            <FinalStandings standings={bracket.standings} locale={locale} />
+          </section>
+          {finalPlayed ? (
+            <section
+              className="grid min-w-0 content-start gap-4"
+              aria-labelledby="final-title"
+              data-testid="final-scoreboard"
+            >
+              <SectionTitle id="final-title" title={tBracket('finalTitle')} />
+              <ScoreboardCard
+                home={finalPlayed.home}
+                away={finalPlayed.away}
+                competition={tour.name}
+                status={tCards('statusFinal')}
+                vs={tCards('vs')}
+              />
+            </section>
+          ) : null}
+        </div>
       ) : null}
 
       {showBracket && bracket ? (
@@ -195,6 +249,23 @@ export default async function TournamentDetailPage({ params }: PageProps) {
             eyebrow={tBracket('eyebrow', { size: (bracket.rounds[0]?.matches.length ?? 0) * 2 })}
           />
           <BracketBoard bracket={bracket} />
+        </section>
+      ) : null}
+
+      {showBracket && resultGroups.length > 0 ? (
+        <section
+          className="grid gap-4"
+          aria-labelledby="results-title"
+          data-testid="tournament-results"
+        >
+          <SectionTitle
+            id="results-title"
+            title={tBracket('resultsTitle')}
+            eyebrow={tBracket('resultsEyebrow', { count: playedCount })}
+          />
+          <div className="max-w-[640px]">
+            <ResultsCard groups={resultGroups} />
+          </div>
         </section>
       ) : null}
 

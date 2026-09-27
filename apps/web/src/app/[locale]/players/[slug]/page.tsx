@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { listPlayerTeams, loadPlayerProfileBySlug } from '@beat-em-all/db/queries';
 import { PlayerProfileBySlug } from '@/components/PlayerProfileBySlug';
 import { PlayerTeams } from '@/components/player/PlayerTeams';
+import { mainTeam } from '@/components/player/main-team';
 import { getCurrentUser } from '@/lib/current-user';
 
 export const dynamic = 'force-dynamic';
@@ -29,7 +30,11 @@ export default async function PlayerSlugPage({ params }: PageProps) {
 
   return (
     <main className="bx-page">
-      <PlayerProfileBySlug profile={profile} isSelf={me?.playerSlug === profile.slug} />
+      <PlayerProfileBySlug
+        profile={profile}
+        isSelf={me?.playerSlug === profile.slug}
+        team={mainTeam(teams)}
+      />
       <PlayerTeams locale={locale} teams={teams} emptyText={t('noTeams')} />
     </main>
   );

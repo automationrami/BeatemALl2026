@@ -295,7 +295,15 @@
     "rosterTitle": "Roster",
     "vs": "VS",
     "upcomingEmptyTitle": "No match on the calendar",
-    "notFoundCta": "Back to home"
+    "notFoundCta": "Back to home",
+    "rankingTitle": "{org} ranking",
+    "rankingSub": "{season} · {team} is #{rank}",
+    "rankingSubUnranked": "{season} · {team} has no ranking points yet",
+    "rankingLink": "Full ranking",
+    "resultsTitle": "Recent results",
+    "resultsEmptyTitle": "No results yet",
+    "resultsEmptyBody": "Results appear here once the team plays a tournament match.",
+    "lastResult": "Last result"
   },
   "teamCreate": {
     "eyebrow": "NEW TEAM",
@@ -1425,6 +1433,30 @@
     "standingsTitle": "Final standings",
     "place1": "1st",
     "place2": "2nd",
-    "place3": "3rd–4th"
+    "place3": "3rd–4th",
+    "resultsTitle": "Results",
+    "resultsEyebrow": "{count, plural, one {# match played} other {# matches played}}",
+    "finalTitle": "The final"
+  },
+  "cards": {
+    "standings": {
+      "team": "Team",
+      "events": "Events",
+      "medals": "Medals",
+      "points": "Pts",
+      "move": "±",
+      "up": "Up {n}",
+      "down": "Down {n}",
+      "same": "No change"
+    },
+    "vs": "VS",
+    "statusFinal": "Final",
+    "challenges": "Challenges",
+    "fromLabel": "From",
+    "joinedLabel": "Joined",
+    "idsLabel": "IDs",
+    "gamesLabel": "Games",
+    "playerCardTitle": "Player card",
+    "noTeamRole": "Free agent"
   }
 }

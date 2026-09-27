@@ -295,7 +295,15 @@
     "rosterTitle": "التشكيلة",
     "vs": "ضد",
     "upcomingEmptyTitle": "لا توجد مباراة في الجدول",
-    "notFoundCta": "العودة للرئيسية"
+    "notFoundCta": "العودة للرئيسية",
+    "rankingTitle": "ترتيب {org}",
+    "rankingSub": "{season} · {team} في المركز {rank}",
+    "rankingSubUnranked": "{season} · لا يملك {team} نقاط ترتيب بعد",
+    "rankingLink": "الترتيب الكامل",
+    "resultsTitle": "آخر النتائج",
+    "resultsEmptyTitle": "لا نتائج بعد",
+    "resultsEmptyBody": "تظهر النتائج هنا بعد أن يلعب الفريق مباراة في بطولة.",
+    "lastResult": "آخر نتيجة"
   },
   "teamCreate": {
     "eyebrow": "فريق جديد",
@@ -1425,6 +1433,30 @@
     "standingsTitle": "الترتيب النهائي",
     "place1": "الأول",
     "place2": "الثاني",
-    "place3": "الثالث–الرابع"
+    "place3": "الثالث–الرابع",
+    "resultsTitle": "النتائج",
+    "resultsEyebrow": "{count, plural, one {مباراة واحدة} two {مباراتان} few {# مباريات} many {# مباراة} other {# مباراة}}",
+    "finalTitle": "النهائي"
+  },
+  "cards": {
+    "standings": {
+      "team": "الفريق",
+      "events": "البطولات",
+      "medals": "الميداليات",
+      "points": "النقاط",
+      "move": "±",
+      "up": "صعد {n}",
+      "down": "هبط {n}",
+      "same": "بلا تغيير"
+    },
+    "vs": "ضد",
+    "statusFinal": "نهائية",
+    "challenges": "التحديات",
+    "fromLabel": "من",
+    "joinedLabel": "انضم",
+    "idsLabel": "المعرّفات",
+    "gamesLabel": "الألعاب",
+    "playerCardTitle": "بطاقة اللاعب",
+    "noTeamRole": "لاعب حر"
   }
 }

@@ -12,6 +12,16 @@ deployment URL and are dated.
 
 Build queue priority pivot 2026-05-02: skip Phone OTP, populate DB with demo data so every model can be tested without auth.
 
+### Match and stats cards on team, player and tournament pages (2026-09-27)
+
+Founder request: "use these free cards … insert into the related pages". Five cards in `apps/web/src/components/cards/`, layouts adapted from the SportyBlocks free components (free to use) and rebuilt in Championship Gold with our crests, Western digits and Arabic mirroring (no `translate-x` centring, no letter-spacing on Arabic).
+
+- **Team page**: last result (`ScoreboardCard`), recent results grouped by tournament (`ResultsCard`), and the federation ranking with this team highlighted (`StandingsCard`, top 5 plus the team's row).
+- **Tournament page**: results by round (newest first) and the final's scoreboard next to the final standings.
+- **Player page and /me**: the gold `PlayerStatsBanner` replaces the profile header (role, verification, team, from/joined/IDs/games, the same five stats), bio and actions sit underneath; `PlayerCard` beside recent matches, now shown as a `ResultsCard` split into tournament matches and challenges.
+- **Data**: `listTeamResults(teamIds)` — recorded match results for teams, newest first. Player recent matches, pentagon and stats are still the demo overlay.
+- Rankings keeps its existing `StandingsTable` (it already links teams, shows prize and eligibility).
+
 ### Pilot platform — every role end to end (2026-09-26)
 
 Founder request: "create user stories … test each story end to end … a ready to go platform". Stories: `docs/USER_STORIES.md` (P-01…09, T-01…09, V-01…07, M-01…09, A-01…02).

@@ -10,6 +10,7 @@ import { SectionTitle } from '@beat-em-all/ui';
 import { PlayerProfileViewFor } from '@/components/PlayerProfileView';
 import { InvitationsPanel } from '@/components/player/InvitationsPanel';
 import { PlayerTeams } from '@/components/player/PlayerTeams';
+import { mainTeam } from '@/components/player/main-team';
 import { requireMe } from '@/components/player/me-server';
 import { dateLocale } from '@/components/booking/format';
 
@@ -72,7 +73,7 @@ export default async function MePage({ params }: PageProps) {
   return (
     <main className="bx-page">
       {invitations.length > 0 ? invitationsSection : null}
-      <PlayerProfileViewFor profile={profile} isSelf />
+      <PlayerProfileViewFor profile={profile} isSelf team={mainTeam(teams)} />
       <PlayerTeams locale={locale} teams={teams} emptyText={tp('noTeamsSelf')} />
       {invitations.length === 0 ? invitationsSection : null}
     </main>

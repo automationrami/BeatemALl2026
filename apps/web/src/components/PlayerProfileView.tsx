@@ -6,20 +6,16 @@ import {
   Award,
   BadgeCheck,
   Calendar,
-  Gamepad2,
   Link2,
   Lock,
-  MapPin,
   PencilLine,
   Share2,
   Swords,
   UserPlus,
 } from 'lucide-react';
 import {
-  Avatar,
   Button,
   EmptyState,
-  ProfileHeader,
   SectionTitle,
   StatPentagon,
   Tag,
@@ -27,8 +23,11 @@ import {
   useHasMounted,
 } from '@beat-em-all/ui';
 import { useActAsPersona, getPlayerProfileForPersona } from '@beat-em-all/api-client';
-import { GAMES } from '@beat-em-all/mock-data';
-import type { PlayerProfile } from '@beat-em-all/types';
+import { GAMES, TEAMS_LIST } from '@beat-em-all/mock-data';
+import type { MatchSummary, PlayerProfile } from '@beat-em-all/types';
+import { PlayerCard } from './cards/PlayerCard';
+import { PlayerStatsBanner } from './cards/PlayerStatsBanner';
+import { ResultsCard, type ResultsCardGroup } from './cards/ResultsCard';
 import { ProfileMatchRow } from './player/ProfileMatchRow';
 
 const FALLBACK_PROFILE: PlayerProfile = getPlayerProfileForPersona('khaled');
@@ -41,30 +40,41 @@ export function PlayerProfileView() {
   return <PlayerProfileViewFor profile={profile} isSelf />;
 }
 
+/** The player's main team (captaincy first), from the server; null for free agents. */
+export type ProfileTeam = {
+  slug: string;
+  name: string;
+  tag: string;
+  color: string;
+  role: 'captain' | 'co_captain' | 'starter' | 'substitute' | 'coach' | 'manager';
+};
+
 type ViewProps = {
   profile: PlayerProfile;
   /** Force the "own profile" actions (Edit profile). When omitted, derived from the active persona. */
   isSelf?: boolean;
+  team?: ProfileTeam | null;
 };
 
 /** Same body, but driven by an explicit profile prop — used by /players/[slug]. */
-export function PlayerProfileViewFor({ profile, isSelf }: ViewProps) {
+export function PlayerProfileViewFor({ profile, isSelf, team }: ViewProps) {
   const mounted = useHasMounted();
   const activePersonaId = useActAsPersona((s) => s.activePersonaId);
   const self = isSelf ?? (mounted && activePersonaId === profile.personaId);
 
   return (
     <>
-      <Header profile={profile} self={self} />
+      <Header profile={profile} self={self} team={team ?? null} />
       <div className="bx-two">
         <RecentMatches profile={profile} />
+        <PlayerCardSection profile={profile} team={team ?? null} />
+      </div>
+      <div className="bx-two">
         <Pentagon profile={profile} />
+        <Achievements profile={profile} />
       </div>
       <Games profile={profile} />
-      <div className="bx-two">
-        <Achievements profile={profile} />
-        <LinkedAccounts profile={profile} />
-      </div>
+      <LinkedAccounts profile={profile} />
     </>
   );
 }
@@ -80,8 +90,28 @@ function countryName(code: string, locale: string): string {
   }
 }
 
-function Header({ profile, self }: { profile: PlayerProfile; self: boolean }) {
+/** Status pill on the gold banner: ink chip, never letter-spaced in Arabic. */
+function BannerPill({ children, icon }: { children: React.ReactNode; icon?: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-band px-3 py-1 text-xs/none font-extrabold tracking-[0.12em] text-gold-text-hi uppercase rtl:tracking-normal">
+      {icon}
+      {children}
+    </span>
+  );
+}
+
+function Header({
+  profile,
+  self,
+  team,
+}: {
+  profile: PlayerProfile;
+  self: boolean;
+  team: ProfileTeam | null;
+}) {
   const t = useTranslations('profile');
+  const tc = useTranslations('cards');
+  const tr = useTranslations('roster');
   const locale = useLocale();
   const { stats } = profile;
   const num = (n: number) => n.toLocaleString('en-US');
@@ -89,30 +119,20 @@ function Header({ profile, self }: { profile: PlayerProfile; self: boolean }) {
 
   const tags = (
     <>
+      <BannerPill>{team ? tr(`roles.${team.role}`) : tc('noTeamRole')}</BannerPill>
       {profile.civilIdVerified && (
-        <Tag tone="gold" icon={<BadgeCheck className="bx-icon" aria-hidden />}>
+        <BannerPill icon={<BadgeCheck className="size-3.5" aria-hidden />}>
           {t('civilIdVerified')}
-        </Tag>
+        </BannerPill>
       )}
-      <Tag tone="ink">
-        {t('playerEyebrow')} · {profile.country}
-      </Tag>
       {profile.badges
-        // Verification is shown by the Civil ID tag above.
-        .filter((b) => b.label !== 'Verified')
-        .map((b) =>
-          b.href ? (
-            <Link key={b.label} href={`/${locale}${b.href}`} className="hover:brightness-125">
-              <Tag tone="soft">
-                <bdi>{b.label}</bdi>
-              </Tag>
-            </Link>
-          ) : (
-            <Tag key={b.label}>
-              <bdi>{b.label}</bdi>
-            </Tag>
-          ),
-        )}
+        // Verification is the Civil ID pill; the team shows beside its crest.
+        .filter((b) => b.label !== 'Verified' && !b.href)
+        .map((b) => (
+          <BannerPill key={b.label}>
+            <bdi>{b.label}</bdi>
+          </BannerPill>
+        ))}
     </>
   );
 
@@ -133,13 +153,20 @@ function Header({ profile, self }: { profile: PlayerProfile; self: boolean }) {
     </bdi>
   );
 
-  const meta = [
-    { icon: <MapPin className="bx-icon" aria-hidden />, text: place },
-    { icon: <Gamepad2 className="bx-icon" aria-hidden />, text: <bdi>{ids.join(' · ')}</bdi> },
-    {
-      icon: <Calendar className="bx-icon" aria-hidden />,
-      text: `${t('joinedPrefix')} ${profile.joinedLabel}`,
-    },
+  const facts = [
+    { label: tc('fromLabel'), value: place },
+    { label: tc('joinedLabel'), value: profile.joinedLabel },
+    ...(ids.length > 0
+      ? [{ label: tc('idsLabel'), value: <bdi dir="ltr">{ids.join(' · ')}</bdi> }]
+      : []),
+    ...(profile.games.length > 0
+      ? [
+          {
+            label: tc('gamesLabel'),
+            value: profile.games.map((g) => GAMES[g]?.shortName ?? g).join(' · '),
+          },
+        ]
+      : []),
   ];
 
   const share = (
@@ -222,30 +249,85 @@ function Header({ profile, self }: { profile: PlayerProfile; self: boolean }) {
   ];
 
   return (
-    <ProfileHeader
-      mark={
-        <Avatar
-          name={profile.displayName}
-          size={120}
-          verified={profile.civilIdVerified}
-          verifiedLabel={t('civilIdVerified')}
-        />
-      }
-      name={profile.displayName}
-      tags={tags}
-      meta={meta}
-      bio={profile.bio ? <span dir="auto">{profile.bio}</span> : undefined}
-      actions={actions}
-      stats={statItems}
-    />
+    <div className="grid gap-3">
+      <PlayerStatsBanner
+        name={profile.displayName}
+        pills={tags}
+        team={
+          team
+            ? {
+                name: team.name,
+                tag: team.tag,
+                color: team.color,
+                href: `/${locale}/teams/${team.slug}`,
+              }
+            : null
+        }
+        facts={facts}
+        stats={statItems}
+      />
+      <div className="bx-card flex flex-wrap items-center justify-between gap-3 p-4">
+        {profile.bio ? (
+          <p
+            className="m-0 min-w-0 max-w-[72ch] flex-1 text-[15px] leading-relaxed text-ink-muted"
+            dir="auto"
+          >
+            {profile.bio}
+          </p>
+        ) : (
+          <span className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-ink-muted">
+            <Calendar className="bx-icon" aria-hidden />
+            {`${t('joinedPrefix')} ${profile.joinedLabel}`}
+          </span>
+        )}
+        <div className="flex flex-wrap items-center gap-2">{actions}</div>
+      </div>
+    </div>
   );
 }
 
 /* ---------- Sections ---------- */
 
+const TEAM_BY_NAME = new Map(TEAMS_LIST.map((tm) => [tm.name.toLowerCase(), tm]));
+
+function resultSide(label: string, score: number) {
+  const name = label.trim();
+  const known = TEAM_BY_NAME.get(name.toLowerCase());
+  const tag =
+    known?.tag ??
+    name
+      .split(/\s+/)
+      .map((w) => w[0])
+      .join('')
+      .slice(0, 3)
+      .toUpperCase();
+  return { name, tag, color: known?.accentColor ?? '#987C4B', score };
+}
+
+/** "Sandstorm vs Falcon Squad" + "13–9" → a results-card row, or null when it doesn't parse. */
+function toResultEvent(m: MatchSummary, note: string) {
+  const [a, b] = m.opponentLabel.split(/\s+vs\s+/i);
+  const [sa, sb] = m.scoreLabel.split(/[-–]/).map((n) => Number.parseInt(n, 10));
+  if (!a || !b || sa === undefined || sb === undefined || Number.isNaN(sa) || Number.isNaN(sb))
+    return null;
+  return { id: m.id, home: resultSide(a, sa), away: resultSide(b, sb), note };
+}
+
 function RecentMatches({ profile }: { profile: PlayerProfile }) {
   const t = useTranslations('profile');
+  const tc = useTranslations('cards');
   const matches = profile.recentMatches;
+  const rows = matches.map((m) => ({
+    m,
+    event: toResultEvent(m, `${GAMES[m.game]?.shortName ?? m.game} · ${m.relativeDate}`),
+  }));
+  const parsed = rows.every((r) => r.event !== null);
+  const pick = (tournament: boolean) =>
+    rows.flatMap((r) => (r.m.isTournament === tournament && r.event ? [r.event] : []));
+  const groups: ResultsCardGroup[] = [
+    { title: t('tournamentMatch'), events: pick(true) },
+    { title: tc('challenges'), events: pick(false) },
+  ].filter((g) => g.events.length > 0);
   return (
     <section className="min-w-0">
       <SectionTitle
@@ -258,6 +340,8 @@ function RecentMatches({ profile }: { profile: PlayerProfile }) {
       />
       {matches.length === 0 ? (
         <EmptyState title={t('emptyMatches')} />
+      ) : parsed ? (
+        <ResultsCard groups={groups} />
       ) : (
         <ul className="bx-card grid gap-1 p-3">
           {matches.map((m) => (
@@ -277,6 +361,38 @@ function RecentMatches({ profile }: { profile: PlayerProfile }) {
           ))}
         </ul>
       )}
+    </section>
+  );
+}
+
+function PlayerCardSection({
+  profile,
+  team,
+}: {
+  profile: PlayerProfile;
+  team: ProfileTeam | null;
+}) {
+  const t = useTranslations('profile');
+  const tc = useTranslations('cards');
+  const tr = useTranslations('roster');
+  const { stats } = profile;
+  const num = (n: number) => n.toLocaleString('en-US');
+  const primaryGame = profile.games[0];
+  return (
+    <section className="min-w-0">
+      <SectionTitle title={tc('playerCardTitle')} />
+      <PlayerCard
+        name={profile.displayName}
+        role={team ? `${tr(`roles.${team.role}`)} · ${team.name}` : tc('noTeamRole')}
+        badge={team?.tag}
+        team={team ? { tag: team.tag, color: team.color } : null}
+        game={primaryGame ? (GAMES[primaryGame]?.shortName ?? primaryGame) : undefined}
+        stats={[
+          { label: t('statMatches'), value: num(stats.totalMatches) },
+          { label: t('streakWin'), value: num(stats.wins) },
+          { label: t('statRating'), value: stats.rating > 0 ? num(stats.rating) : '—' },
+        ]}
+      />
     </section>
   );
 }
